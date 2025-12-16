@@ -93,4 +93,31 @@ export const combineTypography = (typographyClass: string, customClass?: string)
     return customClass ? `${typographyClass} ${customClass}` : typographyClass;
 };
 
+// Export individual typography elements for direct usage
+export const fontSize = typography.fontSize;
+
+export const fontWeight = {
+    thin: "font-thin",
+    extralight: "font-extralight",
+    light: "font-light",
+    normal: "font-normal",
+    medium: "font-medium",
+    semibold: "font-semibold",
+    bold: "font-bold",
+    extrabold: "font-extrabold",
+    black: "font-black",
+};
+
+export const responsiveFontSize = {
+    xs: "text-xs sm:text-sm",
+    sm: "text-sm sm:text-base",
+    base: "text-base sm:text-lg",
+    lg: "text-lg sm:text-xl",
+    xl: "text-xl sm:text-2xl",
+    "2xl": "text-2xl sm:text-3xl",
+    "3xl": "text-3xl sm:text-4xl",
+    "4xl": "text-4xl sm:text-5xl",
+    "5xl": "text-5xl sm:text-6xl",
+};
+
 export default typography;

@@ -1,29 +1,71 @@
+// src/App.tsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
+    useLocation,
+} from "react-router-dom";
+
 import Navbar from "./components/layout/NavBar";
 import HomePage from "./pages/Home";
+import RoleSelection from "./pages/RoleSelection";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import SelectCategory from "./pages/SelectCategories";
+import WorkerProfileScreen from "./pages/Profile";
+/* ---------------- Protected Route ---------------- */
+const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? children : <Navigate to="/" replace />;
+};
 
+/* ---------------- Layout Wrapper ---------------- */
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const location = useLocation();
+    const hideNavbar = location.pathname === "/services"; // hide navbar on role selection
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {!hideNavbar && <Navbar />}
+            <main>{children}</main>
+        </div>
+    );
+};
+
+/* ---------------- App Routes ---------------- */
+const AppRoutes: React.FC = () => {
+    return (
+        <Layout>
+            <Routes>
+                {/* Home */}
+                <Route path="/" element={<HomePage />} />
+
+                <Route path="/role-selection" element={<RoleSelection />} />
+                <Route
+                    path="/select-category"
+                    element={
+                        <ProtectedRoute>
+                            <SelectCategory />
+                        </ProtectedRoute>
+                    }
+                />
+
+                            <Route path="/worker-profile" element={<WorkerProfileScreen />} />
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </Layout>
+    );
+};
+
+/* ---------------- Main App ---------------- */
 const App: React.FC = () => {
     return (
-        <Router>
-            <div className="min-h-screen bg-gray-50">
-                {/* Navbar - Sticky at top */}
-                <Navbar />
-
-                {/* Main Content - Rendered below navbar */}
-                <main>
-                    <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/services" element={<div className="p-8 text-center">Services Page - Coming Soon</div>} />
-                        <Route path="/workers" element={<div className="p-8 text-center">For Workers Page - Coming Soon</div>} />
-                        <Route path="/help" element={<div className="p-8 text-center">Help Page - Coming Soon</div>} />
-                        <Route path="/leads" element={<div className="p-8 text-center">Leads Page - Coming Soon</div>} />
-                        <Route path="/free-listing" element={<div className="p-8 text-center">Free Listing Page - Coming Soon</div>} />
-                        <Route path="/login" element={<div className="p-8 text-center">Login Page - Coming Soon</div>} />
-                    </Routes>
-                </main>
-            </div>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <AppRoutes />
+            </Router>
+        </AuthProvider>
     );
 };
 
