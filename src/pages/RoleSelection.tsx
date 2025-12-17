@@ -49,6 +49,12 @@ const RoleSelection: React.FC = () => {
     const handleRoleSelection = (role: 'worker' | 'customer') => {
         setSelectedRole(role);
         stopListening();
+
+        // If worker is selected, navigate directly to worker profile
+        if (role === 'worker') {
+            login();
+            navigate("/worker-profile");
+        }
     };
 
     const handleContinue = () => {
@@ -113,14 +119,14 @@ const RoleSelection: React.FC = () => {
                         />
                     </div>
 
-                    {/* Continue Button */}
-                    {selectedRole && (
+                    {/* Continue Button - Only for Customer */}
+                    {selectedRole === 'customer' && (
                         <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center animate-fade-in">
                             <button
-                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
+                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:opacity-90 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
                                 onClick={handleContinue}
                             >
-                                Continue as {selectedRole === 'worker' ? 'Worker' : 'Customer'}
+                                Continue as Customer
                             </button>
                         </div>
                     )}

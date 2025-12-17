@@ -1,0 +1,122 @@
+{
+    "subcategories": [
+        {
+            "categoryId": 1,
+            "items": [
+                {
+                    "name": "Plumbing",
+                    "icon": "🚰"
+                },
+                {
+                    "name": "Electrical",
+                    "icon": "💡"
+                },
+                {
+                    "name": "Carpentry",
+                    "icon": "🪑"
+                },
+                {
+                    "name": "Painting",
+                    "icon": "🎨"
+                }
+            ]
+        },
+        {
+            "categoryId": 2,
+            "items": [
+                {
+                    "name": "Full Home Cleaning",
+                    "icon": "🏠"
+                },
+                {
+                    "name": "Kitchen Cleaning",
+                    "icon": "🍽️"
+                },
+                {
+                    "name": "Bathroom Cleaning",
+                    "icon": "🚽"
+                },
+                {
+                    "name": "Sofa & Carpet Cleaning",
+                    "icon": "🛋️"
+                }
+            ]
+        },
+        {
+            "categoryId": 3,
+            "items": [
+                {
+                    "name": "AC Repair",
+                    "icon": "❄️"
+                },
+                {
+                    "name": "Washing Machine",
+                    "icon": "🧺"
+                },
+                {
+                    "name": "Refrigerator",
+                    "icon": "🧊"
+                },
+                {
+                    "name": "Water Purifier",
+                    "icon": "💧"
+                },
+                {
+                    "name": "Microwave",
+                    "icon": "🥓"
+                }
+            ]
+        },
+        {
+            "categoryId": 4,
+            "items": [
+                {
+                    "name": "Haircut for Men",
+                    "icon": "💇‍♂️"
+                },
+                {
+                    "name": "Salon for Women",
+                    "icon": "💇‍♀️"
+                },
+                {
+                    "name": "Massage & Spa",
+                    "icon": "💆"
+                }
+            ]
+        },
+        {
+            "categoryId": 5,
+            "items": [
+                {
+                    "name": "House Shifting",
+                    "icon": "🚚"
+                },
+                {
+                    "name": "Office Shifting",
+                    "icon": "🏢"
+                },
+                {
+                    "name": "Vehicle Transport",
+                    "icon": "🏍️"
+                }
+            ]
+        },
+        {
+            "categoryId": 6,
+            "items": [
+                {
+                    "name": "Termite Control",
+                    "icon": "🪵"
+                },
+                {
+                    "name": "Cockroach Control",
+                    "icon": "🪳"
+                },
+                {
+                    "name": "Bed Bug Control",
+                    "icon": "🛏️"
+                }
+            ]
+        }
+    ]
+}

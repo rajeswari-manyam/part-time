@@ -1,181 +1,219 @@
+// ==================== FILE: src/components/layout/Navbar.tsx ====================
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { FaGlobe, FaBell, FaTimes, FaBars } from "react-icons/fa";
-import Button from "../ui/Buttons";
-import typography from "../../styles/typography";
-import WelcomePage from "../Auth/WelcomePage";
+import { useNavigate } from "react-router-dom";
+import {
+  Heart,
+  Bookmark,
+  User,
+  Bell,
+  LogOut,
+  Briefcase,
+  Home,
+} from "lucide-react";
 
-// Cast icons to any to avoid TS2786 error with React 19
-const GlobeIcon = FaGlobe as any;
-const BellIcon = FaBell as any;
-const TimesIcon = FaTimes as any;
-const BarsIcon = FaBars as any;
+import { useLocation } from "react-router-dom";
+
+import { useAuth } from "../../context/AuthContext";
+import Button from "../ui/Buttons";
+import typography, { combineTypography } from "../../styles/typography";
+import WelcomePage from "../Auth/WelcomePage";
+import OTPVerification from "../Auth/OTPVerification";
+
+const languages = ["EN", "ES", "FR"];
 
 const Navbar: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("EN");
+      const location = useLocation();
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+  /* ---------------- Navigation ---------------- */
+  const handleNavClick = (path: string) => {
+    if (!isAuthenticated) {
+      setShowWelcomeModal(true);
+      return;
+    }
+    navigate(path);
   };
 
-  const openWelcomeModal = () => {
-    setIsWelcomeModalOpen(true);
-    setIsMobileMenuOpen(false); // Close mobile menu if open
+
+
+const handleProfileClick = () => {
+  if (!isAuthenticated) {
+    setShowWelcomeModal(true);
+    return;
+  }
+
+  navigate("/profile", {
+    state: { background: location },
+  });
+};
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
-  const closeWelcomeModal = () => {
-    setIsWelcomeModalOpen(false);
+  /* ---------------- OTP ---------------- */
+  const handleLoginSuccess = () => {
+    setShowOTPModal(false);
+    setShowWelcomeModal(false);
+    setTimeout(() => navigate("/", { replace: true }), 100);
+  };
+
+  const openOTPModal = (phone: string) => {
+    setPhoneNumber(phone);
+    setShowWelcomeModal(false);
+    setShowOTPModal(true);
   };
 
   return (
     <>
-      <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex justify-between items-center h-20">
+      {/* ================= HEADER ================= */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
 
-            {/* Left: Logo */}
-            <div className="flex items-center space-x-3">
-              <Link to="/" className="flex items-center">
-                <div className="bg-blue-600 p-3 rounded-full">
-                  <span className={`text-white font-bold ${typography.logo.icon}`}>⚡</span>
-                </div>
-                <div className="ml-3">
-                  <h1 className={`text-blue-800 ${typography.logo.title}`}>ServiceHub</h1>
-                  <p className={`hidden sm:block ${typography.logo.subtitle}`}>Find Local Service Experts</p>
-                </div>
-              </Link>
+            {/* Logo */}
+            <div
+              onClick={() => navigate("/")}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">⚡</span>
+              </div>
+
+              <div className="ml-2">
+                <h1
+                  className={combineTypography(
+                    typography.logo.title,
+                    "text-blue-800 hidden sm:block"
+                  )}
+                >
+                  ServiceHub
+                </h1>
+                <p
+                  className={combineTypography(
+                    typography.logo.subtitle,
+                    "hidden lg:block"
+                  )}
+                >
+                  Find Local Service Experts
+                </p>
+              </div>
             </div>
 
-            {/* Center: Desktop Menu */}
-            <div className={`hidden lg:flex gap-10 text-gray-700 ${typography.nav.menuItem}`}>
-              <Link to="/" className="hover:text-blue-600 transition">Home</Link>
-              {/* Updated: Link to role selection page */}
-              <Link to="/role-selection" className="hover:text-blue-600 transition">All Services</Link>
-              <Link to="/workers" className="hover:text-blue-600 transition">For Workers</Link>
-              <Link to="/help" className="hover:text-blue-600 transition">Help</Link>
-            </div>
+            {/* Right Section */}
+            <div className="flex items-center space-x-4">
 
-            {/* Right: Icons and Buttons (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {/* Language selector */}
-              <button className={`flex items-center text-gray-700 hover:text-blue-600 gap-2 transition ${typography.nav.button}`}>
-                <GlobeIcon size={22} />
-                <span>English</span>
-              </button>
+              {/* Desktop Menu */}
+              <div className="hidden lg:flex items-center space-x-6">
+                <button
+                  onClick={() => handleNavClick("/")}
+                  className={`flex items-center space-x-1 ${!isAuthenticated
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:text-blue-600"
+                    }`}
+                >
+                  <Home className="w-4 h-4" />
+                  <span className={typography.nav.menuItem}>Home</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("/free-listing")}
+                  className={`flex items-center space-x-1 ${!isAuthenticated
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:text-blue-600"
+                    }`}
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span className={typography.nav.menuItem}>Free Listing</span>
+                </button>
+
+                <button
+                  onClick={() => handleNavClick("/jobs")}
+                  className={`flex items-center space-x-1 ${!isAuthenticated
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:text-blue-600"
+                    }`}
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span className={typography.nav.menuItem}>Jobs</span>
+                </button>
+              </div>
 
               {/* Notification */}
-              <button className="relative text-gray-700 hover:text-blue-600 transition">
-                <BellIcon size={24} />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-8">
-                <Button variant="success" to="/leads" size="md">
-                  Leads
-                </Button>
-
-                <Button variant="gradient-orange" to="/free-listing" size="md">
-                  Free Listing
-                </Button>
-
-                {/* Login Button - Opens Modal */}
-                <button
-                  onClick={openWelcomeModal}
-                  className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:from-[#090B7A] hover:to-[#5A95E0] text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
-                >
-                  Login / Sign Up
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile: Notification & Menu Button */}
-            <div className="flex lg:hidden items-center gap-4">
-              {/* Notification - Mobile */}
-              <button className="relative text-gray-700 hover:text-blue-600">
-                <BellIcon size={24} />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-
-              {/* Mobile menu button */}
               <button
-                onClick={toggleMobileMenu}
-                className="text-gray-700 hover:text-blue-600 text-3xl"
+                onClick={() => handleNavClick("/notifications")}
+                className={`${!isAuthenticated
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:text-blue-600"
+                  }`}
               >
-                {isMobileMenuOpen ? <TimesIcon /> : <BarsIcon />}
-              </button>
-            </div>
-
-          </div>
-
-          {/* Mobile Menu Dropdown */}
-          {isMobileMenuOpen && (
-            <div className="lg:hidden border-t border-gray-200 py-6 space-y-5">
-              {/* Mobile Navigation Links */}
-              <div className={`flex flex-col space-y-4 text-gray-700 ${typography.nav.menuItem}`}>
-                <Link
-                  to="/"
-                  className="hover:text-blue-600 px-3 py-3 hover:bg-gray-50 rounded transition"
-                  onClick={toggleMobileMenu}
-                >
-                  Home
-                </Link>
-                {/* Updated: Link to role selection page */}
-                <Link
-                  to="/role-selection"
-                  className="hover:text-blue-600 px-3 py-3 hover:bg-gray-50 rounded transition"
-                  onClick={toggleMobileMenu}
-                >
-                  All Services
-                </Link>
-                <Link
-                  to="/workers"
-                  className="hover:text-blue-600 px-3 py-3 hover:bg-gray-50 rounded transition"
-                  onClick={toggleMobileMenu}
-                >
-                  For Workers
-                </Link>
-                <Link
-                  to="/help"
-                  className="hover:text-blue-600 px-3 py-3 hover:bg-gray-50 rounded transition"
-                  onClick={toggleMobileMenu}
-                >
-                  Help
-                </Link>
-              </div>
-
-              {/* Language Selector - Mobile */}
-              <button className={`flex items-center text-gray-700 hover:text-blue-600 gap-2 px-3 py-3 w-full hover:bg-gray-50 rounded transition ${typography.nav.button}`}>
-                <GlobeIcon size={22} />
-                <span>English</span>
+                <Bell className="w-5 h-5" />
               </button>
 
-              {/* Mobile Action Buttons */}
-              <div className="flex flex-col gap-4 pt-2">
-                <Button variant="success" to="/leads" fullWidth size="md">
-                  Leads
-                </Button>
+              {/* Language */}
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="border rounded-md px-2 py-1 text-sm"
+              >
+                {languages.map((lang) => (
+                  <option key={lang}>{lang}</option>
+                ))}
+              </select>
 
-                <Button variant="gradient-orange" to="/free-listing" fullWidth size="md">
-                  Free Listing
-                </Button>
-
-                {/* Login Button - Opens Modal (Mobile) */}
-                <button
-                  onClick={openWelcomeModal}
-                  className="w-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:from-[#090B7A] hover:to-[#5A95E0] text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 shadow-md text-center block"
+              {/* Login Button */}
+              {!isAuthenticated && (
+                <Button
+                  variant="gradient-blue"
+                  size="md"
+                  className="hidden lg:block"
+                  onClick={() => setShowWelcomeModal(true)}
                 >
                   Login / Sign Up
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+                </Button>
+              )}
 
-      {/* Welcome Modal */}
-      <WelcomePage isOpen={isWelcomeModalOpen} onClose={closeWelcomeModal} />
+              {/* Profile Button (ONLY button after login) */}
+              {isAuthenticated && (
+                <button
+                  onClick={handleProfileClick}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">R</span>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ================= AUTH MODALS ================= */}
+      <WelcomePage
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onOpenOTP={openOTPModal}
+      />
+
+      {showOTPModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          <OTPVerification
+            phoneNumber={phoneNumber}
+            onVerify={() => { }}
+            onResend={() => { }}
+            onBack={() => setShowOTPModal(false)}
+            onClose={handleLoginSuccess}
+            onContinue={handleLoginSuccess}
+          />
+        </div>
+      )}
     </>
   );
 };

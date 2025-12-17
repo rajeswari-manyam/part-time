@@ -9,11 +9,12 @@ interface LoginFormProps {
     onClose: () => void;
     initialMode?: "signup" | "login";
     onBack?: () => void;
+    onOpenOTP?: (phone: string) => void; // 🔥 This comes from Navbar
 }
 
 type FormStep = "phone" | "otp";
 
-const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack, onOpenOTP }) => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [isLogin, setIsLogin] = useState(initialMode === "login");
     const [currentStep, setCurrentStep] = useState<FormStep>("phone");
@@ -103,23 +104,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
         e.preventDefault();
         if (phoneNumber.length === 10) {
             console.log("Sending OTP to:", phoneNumber);
-            setCurrentStep("otp");
+
+            // 🔥 If onOpenOTP callback exists (from Navbar), use it
+            if (onOpenOTP) {
+                console.log("Using Navbar OTP modal");
+                onOpenOTP(phoneNumber); // This will close Welcome and open OTP modal in Navbar
+            } else {
+                // Fallback: show OTP inline (for standalone use)
+                console.log("Using inline OTP");
+                setCurrentStep("otp");
+            }
         }
     };
 
     const handleOTPVerify = (otp: string) => {
         console.log("Verifying OTP:", otp);
+        // Your API call here
     };
 
     const handleOTPResend = () => {
         console.log("Resending OTP to:", phoneNumber);
+        // Your API call here
     };
 
     const handleBackToPhone = () => {
         setCurrentStep("phone");
     };
 
-    if (currentStep === "otp") {
+    // 🔥 Only show inline OTP if onOpenOTP is NOT provided
+    if (currentStep === "otp" && !onOpenOTP) {
         return (
             <OTPVerification
                 phoneNumber={phoneNumber}
@@ -157,6 +170,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                 </p>
             </div>
 
+            {/* Voice Assistance Button */}
             <button
                 type="button"
                 onClick={handleVoiceInput}
@@ -171,6 +185,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                 </p>
             </button>
 
+            {/* Phone Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label
@@ -226,6 +241,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                     )}
                 </div>
 
+                {/* Submit Button */}
                 <Button
                     type="submit"
                     fullWidth
@@ -236,6 +252,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                     Send OTP
                 </Button>
 
+                {/* Terms & Conditions */}
                 {!isLogin && (
                     <p className={`text-center text-gray-500 ${typography.body.xs}`}>
                         By continuing, you agree to our{" "}

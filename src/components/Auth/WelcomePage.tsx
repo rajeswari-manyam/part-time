@@ -9,11 +9,12 @@ const TimesIcon = FaTimes as any;
 interface WelcomePageProps {
     isOpen: boolean;
     onClose: () => void;
+    onOpenOTP?: (phoneNumber: string) => void; // 🔥 Add this callback
 }
 
 type ViewState = "welcome" | "login" | "signup";
 
-const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose }) => {
+const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP }) => {
     const [view, setView] = useState<ViewState>("welcome");
     const [isListening, setIsListening] = useState(false);
     const [voiceText, setVoiceText] = useState("");
@@ -178,6 +179,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose }) => {
                                 onClose={onClose}
                                 initialMode={view === "login" ? "login" : "signup"}
                                 onBack={() => setView("welcome")}
+                                onOpenOTP={onOpenOTP} // 🔥 Pass the callback to LoginForm
                             />
                         )}
                     </div>
