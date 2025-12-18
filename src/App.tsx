@@ -1,4 +1,5 @@
 import React from "react";
+import "./i18n"; // Import i18n config
 import {
     BrowserRouter as Router,
     Routes,
@@ -8,6 +9,8 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
+
 import Navbar from "./components/layout/NavBar";
 
 import HomePage from "./pages/Home";
@@ -23,10 +26,11 @@ import FeedBack from "./pages/FeedBack";
 import Help from "./pages/Help";
 import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
+import ServiceMarketplace from "./pages/ServiceMarketPlace";
+import JobDetails from "./pages/JobDetails";
+
 /* ---------------- Protected Route ---------------- */
-const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({
-    children,
-}) => {
+const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? children : <Navigate to="/" replace />;
 };
@@ -51,6 +55,9 @@ const AppRoutes: React.FC = () => {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
+                    <Route path="/service-marketplace" element={<ServiceMarketplace />} />
+                    <Route path="/jobs/:jobId" element={<JobDetails />} />
+
                     <Route
                         path="/free-listing"
                         element={
@@ -148,9 +155,11 @@ const AppRoutes: React.FC = () => {
 /* ---------------- Main App ---------------- */
 const App: React.FC = () => (
     <AuthProvider>
-        <Router>
-            <AppRoutes />
-        </Router>
+        <LanguageProvider>
+            <Router>
+                <AppRoutes />
+            </Router>
+        </LanguageProvider>
     </AuthProvider>
 );
 

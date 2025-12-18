@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Carousel from "./ui/Carousel";
 import { fontSize, fontWeight, responsiveFontSize } from "../styles/typography";
 
@@ -20,54 +21,55 @@ interface PromoSlidesProps {
 
 const PromoSlides: React.FC<PromoSlidesProps> = ({ className = "" }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const slides: PromoSlide[] = [
         {
             id: "1",
-            title: "💼 Find Part-Time Jobs",
-            subtitle: "Flexible Opportunities Await",
-            description: "Discover thousands of part-time positions perfect for students, professionals, and anyone seeking flexible work.",
-            buttonText: "Browse Jobs",
+            title: t("promo.partTime.title"),
+            subtitle: t("promo.partTime.subtitle"),
+            description: t("promo.partTime.description"),
+            buttonText: t("promo.partTime.button"),
             gradient: "from-purple-600 via-pink-600 to-red-600",
             textColor: "text-white",
             path: "/jobs",
         },
         {
             id: "2",
-            title: "🏠 Work From Home",
-            subtitle: "Remote Opportunities",
-            description: "Find remote part-time jobs that let you work from anywhere. Perfect for work-life balance.",
-            buttonText: "View Remote Jobs",
+            title: t("promo.remote.title"),
+            subtitle: t("promo.remote.subtitle"),
+            description: t("promo.remote.description"),
+            buttonText: t("promo.remote.button"),
             gradient: "from-blue-600 via-indigo-600 to-purple-600",
             textColor: "text-white",
             path: "/remote-jobs",
         },
         {
             id: "3",
-            title: "🎓 Student-Friendly Jobs",
-            subtitle: "Earn While You Learn",
-            description: "Part-time positions designed around your class schedule. Gain experience and earn money simultaneously.",
-            buttonText: "Student Jobs",
+            title: t("promo.student.title"),
+            subtitle: t("promo.student.subtitle"),
+            description: t("promo.student.description"),
+            buttonText: t("promo.student.button"),
             gradient: "from-green-600 via-teal-600 to-cyan-600",
             textColor: "text-white",
             path: "/student-jobs",
         },
         {
             id: "4",
-            title: "⏰ Flexible Hours",
-            subtitle: "Work On Your Schedule",
-            description: "Choose jobs with evening, weekend, or flexible shifts. Perfect for those with other commitments.",
-            buttonText: "Find Flexible Jobs",
+            title: t("promo.flexible.title"),
+            subtitle: t("promo.flexible.subtitle"),
+            description: t("promo.flexible.description"),
+            buttonText: t("promo.flexible.button"),
             gradient: "from-orange-600 via-red-600 to-pink-600",
             textColor: "text-white",
             path: "/flexible-jobs",
         },
         {
             id: "5",
-            title: "💰 High-Paying Gigs",
-            subtitle: "Maximize Your Earnings",
-            description: "Discover part-time positions with competitive pay. Earn more in less time with premium opportunities.",
-            buttonText: "View High-Paying Jobs",
+            title: t("promo.highPaying.title"),
+            subtitle: t("promo.highPaying.subtitle"),
+            description: t("promo.highPaying.description"),
+            buttonText: t("promo.highPaying.button"),
             gradient: "from-yellow-600 via-orange-600 to-red-600",
             textColor: "text-white",
             path: "/high-paying-jobs",

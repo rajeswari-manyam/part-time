@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 import voiceIcon from "../../assets/icons/Voice.png";
 import LoginForm from "./LoginForm";
 import VoiceService from "../../services/voiceService";
@@ -9,12 +10,13 @@ const TimesIcon = FaTimes as any;
 interface WelcomePageProps {
     isOpen: boolean;
     onClose: () => void;
-    onOpenOTP?: (phoneNumber: string) => void; // 🔥 Add this callback
+    onOpenOTP?: (phoneNumber: string) => void;
 }
 
 type ViewState = "welcome" | "login" | "signup";
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP }) => {
+    const { t } = useTranslation();
     const [view, setView] = useState<ViewState>("welcome");
     const [isListening, setIsListening] = useState(false);
     const [voiceText, setVoiceText] = useState("");
@@ -55,7 +57,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
 
     const startVoice = () => {
         if (!voiceService.isSpeechRecognitionSupported()) {
-            alert("Voice recognition not supported in this browser");
+            alert(t("welcome.voiceNotSupported"));
             return;
         }
 
@@ -127,7 +129,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         ServiceHub
                                     </h1>
                                     <p className="text-gray-600 mt-1">
-                                        Find skilled professionals or offer your services
+                                        {t("welcome.subtitle")}
                                     </p>
                                 </div>
 
@@ -143,8 +145,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                     <p className="text-white flex items-center justify-center gap-2 text-sm">
                                         <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
                                         {isListening
-                                            ? "Listening... speak now"
-                                            : "Tap to use voice assistance"}
+                                            ? t("welcome.listening")
+                                            : t("welcome.tapVoice")}
                                     </p>
                                 </div>
 
@@ -162,7 +164,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         className="w-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
                                             text-white py-3 rounded-xl font-semibold"
                                     >
-                                        Get Started
+                                        {t("welcome.getStarted")}
                                     </button>
 
                                     <button
@@ -170,7 +172,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         className="w-full border-2 border-blue-600 text-blue-600
                                             py-3 rounded-xl font-semibold hover:bg-blue-50"
                                     >
-                                        Already have an account? Login
+                                        {t("welcome.alreadyHaveAccount")}
                                     </button>
                                 </div>
                             </div>
@@ -179,7 +181,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                 onClose={onClose}
                                 initialMode={view === "login" ? "login" : "signup"}
                                 onBack={() => setView("welcome")}
-                                onOpenOTP={onOpenOTP} // 🔥 Pass the callback to LoginForm
+                                onOpenOTP={onOpenOTP}
                             />
                         )}
                     </div>

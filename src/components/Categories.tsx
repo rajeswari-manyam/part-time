@@ -1,5 +1,6 @@
 import React from "react";
 import { fontSize, fontWeight } from "../styles/typography";
+import { useTranslation } from "react-i18next";
 
 interface Category {
     id: string;
@@ -132,9 +133,40 @@ export const categories: Category[] = [
 ];
 
 const Categories: React.FC = () => {
+    const { t } = useTranslation();
 
     const handleCategoryClick = (link: string) => {
         window.location.href = link;
+    };
+
+    // Helper to get translation key for a category
+    const getCategoryName = (cat: Category) => {
+        // Mapping category IDs or names to translation keys
+        // Assuming we added keys like "categories.restaurants"
+        const keyMap: Record<string, string> = {
+            "Restaurants & Food": "restaurants",
+            "Hospitals & Healthcare": "hospitals",
+            "Plumbers & Home Repair": "plumbers",
+            "Hotels & Travel": "hotels",
+            "Beauty & Wellness": "beauty",
+            "Real Estate": "realEstate",
+            "Shopping & Retail": "shopping",
+            "Education & Training": "education",
+            "Automotive": "automotive",
+            "Business Services": "business",
+            "Tech & Digital": "tech",
+            "Pet Services": "pets",
+            "Events & Entertainment": "events",
+            "Industrial Services": "industrial",
+            "Courier & Logistics": "courier",
+            "Daily Wage Labour": "labour",
+            "Agriculture & Farming": "agriculture",
+            "Corporate Services": "corporate",
+            "Creative & Art": "creative",
+            "Wedding Services": "wedding"
+        };
+        const key = keyMap[cat.name];
+        return key ? t(`categories.${key}`) : cat.name;
     };
 
     return (
@@ -143,10 +175,10 @@ const Categories: React.FC = () => {
                 {/* Section Header */}
                 <div className="mb-6">
                     <h2 className={`${fontSize["3xl"]} ${fontWeight.bold} text-gray-800`}>
-                        Popular Categories
+                        {t("popularCategories")}
                     </h2>
                     <p className={`${fontSize.base} text-gray-600 mt-2`}>
-                        Explore services across various categories
+                        {t("exploreServices")}
                     </p>
                 </div>
 
@@ -167,7 +199,7 @@ const Categories: React.FC = () => {
 
                             {/* Category Name */}
                             <h3 className={`${fontSize.sm} ${fontWeight.semibold} text-gray-700 text-center group-hover:text-blue-600 transition-colors duration-300`}>
-                                {category.name}
+                                {getCategoryName(category)}
                             </h3>
                         </button>
                     ))}
@@ -176,7 +208,7 @@ const Categories: React.FC = () => {
                 {/* View All Button */}
                 <div className="mt-8 text-center">
                     <button className={`bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:from-[#090B7A] hover:to-[#5A95E0] text-white px-8 py-3 rounded-full ${fontWeight.semibold} ${fontSize.base} transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105`}>
-                        View All Categories →
+                        {t("viewAllCategories")}
                     </button>
                 </div>
             </div>
