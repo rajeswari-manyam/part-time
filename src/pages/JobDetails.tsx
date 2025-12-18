@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Wrench } from "lucide-react";
 import { combineTypography } from "../styles/typography";
 import typography from "../styles/typography";

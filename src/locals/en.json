@@ -97,5 +97,74 @@
             "message": "Send Message",
             "accept": "Accept This Job"
         }
+    },
+    "welcome": {
+        "subtitle": "Find skilled professionals or offer your services",
+        "tapVoice": "Tap to use voice assistance",
+        "listening": "Listening... speak now",
+        "getStarted": "Get Started",
+        "alreadyHaveAccount": "Already have an account? Login",
+        "voiceNotSupported": "Voice recognition not supported in this browser"
+    },
+    "auth": {
+        "welcomeBack": "Welcome back!",
+        "findProfessionals": "Find skilled professionals for your needs",
+        "listening": "Listening... Speak your number",
+        "voiceAssistance": "Voice assistance available throughout",
+        "mobileNumber": "Mobile Number",
+        "verifyText": "We'll send you an OTP to verify your number",
+        "sendOTP": "Send OTP",
+        "agreeTo": "By continuing, you agree to our",
+        "terms": "Terms & Conditions",
+        "privacy": "Privacy Policy"
+    },
+    "workerProfile": {
+        "title": "Create Your Worker Profile",
+        "fillVoice": "Fill profile using voice",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Your full name",
+        "email": "Email",
+        "skills": "Skills & Expertise",
+        "skillsPlaceholder": "e.g., Plumbing, AC Repair, 5 years experience",
+        "bio": "Bio / Experience",
+        "bioPlaceholder": "Tell us about your experience and services...",
+        "speakBio": "Speak Bio",
+        "saveContinue": "Save & Continue",
+        "validationError": "Please fill in all required fields: Name, Category, Subcategory, City, and Service Charges"
+    },
+    "profile": {
+        "title": "Profile",
+        "close": "Close"
+    },
+    "roleSelection": {
+        "title": "How would you like to use our platform?",
+        "subtitle": "Choose your role to get started with our services",
+        "back": "Back",
+        "worker": {
+            "title": "I'm a Worker",
+            "description": "Offer your services and earn money by connecting with customers"
+        },
+        "customer": {
+            "title": "I'm a Customer",
+            "description": "Find and hire skilled professionals for your service needs",
+            "continue": "Continue as Customer"
+        },
+        "voice": {
+            "hint": "Select your role to access our complete range of services",
+            "notSupported": "Voice recognition not available - please click a role to select"
+        }
+    },
+    "otp": {
+        "verifyTitle": "Verify Phone Number",
+        "sentTo": "Code sent to",
+        "enterCode": "Enter Verification Code",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "resend": "Resend Code",
+        "resendIn": "Resend in",
+        "success": {
+            "title": "Verified Successfully",
+            "message": "Your phone number has been verified"
+        }
     }
 }
