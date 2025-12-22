@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import Button from "../ui/Buttons";
 import typography from "../../styles/typography";
 import OTPVerification from "./OTPVerification";
@@ -16,7 +16,7 @@ interface LoginFormProps {
 type FormStep = "phone" | "otp";
 
 const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack, onOpenOTP }) => {
-    const { t } = useTranslation();
+  
     const [phoneNumber, setPhoneNumber] = useState("");
     const [isLogin, setIsLogin] = useState(initialMode === "login");
     const [currentStep, setCurrentStep] = useState<FormStep>("phone");
@@ -53,7 +53,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
         console.log("Voice button clicked");
 
         if (!voiceService.isSpeechRecognitionSupported()) {
-            const errorMsg = t("welcome.voiceNotSupported");
+            const errorMsg = "Voice not supported";
             setVoiceError(errorMsg);
             console.error(errorMsg);
             setTimeout(() => setVoiceError(null), 5000);
@@ -168,7 +168,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                     ServiceHub
                 </h1>
                 <p className={`text-gray-600 ${typography.body.base}`}>
-                    {isLogin ? t("auth.welcomeBack") : t("auth.findProfessionals")}
+                    {isLogin ? "Welcome Back" : "Find Professionals"}
                 </p>
             </div>
 
@@ -183,7 +183,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
             >
                 <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
                 <p className={`text-white ${typography.body.small}`}>
-                    {isListening ? t("auth.listening") : t("auth.voiceAssistance")}
+                    {isListening ? "Listening" : "Voice Assistance"}
                 </p>
             </button>
 
@@ -194,7 +194,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                         htmlFor="phone"
                         className={`block mb-2 text-gray-700 ${typography.form.label}`}
                     >
-                        {t("auth.mobileNumber")}
+                        Mobile Number
                     </label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -238,7 +238,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                     )}
                     {!isLogin && !voiceError && (
                         <p className={`mt-2 text-gray-500 ${typography.form.helper}`}>
-                            {t("auth.verifyText")}
+                            Verify Text
                         </p>
                     )}
                 </div>
@@ -251,13 +251,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                     variant="gradient-blue"
                     disabled={phoneNumber.length < 10}
                 >
-                    {t("auth.sendOTP")}
+                    Send OTP
                 </Button>
 
                 {/* Terms & Conditions */}
                 {!isLogin && (
                     <p className={`text-center text-gray-500 ${typography.body.xs}`}>
-                        {t("auth.agreeTo")}{" "}
+                        Agree to{" "}
                         <a
                             href="/terms"
                             className="text-blue-600 hover:underline"
@@ -265,7 +265,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            {t("auth.terms")}
+                            Terms
                         </a>{" "}
                         and{" "}
                         <a
@@ -275,7 +275,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            {t("auth.privacy")}
+                            Privacy
                         </a>
                     </p>
                 )}

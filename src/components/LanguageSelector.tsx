@@ -1,81 +1,92 @@
-import React, { useState } from "react";
-import { useLanguage } from "../context/LanguageContext";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, Languages } from "lucide-react";
+
+const languages = [
+    { code: "en", name: "English" },
+    { code: "hi", name: "Hindi" },
+    { code: "ta", name: "Tamil" },
+    { code: "te", name: "Telugu" },
+    { code: "kn", name: "Kannada" },
+    { code: "ml", name: "Malayalam" },
+    { code: "pa", name: "Punjabi" },
+    { code: "bn", name: "Bengali" },
+    { code: "gu", name: "Gujarati" },
+    { code: "mr", name: "Marathi" },
+    { code: "ur", name: "Urdu" },
+    { code: "or", name: "Odia" },
+    { code: "as", name: "Assamese" },
+];
 
 const LanguageSelector = () => {
-    const { language, setLanguage } = useLanguage();
-    const [isOpen, setIsOpen] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [selectedLang, setSelectedLang] = useState("English");
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
-    const languages = [
-        { code: "en", name: "English", native: "English" },
-        { code: "hi", name: "Hindi", native: "हिंदी" },
-        { code: "ta", name: "Tamil", native: "தமிழ்" },
-        { code: "te", name: "Telugu", native: "తెలుగు" },
-        { code: "kn", name: "Kannada", native: "ಕನ್ನಡ" },
-        { code: "ml", name: "Malayalam", native: "മലയാളം" },
-        { code: "bn", name: "Bengali", native: "বাংলা" },
-        { code: "mr", name: "Marathi", native: "मराठी" },
-        { code: "gu", name: "Gujarati", native: "ગુજરાતી" },
-        { code: "pa", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
-        { code: "or", name: "Odia", native: "ଓଡ଼ିଆ" },
-        { code: "as", name: "Assamese", native: "অসমীয়া" },
-        { code: "ur", name: "Urdu", native: "اردو" },
-    ];
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-    const currentLanguage = languages.find((lang) => lang.code === language) || languages[0];
+    const changeLanguage = (langCode: string, langName: string) => {
+        const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+        if (!select) return alert("Translator loading, please wait...");
 
-    const handleLanguageChange = (langCode: string) => {
-        setLanguage(langCode);
-        setIsOpen(false);
+        select.value = langCode;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        setSelectedLang(langName);
+        setOpen(false);
     };
 
     return (
-        <div className="relative">
+        <div className="relative inline-block" ref={dropdownRef}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-white border border-gray-300 rounded-lg md:rounded-xl hover:shadow-md transition-all duration-200"
+                ref={buttonRef}
+                onClick={() => setOpen(!open)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-gray-100 hover:bg-gray-200 transition"
+                aria-haspopup="listbox"
+                aria-expanded={open}
             >
-                <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-                <span className="text-sm md:text-base font-medium text-gray-700 hidden sm:inline">
-                    {currentLanguage.native}
-                </span>
-                <svg
-                    className={`w-4 h-4 text-gray-600 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <Languages className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-sm text-gray-700">{selectedLang}</span>
+                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {isOpen && (
-                <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 md:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-20 max-h-96 overflow-y-auto">
-                        <div className="py-2">
-                            {languages.map((lang) => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => handleLanguageChange(lang.code)}
-                                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center justify-between ${language === lang.code ? "bg-blue-50 text-blue-700" : "text-gray-700"
-                                        }`}
-                                >
-                                    <span className="flex flex-col">
-                                        <span className="font-medium text-sm">{lang.native}</span>
-                                        <span className="text-xs text-gray-500">{lang.name}</span>
-                                    </span>
-                                    {language === lang.code && (
-                                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </>
+            {open && (
+                <div
+                    className="fixed bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    style={{
+                        top: buttonRef.current
+                            ? `${buttonRef.current.getBoundingClientRect().bottom + 8}px`
+                            : '0px',
+                        left: buttonRef.current
+                            ? `${buttonRef.current.getBoundingClientRect().left}px`
+                            : '0px',
+                        width: buttonRef.current
+                            ? `${buttonRef.current.offsetWidth}px`
+                            : '176px',
+                        zIndex: 10000,
+                    }}
+                >
+                    {languages.map((lang) => (
+                        <button
+                            key={lang.code}
+                            onClick={() => changeLanguage(lang.code, lang.name)}
+                            className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition first:rounded-t-lg last:rounded-b-lg"
+                        >
+                            {lang.name}
+                        </button>
+                    ))}
+                </div>
             )}
         </div>
     );

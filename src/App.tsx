@@ -1,5 +1,5 @@
 import React from "react";
-import "./i18n"; // Import i18n config
+
 import {
     BrowserRouter as Router,
     Routes,
@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { LanguageProvider } from "./context/LanguageContext";
+
 
 import Navbar from "./components/layout/NavBar";
 
@@ -152,15 +152,14 @@ const AppRoutes: React.FC = () => {
     );
 };
 
-/* ---------------- Main App ---------------- */
-const App: React.FC = () => (
-    <AuthProvider>
-        <LanguageProvider>
+const App: React.FC = () => {
+    return (
+        <AuthProvider>
             <Router>
                 <AppRoutes />
             </Router>
-        </LanguageProvider>
-    </AuthProvider>
-);
+        </AuthProvider>
+    );
+};
 
 export default App;

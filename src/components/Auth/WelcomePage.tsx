@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaTimes } from "react-icons/fa";
-import { useTranslation } from "react-i18next";
+
 import voiceIcon from "../../assets/icons/Voice.png";
 import LoginForm from "./LoginForm";
 import VoiceService from "../../services/voiceService";
@@ -16,7 +16,7 @@ interface WelcomePageProps {
 type ViewState = "welcome" | "login" | "signup";
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP }) => {
-    const { t } = useTranslation();
+   
     const [view, setView] = useState<ViewState>("welcome");
     const [isListening, setIsListening] = useState(false);
     const [voiceText, setVoiceText] = useState("");
@@ -57,7 +57,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
 
     const startVoice = () => {
         if (!voiceService.isSpeechRecognitionSupported()) {
-            alert(t("welcome.voiceNotSupported"));
+            alert("Voice not supported");
             return;
         }
 
@@ -129,7 +129,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         ServiceHub
                                     </h1>
                                     <p className="text-gray-600 mt-1">
-                                        {t("welcome.subtitle")}
+                                        Welcome to ServiceHub
                                     </p>
                                 </div>
 
@@ -145,8 +145,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                     <p className="text-white flex items-center justify-center gap-2 text-sm">
                                         <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
                                         {isListening
-                                            ? t("welcome.listening")
-                                            : t("welcome.tapVoice")}
+                                            ? "Listening"
+                                            : "Tap to start voice"}
                                     </p>
                                 </div>
 
@@ -164,7 +164,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         className="w-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
                                             text-white py-3 rounded-xl font-semibold"
                                     >
-                                        {t("welcome.getStarted")}
+                                        Get Started
                                     </button>
 
                                     <button
@@ -172,7 +172,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                         className="w-full border-2 border-blue-600 text-blue-600
                                             py-3 rounded-xl font-semibold hover:bg-blue-50"
                                     >
-                                        {t("welcome.alreadyHaveAccount")}
+                                        Already have an account?
                                     </button>
                                 </div>
                             </div>

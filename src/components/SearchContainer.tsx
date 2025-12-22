@@ -1,13 +1,13 @@
 import React from "react";
 import { useSearchController } from "../hooks/useSearchController";
-import { useTranslation } from "react-i18next";
+
 import LocationSelector from "./LocationSelector";
 import SearchIcon from "../assets/icons/Search.png";
 import VoiceIcon from "../assets/icons/Voice.png";
 import MobileIcon from "../assets/icons/mobile.jpeg";
 
 const SearchContainer: React.FC = () => {
-    const { t } = useTranslation();
+ 
     const {
         state,
         handleSearchChange,
@@ -55,7 +55,7 @@ const SearchContainer: React.FC = () => {
                                     value={state.searchText}
                                     onChange={(e) => handleSearchChange(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                    placeholder={t("searchPlaceholder")}
+                                    placeholder={"searchPlaceholder"}
                                     className="flex-1 px-3 md:px-4 py-3 md:py-4 outline-none text-gray-700 placeholder-gray-400 text-sm md:text-base"
                                 />
 
@@ -82,12 +82,12 @@ const SearchContainer: React.FC = () => {
                                     {state.isSearching ? (
                                         <>
                                             <div className="w-4 md:w-5 h-4 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            <span className="text-white font-semibold text-xs md:text-base hidden sm:inline">{t("searching")}</span>
+                                            <span className="text-white font-semibold text-xs md:text-base hidden sm:inline">searching</span>
                                         </>
                                     ) : (
                                         <>
                                             <img src={SearchIcon} alt="Search" className="w-4 md:w-5 h-4 md:h-5 invert" />
-                                            <span className="text-white font-semibold text-xs md:text-base hidden sm:inline">{t("search")}</span>
+                                            <span className="text-white font-semibold text-xs md:text-base hidden sm:inline">search</span>
                                         </>
                                     )}
                                 </button>
@@ -99,8 +99,8 @@ const SearchContainer: React.FC = () => {
                             <img src={VoiceIcon} alt="" className="w-4 md:w-5 h-4 md:h-5 opacity-60 flex-shrink-0" />
                             <span className="text-xs md:text-sm text-blue-700">
                                 {state.isListening
-                                    ? `🎤 ${t("listening")}`
-                                    : t("voiceHint")
+                                    ? `🎤 listening`
+                                    : "voiceHint"
                                 }
                             </span>
                         </div>
@@ -109,7 +109,7 @@ const SearchContainer: React.FC = () => {
                     {/* Download App Button - Show on tablet and desktop only */}
                     <button className="hidden md:flex flex-shrink-0 items-center gap-2 bg-white border border-gray-300 rounded-xl px-4 lg:px-5 py-3 lg:py-3.5 hover:shadow-lg transition">
                         <img src={MobileIcon} alt="Download App" className="w-5 h-5" />
-                        <span className="text-sm font-semibold whitespace-nowrap">{t("downloadApp")}</span>
+                        <span className="text-sm font-semibold whitespace-nowrap">downloadApp</span>
                     </button>
                 </div>
 
@@ -117,7 +117,7 @@ const SearchContainer: React.FC = () => {
                 <div className="md:hidden mt-3">
                     <button className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-xl px-4 py-3 hover:shadow-lg transition">
                         <img src={MobileIcon} alt="Download App" className="w-5 h-5" />
-                        <span className="text-sm font-semibold">{t("downloadApp")}</span>
+                        <span className="text-sm font-semibold">downloadApp</span>
                     </button>
                 </div>
             </div>

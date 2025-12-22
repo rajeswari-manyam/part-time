@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaMapMarkerAlt, FaChevronDown } from "react-icons/fa";
 import { Location } from "../types/search.types";
-import { useTranslation } from "react-i18next";
+
 const MapMarkerIcon = FaMapMarkerAlt as any;
 const ChevronDownIcon = FaChevronDown as any;
 
@@ -17,7 +17,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     onGetCurrentLocation,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { t } = useTranslation();
+   
 
     const popularCities = [
         { city: "Hyderabad", state: "Telangana" },
@@ -50,7 +50,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                 <MapMarkerIcon className="text-blue-600 text-2xl flex-shrink-0" />
                 <div className="text-left flex-1">
                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">
-                        {t('yourLocation')}
+                        Your Location
                     </p>
                     <p className="text-base font-bold text-gray-900 mt-0.5">
                         {location.city}, {location.state}
@@ -82,15 +82,15 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                                 <MapMarkerIcon className="text-blue-600 text-xl" />
                             </div>
                             <div className="text-left flex-1">
-                                <p className="font-bold text-gray-900 text-base">{t('useCurrentLocation')}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{t('detectAutomatically')}</p>
+                                <p className="font-bold text-gray-900 text-base">Use Current Location</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Detect Automatically</p>
                             </div>
                         </button>
 
                         {/* Popular Cities */}
                         <div className="p-4">
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-2 mb-3">
-                                {t('popularCities')}
+                                Popular Cities
                             </p>
                             <div className="space-y-1">
                                 {popularCities.map((city) => (

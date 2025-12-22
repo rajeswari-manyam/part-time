@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+
 import Carousel from "./ui/Carousel";
 import { fontSize, fontWeight, responsiveFontSize } from "../styles/typography";
 
@@ -21,55 +21,55 @@ interface PromoSlidesProps {
 
 const PromoSlides: React.FC<PromoSlidesProps> = ({ className = "" }) => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+   
 
     const slides: PromoSlide[] = [
         {
             id: "1",
-            title: t("promo.partTime.title"),
-            subtitle: t("promo.partTime.subtitle"),
-            description: t("promo.partTime.description"),
-            buttonText: t("promo.partTime.button"),
+            title: "Part Time",
+            subtitle: "Part Time",
+            description: "Part Time",
+            buttonText: "Part Time",
             gradient: "from-purple-600 via-pink-600 to-red-600",
             textColor: "text-white",
             path: "/jobs",
         },
         {
             id: "2",
-            title: t("promo.remote.title"),
-            subtitle: t("promo.remote.subtitle"),
-            description: t("promo.remote.description"),
-            buttonText: t("promo.remote.button"),
+            title: "Remote",
+            subtitle: "Remote",
+            description: "Remote",
+            buttonText: "Remote",
             gradient: "from-blue-600 via-indigo-600 to-purple-600",
             textColor: "text-white",
             path: "/remote-jobs",
         },
         {
             id: "3",
-            title: t("promo.student.title"),
-            subtitle: t("promo.student.subtitle"),
-            description: t("promo.student.description"),
-            buttonText: t("promo.student.button"),
+            title: "Student",
+            subtitle: "Student",
+            description: "Student",
+            buttonText: "Student",
             gradient: "from-green-600 via-teal-600 to-cyan-600",
             textColor: "text-white",
             path: "/student-jobs",
         },
         {
             id: "4",
-            title: t("promo.flexible.title"),
-            subtitle: t("promo.flexible.subtitle"),
-            description: t("promo.flexible.description"),
-            buttonText: t("promo.flexible.button"),
+            title: "Flexible",
+            subtitle: "Flexible",
+            description: "Flexible",
+            buttonText: "Flexible",
             gradient: "from-orange-600 via-red-600 to-pink-600",
             textColor: "text-white",
             path: "/flexible-jobs",
         },
         {
             id: "5",
-            title: t("promo.highPaying.title"),
-            subtitle: t("promo.highPaying.subtitle"),
-            description: t("promo.highPaying.description"),
-            buttonText: t("promo.highPaying.button"),
+            title: "High Paying",
+            subtitle: "High Paying",
+            description: "High Paying",
+            buttonText: "High Paying",
             gradient: "from-yellow-600 via-orange-600 to-red-600",
             textColor: "text-white",
             path: "/high-paying-jobs",
