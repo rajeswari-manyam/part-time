@@ -99,10 +99,10 @@ const Navbar: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => handleNavClick("/free-listing")}
+                  onClick={() => handleNavClick("/user-profile")}
                   className={`flex items-center space-x-1 ${!isAuthenticated ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:text-blue-600"}`}
                 >
-                  <Briefcase className="w-4 h-4" />
+                  <User className="w-4 h-4" />
                   <span className={typography.nav.menuItem}>freeListing</span>
                 </button>
 

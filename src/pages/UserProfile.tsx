@@ -85,6 +85,7 @@ const UserProfile: React.FC = () => {
     const handleSubmit = () => {
         console.log("Form submitted:", formData);
         alert("Job details submitted!");
+        navigate("/matched-workers");
     };
 
     const handleVoiceClickFor = (fieldName: keyof FormData) => () => {
@@ -373,7 +374,7 @@ const UserProfile: React.FC = () => {
                     {/* Submit */}
                     <Button
                         onClick={handleSubmit}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-xl font-semibold hover:opacity-90 shadow-lg"
+                        className="w-full px-6 py-4 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold hover:opacity-90 shadow-lg"
                     >
                         Submit Profile
                     </Button>
