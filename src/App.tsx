@@ -28,7 +28,10 @@ import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
 import ServiceMarketplace from "./pages/ServiceMarketPlace";
 import JobDetails from "./pages/JobDetails";
-
+import UserProfile from "./pages/UserProfile";
+import MatchedWorkers from "./pages/MatchedWorkers";
+import ServiceWorkerProfile from "./pages/WorkerDetails";
+import ChatScreen from "./pages/Chat";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -57,7 +60,10 @@ const AppRoutes: React.FC = () => {
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
                     <Route path="/service-marketplace" element={<ServiceMarketplace />} />
                     <Route path="/jobs/:jobId" element={<JobDetails />} />
-
+                    <Route path="/user-profile" element={<UserProfile />} />
+                    <Route path="/matched-workers" element={<MatchedWorkers />} />
+                    <Route path="/worker-profile/:id" element={<ServiceWorkerProfile />} />
+                     <Route path="/chat/:id" element={<ChatScreen />} />
                     <Route
                         path="/free-listing"
                         element={

@@ -45,15 +45,15 @@ const RoleSelection: React.FC = () => {
         handleVoiceClick,
         stopListening
     } = useVoiceRecognition(setSelectedRole);
-
     const handleRoleSelection = (role: 'worker' | 'customer') => {
         setSelectedRole(role);
         stopListening();
+        login();
 
-        // If worker is selected, navigate directly to worker profile
         if (role === 'worker') {
-            login();
-            navigate("/worker-profile");
+            navigate("/worker-profile");   // Worker profile
+        } else {
+            navigate("/matched-workers"); // ✅ Customer profile
         }
     };
 
@@ -123,7 +123,7 @@ const RoleSelection: React.FC = () => {
                     {selectedRole === 'customer' && (
                         <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center animate-fade-in">
                             <button
-                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:opacity-90 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
+                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 dark: '#2C3E50' hover:opacity-90 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
                                 onClick={handleContinue}
                             >
                                 Continue as Customer

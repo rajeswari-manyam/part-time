@@ -16,7 +16,7 @@ interface WelcomePageProps {
 type ViewState = "welcome" | "login" | "signup";
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP }) => {
-   
+
     const [view, setView] = useState<ViewState>("welcome");
     const [isListening, setIsListening] = useState(false);
     const [voiceText, setVoiceText] = useState("");

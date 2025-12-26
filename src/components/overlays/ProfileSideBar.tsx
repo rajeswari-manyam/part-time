@@ -10,35 +10,40 @@ import {
     HelpCircle,
     LogOut,
     X,
+    Briefcase,
 } from "lucide-react";
+
+/* ================= TYPES ================= */
+
+type AccountType = "user" | "worker";
 
 interface ProfileSidebarProps {
     onNavigate: (path: string) => void;
     onLogout: () => void;
+    onSwitchAccount?: (type: AccountType) => void; // ✅ added
     user: {
         name: string;
         initial: string;
+        accountType?: AccountType;
     };
 }
+
+/* ================= SIDEBAR ================= */
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     onNavigate,
     onLogout,
+    onSwitchAccount,
     user,
 }) => {
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+    const [accountType, setAccountType] = useState<AccountType>(
+        user.accountType ?? "user"
+    );
 
-    const handleLogoutClick = () => {
-        setShowLogoutPopup(true);
-    };
-
-    const handleConfirmLogout = () => {
-        setShowLogoutPopup(false);
-        onLogout();
-    };
-
-    const handleCancelLogout = () => {
-        setShowLogoutPopup(false);
+    const switchAccount = (type: AccountType) => {
+        setAccountType(type);
+        onSwitchAccount?.(type);
     };
 
     return (
@@ -47,7 +52,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-900">{user.name}</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                            {user.name}
+                        </h2>
                         <button
                             onClick={() => onNavigate("/profile")}
                             className="text-sm text-blue-600 hover:underline"
@@ -61,7 +68,52 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     </div>
                 </div>
 
-                {/* Menu */}
+                {/* ================= SWITCH ACCOUNT ================= */}
+                {/* ================= SWITCH ACCOUNT ================= */}
+                <div className="px-4 py-4 border-b">
+                    <div className="flex items-center justify-between bg-white border rounded-xl px-4 py-3">
+
+                        {/* Left: Switch Account Text */}
+                        <div className="flex items-center gap-3 text-[#1F3B64] font-semibold">
+                            <Briefcase className="w-5 h-5" />
+                            <span>Switch Account</span>
+                        </div>
+
+                        {/* Right: Toggle */}
+                        <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
+
+                            {/* Active pill with GRADIENT */}
+                            <div
+                                className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
+        bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+        rounded-full transition-transform duration-300
+        ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
+                            />
+
+                            {/* Guest */}
+                            <button
+                                onClick={() => switchAccount("user")}
+                                className={`relative z-10 w-1/2 text-xs font-semibold transition-colors
+        ${accountType === "user" ? "text-white" : "text-[#1F3B64]"}`}
+                            >
+                                Guest
+                            </button>
+
+                            {/* Host */}
+                            <button
+                                onClick={() => switchAccount("worker")}
+                                className={`relative z-10 w-1/2 text-xs font-semibold transition-colors
+        ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"}`}
+                            >
+                                Worker
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                {/* ================= MENU ================= */}
                 <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
                     <MenuItem icon={<Heart />} label="Favourite" onClick={() => onNavigate("/favorites")} />
                     <MenuItem icon={<Bookmark />} label="Saved" onClick={() => onNavigate("/saved")} />
@@ -81,25 +133,22 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         icon={<LogOut />}
                         label="Logout"
                         danger
-                        onClick={handleLogoutClick}
+                        onClick={() => setShowLogoutPopup(true)}
                     />
                 </nav>
             </div>
 
-            {/* Logout Confirmation Popup - Modern Design with Blue Gradient */}
+            {/* ================= LOGOUT POPUP ================= */}
             {showLogoutPopup && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Blur Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"
-                        onClick={handleCancelLogout}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                        onClick={() => setShowLogoutPopup(false)}
                     />
 
-                    {/* Popup Modal */}
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-popup">
-                        {/* Gradient Header */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden">
                         <div className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] px-6 py-8 text-center">
-                            <div className="mx-auto w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4">
+                            <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                                 <LogOut className="w-10 h-10 text-white" />
                             </div>
                             <h3 className="text-2xl font-bold text-white">
@@ -107,59 +156,41 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             </h3>
                         </div>
 
-                        {/* Content */}
                         <div className="p-6">
                             <p className="text-gray-600 text-center mb-6">
-                                Are you sure you want to logout? You'll need to login again to access your account.
+                                Are you sure you want to logout?
                             </p>
 
-                            {/* Action Buttons */}
                             <div className="space-y-3">
                                 <button
-                                    onClick={handleConfirmLogout}
-                                    className="w-full px-6 py-3.5 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white font-semibold rounded-xl hover:opacity-90 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                                    onClick={onLogout}
+                                    className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl"
                                 >
                                     Yes, Logout
                                 </button>
                                 <button
-                                    onClick={handleCancelLogout}
-                                    className="w-full px-6 py-3.5 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                                    onClick={() => setShowLogoutPopup(false)}
+                                    className="w-full py-3 bg-gray-100 rounded-xl"
                                 >
                                     Cancel
                                 </button>
                             </div>
                         </div>
 
-                        {/* Close Button */}
                         <button
-                            onClick={handleCancelLogout}
-                            className="absolute top-4 right-4 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                            onClick={() => setShowLogoutPopup(false)}
+                            className="absolute top-4 right-4"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5 h-5 text-white" />
                         </button>
                     </div>
                 </div>
             )}
-
-            <style>{`
-                @keyframes popup {
-                    0% {
-                        opacity: 0;
-                        transform: scale(0.8) translateY(20px);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: scale(1) translateY(0);
-                    }
-                }
-
-                .animate-popup {
-                    animation: popup 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                }
-            `}</style>
         </>
     );
 };
+
+/* ================= MENU ITEM ================= */
 
 interface MenuItemProps {
     icon: React.ReactNode;

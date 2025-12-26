@@ -1,5 +1,5 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
+
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,7 +10,7 @@ import Button from "../components/ui/Buttons";
 import typography, { combineTypography } from "../styles/typography";
 
 const ProfilePage: React.FC = () => {
-    const { t } = useTranslation();
+   
     const navigate = useNavigate();
     const { logout } = useAuth();
 
@@ -28,7 +28,7 @@ const ProfilePage: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-4 border-b">
                     <h2 className={typography.heading.h5}>
-                        {t("profile.title")}
+                        {"profile.title"}
                     </h2>
 
                     {/* Close Button */}
