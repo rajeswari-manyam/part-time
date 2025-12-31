@@ -6,7 +6,7 @@ import { generateSampleJobs } from '../components/data/SimpleData';
 import JobCard from '../components/cards/JobCard';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+
 
 interface TabButtonProps {
     active: boolean;
@@ -34,7 +34,7 @@ const ServiceMarketplace: React.FC<ServiceMarketplaceProps> = ({
     onJobAccept,
 }) => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+   
     const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
     const jobs = useMemo(
@@ -72,17 +72,17 @@ const ServiceMarketplace: React.FC<ServiceMarketplaceProps> = ({
                         <TabButton
                             active={activeTab === 'matched'}
                             onClick={() => handleTabChange('matched')}
-                            label={t("marketplace.tabs.matched")}
+                            label={"marketplace.tabs.matched"}
                         />
                         <TabButton
                             active={activeTab === 'invitations'}
                             onClick={() => handleTabChange('invitations')}
-                            label={t("marketplace.tabs.invitations")}
+                            label={"marketplace.tabs.invitations"}
                         />
                         <TabButton
                             active={activeTab === 'my-jobs'}
                             onClick={() => handleTabChange('my-jobs')}
-                            label={t("marketplace.tabs.myJobs")}
+                            label={"marketplace.tabs.myJobs"}
                         />
                     </nav>
 
@@ -93,7 +93,7 @@ const ServiceMarketplace: React.FC<ServiceMarketplaceProps> = ({
                             aria-label={`${stats.activeJobs} active jobs`}
                         >
                             <AlertCircle className="w-4 h-4" />
-                            <span>{t("marketplace.stats.activeJobs")}</span>
+                            <span>{"marketplace.stats.activeJobs"}</span>
                             <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">{stats.activeJobs}</span>
                         </button>
                         <button
@@ -101,7 +101,7 @@ const ServiceMarketplace: React.FC<ServiceMarketplaceProps> = ({
                             aria-label={`${stats.thisMonth} jobs this month`}
                         >
                             <Calendar className="w-4 h-4" />
-                            <span>{t("marketplace.stats.thisMonth")}</span>
+                            <span>{"marketplace.stats.thisMonth"}</span>
                             <span className="bg-slate-100 px-2 py-0.5 rounded-full text-sm">{stats.thisMonth}</span>
                         </button>
                     </div>
@@ -120,7 +120,7 @@ const ServiceMarketplace: React.FC<ServiceMarketplaceProps> = ({
                         ))
                     ) : (
                         <div className="col-span-2 text-center py-12">
-                            <p className="text-slate-500 text-lg">{t("marketplace.noJobs")}</p>
+                            <p className="text-slate-500 text-lg">{"marketplace.noJobs"}</p>
                         </div>
                     )}
                 </div>

@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import SearchContainer from "../components/SearchContainer";
 import PromoSlides from "../components/PromoSlides";
 import Categories from "../components/Categories";
@@ -9,7 +8,7 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onOtpSuccess }) => {
-    const { t } = useTranslation();
+   
 
     // Example: You can call onOtpSuccess() after OTP verification
     const handleOtpSuccess = () => {

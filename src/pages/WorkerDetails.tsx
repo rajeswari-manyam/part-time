@@ -146,7 +146,6 @@ const ServiceWorkerProfile: React.FC = () => {
                 <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
                     <div className="grid grid-cols-2 gap-4">
                         <Button
-                         
                             size="lg"
                             className="flex items-center justify-center gap-3 w-full"
                             onClick={() => navigate(`/call/${worker.id}`)}
@@ -154,8 +153,9 @@ const ServiceWorkerProfile: React.FC = () => {
                             <Phone className="w-5 h-5" /> Call Worker
                         </Button>
 
+
                         <Button
-                          
+
                             size="lg"
                             className="flex items-center justify-center gap-3 w-full"
                             onClick={() => navigate(`/chat/${worker.id}`)}
@@ -169,6 +169,7 @@ const ServiceWorkerProfile: React.FC = () => {
                             variant="success"
                             size="lg"
                             className="flex items-center justify-center gap-3 w-full"
+                            onClick={() => navigate(`/send-enquiry/${worker.id}`)}
                         >
                             <Briefcase className="w-5 h-5" /> Send Job Invitation
                         </Button>

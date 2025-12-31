@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Phone, Send } from 'lucide-react';
-
+import Button from '../components/ui/Buttons';
+import typography, { combineTypography } from '../styles/typography';
 interface Message {
     id: number;
     text: string;
@@ -26,14 +27,25 @@ const Chat: React.FC = () => {
                 {/* Header */}
                 <div className="bg-gray-900 text-white p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button className="hover:bg-gray-800 p-2 rounded-lg transition">
+                        <Button
+                            variant="outline"
+                            className="hover:bg-gray-800 p-2 rounded-lg transition"
+                        >
                             <ArrowLeft size={24} />
-                        </button>
+                        </Button>
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-xl font-semibold">
                                 RK
                             </div>
-                            <span className="text-lg font-medium">Ramesh Kumar</span>
+                           <span
+  className={combineTypography(
+    typography.body.large,
+    "text-white"
+  )}
+>
+  Ramesh Kumar
+</span>
+
                         </div>
                     </div>
                     <button className="hover:bg-gray-800 p-2 rounded-lg transition">
@@ -55,9 +67,20 @@ const Chat: React.FC = () => {
                                             : 'bg-gray-200 text-gray-900 rounded-bl-sm'
                                         }`}
                                 >
-                                    <p className="text-sm">{message.text}</p>
+                                  <p className={typography.body.small}>
+  {message.text}
+</p>
+
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1 px-2">{message.time}</p>
+                           <p
+  className={combineTypography(
+    typography.body.xs,
+    "text-gray-500 mt-1 px-2"
+  )}
+>
+  {message.time}
+</p>
+
                             </div>
                         </div>
                     ))}
@@ -71,11 +94,18 @@ const Chat: React.FC = () => {
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             placeholder="Type a message..."
-                            className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                      className={combineTypography(
+  typography.form.input,
+  "flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+)}
+
                         />
-                        <button className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full transition">
+                        <Button
+                            variant="outline"
+                            className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full transition"
+                        >
                             <Send size={24} />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

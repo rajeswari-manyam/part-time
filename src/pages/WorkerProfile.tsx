@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import VoiceService from "../services/voiceService";
@@ -38,7 +38,6 @@ interface SubcategoryGroup {
 
 const WorkerProfileScreen: React.FC = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [bio, setBio] = useState("");
@@ -129,7 +128,7 @@ const WorkerProfileScreen: React.FC = () => {
 
     const startListening = (field: VoiceField) => {
         if (!isVoiceSupported) {
-            setVoiceError(t("welcome.voiceNotSupported"));
+            setVoiceError("welcome.voiceNotSupported");
             return;
         }
         setIsListening(field);
@@ -220,7 +219,7 @@ const WorkerProfileScreen: React.FC = () => {
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white rounded-3xl shadow-xl p-6">
                     <h2 className={`${typography.heading.h3} text-gray-800 mb-6`}>
-                        {t("workerProfile.title")}
+                        {"workerProfile.title"}
                     </h2>
 
                     {/* Profile Photo */}
@@ -239,7 +238,7 @@ const WorkerProfileScreen: React.FC = () => {
                             }`}
                     >
                         <img src={VoiceIcon} className="w-5 h-5" alt="Voice" />
-                        {t("workerProfile.fillVoice")}
+                        {"workerProfile.fillVoice"}
                     </Button>
 
                     {voiceError && (
@@ -248,17 +247,17 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Basic Info Fields */}
                     <VoiceInputField
-                        label={t("workerProfile.fullName")}
+                        label={"workerProfile.fullName"}
                         value={fullName}
                         onChange={setFullName}
                         onVoiceClick={() => startListening("fullName")}
                         isListening={isListening === "fullName"}
-                        placeholder={t("workerProfile.fullNamePlaceholder")}
+                        placeholder={"workerProfile.fullNamePlaceholder"}
                         required
                     />
 
                     <VoiceInputField
-                        label={t("workerProfile.email")}
+                        label={"workerProfile.email"}
                         value={email}
                         onChange={setEmail}
                         onVoiceClick={() => startListening("email")}
@@ -279,12 +278,12 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Skills */}
                     <VoiceInputField
-                        label={t("workerProfile.skills")}
+                        label={"workerProfile.skills"}
                         value={skills}
                         onChange={setSkills}
                         onVoiceClick={() => startListening("skills")}
                         isListening={isListening === "skills"}
-                        placeholder={t("workerProfile.skillsPlaceholder")}
+                        placeholder={"workerProfile.skillsPlaceholder"}
                     />
 
                     {/* Service Charges */}
@@ -299,13 +298,13 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Bio */}
                     <div className="mb-6">
-                        <label className={typography.form.label}>{t("workerProfile.bio")}</label>
+                        <label className={typography.form.label}>{"workerProfile.bio"}</label>
                         <textarea
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
                             rows={5}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl resize-none focus:border-[#0B0E92] focus:outline-none"
-                            placeholder={t("workerProfile.bioPlaceholder")}
+                            placeholder={"workerProfile.bioPlaceholder"}
                         />
                         <Button
                             variant="secondary"
@@ -315,7 +314,7 @@ const WorkerProfileScreen: React.FC = () => {
                                 }`}
                         >
                             <img src={VoiceIcon} className="w-4 h-4" alt="Voice" />
-                            {t("workerProfile.speakBio")}
+                            {"workerProfile.speakBio"}
                         </Button>
                     </div>
 
@@ -360,12 +359,12 @@ const WorkerProfileScreen: React.FC = () => {
                         fullWidth
                         className="rounded-2xl bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white hover:opacity-90 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
-                        {t("workerProfile.saveContinue")}
+                        {"workerProfile.saveContinue"}
                     </Button>
 
                     {!isFormValid && (
                         <p className="text-center text-sm text-red-500 mt-3">
-                            {t("workerProfile.validationError")}
+                            {"workerProfile.validationError"}
                         </p>
                     )}
                 </div>

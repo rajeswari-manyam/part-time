@@ -5,6 +5,9 @@ import { useAuth } from "../../context/AuthContext";
 import OTPInputForm from "./OtpVerification/OTPInputForm";
 import SuccessScreen from "./OtpVerification/SuccessScreen";
 import { extractDigits } from "../../utils/OTPUtils";
+import { verifyOtp } from "../../services/api.service";
+import { resendOtp } from "../../services/api.service"; // <-- import the new API
+
 
 interface VoiceRecognitionResult {
     transcript: string;
@@ -14,7 +17,7 @@ interface VoiceRecognitionResult {
 
 interface OTPVerificationProps {
     phoneNumber: string;
-    onVerify: (otp: string) => void;
+    onVerify?: (otp: string) => void;
     onResend: () => void;
     onBack: () => void;
     onContinue?: () => void;
@@ -23,54 +26,91 @@ interface OTPVerificationProps {
 
 const OTPVerification: React.FC<OTPVerificationProps> = ({
     phoneNumber,
-    onVerify,
     onResend,
     onBack,
     onContinue,
     onClose,
 }) => {
     const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
-    const [timer, setTimer] = useState(30);
+    const [timer, setTimer] = useState(60);
     const [isListening, setIsListening] = useState(false);
     const [voiceError, setVoiceError] = useState<string | null>(null);
     const [isVerifying, setIsVerifying] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const voiceService = VoiceService.getInstance();
     const navigate = useNavigate();
     const { login } = useAuth();
 
-    // Timer countdown
+    // ⏱ Timer
     useEffect(() => {
         if (timer > 0 && !showSuccess) {
             const interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
+                setTimer(prev => prev - 1);
             }, 1000);
             return () => clearInterval(interval);
         }
     }, [timer, showSuccess]);
 
-    const handleVerifyOTP = (otpString: string) => {
-        setIsVerifying(true);
-        setTimeout(() => {
-            onVerify(otpString);
+    // ✅ VERIFY OTP
+    const handleVerifyOTP = async (otpString: string) => {
+        try {
+            setIsVerifying(true);
+
+            const response = await verifyOtp(phoneNumber, otpString);
+
+            if (response.success) {
+                console.log("OTP verified successfully");
+
+                // ✅ Login user
+                login(response.user);
+
+
+                // ✅ Show success screen
+                setShowSuccess(true);
+            } else {
+                alert(response.message || "OTP verification failed");
+            }
+        } catch (error) {
+            console.error("OTP verify error:", error);
+            alert("Something went wrong. Please try again.");
+        } finally {
             setIsVerifying(false);
-            setShowSuccess(true);
-        }, 1000);
+        }
     };
 
-    const handleResend = () => {
-        setTimer(30);
-        setOtp(["", "", "", "", "", ""]);
-        onResend();
-        inputRefs.current[0]?.focus();
+
+    // 🔁 RESEND OTP
+    const handleResend = async () => {
+        try {
+            setTimer(60);
+            setOtp(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
+
+            const response = await resendOtp(phoneNumber);
+
+            if (response.success) {
+                console.log("OTP resent:", response.otp);
+                alert("OTP resent successfully");
+            } else {
+                alert(response.message || "Failed to resend OTP");
+            }
+
+            // Optional: call parent callback
+            if (onResend) onResend();
+        } catch (error) {
+            console.error("Resend OTP error:", error);
+            alert("Something went wrong while resending OTP");
+        }
     };
 
+    // 🎤 VOICE INPUT
     const handleVoiceInput = () => {
         if (!voiceService.isSpeechRecognitionSupported()) {
-            const errorMsg =
-                "Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.";
-            setVoiceError(errorMsg);
+            setVoiceError(
+                "Voice recognition not supported. Use Chrome or Edge."
+            );
             setTimeout(() => setVoiceError(null), 5000);
             return;
         }
@@ -90,8 +130,12 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
                 if (digits.length > 0) {
                     const otpArray = digits.slice(0, 6).split("");
-                    const newOtp = [...otpArray, ...Array(6 - otpArray.length).fill("")];
-                    setOtp(newOtp);
+                    const filledOtp = [
+                        ...otpArray,
+                        ...Array(6 - otpArray.length).fill("")
+                    ];
+
+                    setOtp(filledOtp);
 
                     const nextIndex = Math.min(otpArray.length, 5);
                     inputRefs.current[nextIndex]?.focus();
@@ -101,7 +145,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                         setIsListening(false);
                         setTimeout(() => {
                             handleVerifyOTP(digits.slice(0, 6));
-                        }, 500);
+                        }, 400);
                     }
                 }
             },
@@ -113,32 +157,22 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         );
     };
 
-    // 🔥 FIXED: Proper sequence for closing popup and navigating
+    // ✅ SUCCESS → ROLE SELECTION
     const handleSuccessContinue = () => {
-        // Step 1: Set authentication state
-        login();
+        if (onClose) onClose();
+        if (onContinue) onContinue();
 
-        // Step 2: Close the popup FIRST
-        if (onClose) {
-            onClose();
-        }
-
-        // Step 3: Call parent's continue handler if provided
-        if (onContinue) {
-            onContinue();
-        }
-
-        // Step 4: Navigate to home (only if not already there)
-        // Small delay to ensure popup state updates first
         setTimeout(() => {
-            navigate("/Role-selection", { replace: true });
+            navigate("/role-selection", { replace: true });
         }, 100);
     };
 
+    // 🎉 SUCCESS SCREEN
     if (showSuccess) {
         return <SuccessScreen onContinue={handleSuccessContinue} />;
     }
 
+    // 🔢 OTP INPUT FORM
     return (
         <OTPInputForm
             phoneNumber={phoneNumber}

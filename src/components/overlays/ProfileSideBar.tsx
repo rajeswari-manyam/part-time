@@ -20,7 +20,7 @@ type AccountType = "user" | "worker";
 interface ProfileSidebarProps {
     onNavigate: (path: string) => void;
     onLogout: () => void;
-    onSwitchAccount?: (type: AccountType) => void; // ✅ added
+    onSwitchAccount?: (type: AccountType) => void;
     user: {
         name: string;
         initial: string;
@@ -41,22 +41,36 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         user.accountType ?? "user"
     );
 
+    // ✅ SWITCH ACCOUNT + NAVIGATION
     const switchAccount = (type: AccountType) => {
         setAccountType(type);
         onSwitchAccount?.(type);
+
+        // ✅ NAVIGATION LOGIC
+        if (type === "user") {
+            onNavigate("/profile"); // User profile
+        } else {
+            onNavigate("/worker-profile"); // Worker profile
+        }
     };
 
     return (
         <>
             <div className="h-full flex flex-col">
-                {/* Header */}
+                {/* ================= HEADER ================= */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">
                             {user.name}
                         </h2>
                         <button
-                            onClick={() => onNavigate("/profile")}
+                            onClick={() =>
+                                onNavigate(
+                                    accountType === "user"
+                                        ? "/profile"
+                                        : "/worker-profile"
+                                )
+                            }
                             className="text-sm text-blue-600 hover:underline"
                         >
                             Click to view profile
@@ -69,62 +83,78 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 </div>
 
                 {/* ================= SWITCH ACCOUNT ================= */}
-                {/* ================= SWITCH ACCOUNT ================= */}
                 <div className="px-4 py-4 border-b">
                     <div className="flex items-center justify-between bg-white border rounded-xl px-4 py-3">
 
-                        {/* Left: Switch Account Text */}
+                        {/* Left */}
                         <div className="flex items-center gap-3 text-[#1F3B64] font-semibold">
                             <Briefcase className="w-5 h-5" />
                             <span>Switch Account</span>
                         </div>
 
-                        {/* Right: Toggle */}
+                        {/* Right Toggle */}
                         <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
 
-                            {/* Active pill with GRADIENT */}
+                            {/* Active pill */}
                             <div
                                 className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
-        bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
-        rounded-full transition-transform duration-300
-        ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
+                                bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                                rounded-full transition-transform duration-300
+                                ${accountType === "user"
+                                        ? "translate-x-0"
+                                        : "translate-x-full"
+                                    }`}
                             />
 
                             {/* Guest */}
                             <button
                                 onClick={() => switchAccount("user")}
-                                className={`relative z-10 w-1/2 text-xs font-semibold transition-colors
-        ${accountType === "user" ? "text-white" : "text-[#1F3B64]"}`}
+                                className={`relative z-10 w-1/2 text-xs font-semibold
+                                ${accountType === "user"
+                                        ? "text-white"
+                                        : "text-[#1F3B64]"
+                                    }`}
                             >
                                 Guest
                             </button>
 
-                            {/* Host */}
+                            {/* Worker */}
                             <button
                                 onClick={() => switchAccount("worker")}
-                                className={`relative z-10 w-1/2 text-xs font-semibold transition-colors
-        ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"}`}
+                                className={`relative z-10 w-1/2 text-xs font-semibold
+                                ${accountType === "worker"
+                                        ? "text-white"
+                                        : "text-[#1F3B64]"
+                                    }`}
                             >
                                 Worker
                             </button>
                         </div>
-
                     </div>
                 </div>
-
 
                 {/* ================= MENU ================= */}
                 <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
                     <MenuItem icon={<Heart />} label="Favourite" onClick={() => onNavigate("/favorites")} />
                     <MenuItem icon={<Bookmark />} label="Saved" onClick={() => onNavigate("/saved")} />
-                    <MenuItem icon={<User />} label="Edit Profile" onClick={() => onNavigate("/profile/edit")} />
+                    <MenuItem
+                        icon={<User />}
+                        label="Edit Profile"
+                        onClick={() =>
+                            onNavigate(
+                                accountType === "user"
+                                    ? "/profile/edit"
+                                    : "/worker-profile/edit"
+                            )
+                        }
+                    />
                     <MenuItem icon={<Globe />} label="Change Language" />
-                    <MenuItem icon={<Bell />} label="Notifications" onClick={() => onNavigate("/notifications")} />
+                    <MenuItem icon={<Bell />} label="Notifications" onClick={() => onNavigate("/notification/:id")} />
 
                     <div className="my-3 border-t" />
 
                     <MenuItem icon={<Shield />} label="Policy" onClick={() => onNavigate("/policy")} />
-                    <MenuItem icon={<MessageSquare />} label="Feedback" onClick={() => onNavigate("/feedback")} />
+                    <MenuItem icon={<MessageSquare />} label="Feedback" onClick={() => onNavigate("/feedback/:id")} />
                     <MenuItem icon={<HelpCircle />} label="Help" onClick={() => onNavigate("/help")} />
 
                     <div className="my-3 border-t" />
@@ -208,8 +238,8 @@ const MenuItem: React.FC<MenuItemProps> = ({
     <button
         onClick={onClick}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${danger
-            ? "text-red-600 hover:bg-red-50"
-            : "text-gray-700 hover:bg-gray-100"
+                ? "text-red-600 hover:bg-red-50"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
     >
         <span className="w-5 h-5">{icon}</span>

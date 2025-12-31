@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Heart, Bookmark, User, Bell, LogOut, Briefcase, Home } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  Bell,
+  Briefcase,
+  Home
+} from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
-
 import Button from "../ui/Buttons";
 import typography, { combineTypography } from "../../styles/typography";
 import WelcomePage from "../Auth/WelcomePage";
 import OTPVerification from "../Auth/OTPVerification";
 import LanguageSelector from "../LanguageSelector";
 
-
 const Navbar: React.FC = () => {
-
-
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,8 +24,7 @@ const Navbar: React.FC = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-
-
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   /* ---------------- Navigation ---------------- */
   const handleNavClick = (path: string) => {
@@ -31,6 +33,7 @@ const Navbar: React.FC = () => {
       return;
     }
     navigate(path);
+    setIsMobileMenuOpen(false);
   };
 
   const handleProfileClick = () => {
@@ -39,14 +42,9 @@ const Navbar: React.FC = () => {
       return;
     }
     navigate("/profile", { state: { background: location } });
+    setIsMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  /* ---------------- OTP ---------------- */
   const handleLoginSuccess = () => {
     setShowOTPModal(false);
     setShowWelcomeModal(false);
@@ -63,7 +61,7 @@ const Navbar: React.FC = () => {
     <>
       {/* ================= HEADER ================= */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
 
             {/* Logo */}
@@ -71,61 +69,39 @@ const Navbar: React.FC = () => {
               onClick={() => navigate("/")}
               className="flex items-center space-x-2 cursor-pointer"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">⚡</span>
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white text-xl">⚡</span>
               </div>
-
-              <div className="ml-2">
-                <h1 className={combineTypography(typography.logo.title, "text-blue-800 hidden sm:block")}>
-                  ServiceHub
-                </h1>
-                <p className={combineTypography(typography.logo.subtitle, "hidden lg:block")}>
-                  tagline
-                </p>
-              </div>
+              <h1 className={combineTypography(
+                typography.logo.title,
+                "text-blue-800 hidden sm:block"
+              )}>
+                ServiceHub
+              </h1>
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <LanguageSelector />
+
               {/* Desktop Menu */}
               <div className="hidden lg:flex items-center space-x-6">
-                <button
-                  onClick={() => handleNavClick("/")}
-                  className={`flex items-center space-x-1 ${!isAuthenticated ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:text-blue-600"}`}
-                >
-                  <Home className="w-4 h-4" />
-                  <span className={typography.nav.menuItem}>home</span>
-                </button>
+                <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/")} />
+                <NavItem icon={User} label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
+                <NavItem icon={User} label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs/:jobId")} />
 
-                <button
-                  onClick={() => handleNavClick("/user-profile")}
-                  className={`flex items-center space-x-1 ${!isAuthenticated ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:text-blue-600"}`}
-                >
-                  <User className="w-4 h-4" />
-                  <span className={typography.nav.menuItem}>freeListing</span>
-                </button>
-
-                <button
-                  onClick={() => handleNavClick("/jobs")}
-                  className={`flex items-center space-x-1 ${!isAuthenticated ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:text-blue-600"}`}
-                >
-                  <Briefcase className="w-4 h-4" />
-                  <span className={typography.nav.menuItem}>jobs</span>
-                </button>
+                <NavItem icon={Briefcase} label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
               </div>
 
               {/* Notification */}
               <button
-                onClick={() => handleNavClick("/notifications")}
-                className={`${!isAuthenticated ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:text-blue-600"}`}
+                onClick={() => handleNavClick("/notification")}
+                className="text-gray-700"
               >
                 <Bell className="w-5 h-5" />
               </button>
 
-
-
-              {/* Login/Profile */}
+              {/* Auth Button */}
               {!isAuthenticated ? (
                 <Button
                   variant="gradient-blue"
@@ -133,18 +109,58 @@ const Navbar: React.FC = () => {
                   className="hidden lg:block"
                   onClick={() => setShowWelcomeModal(true)}
                 >
-                  login
+                  Login
                 </Button>
               ) : (
-                <button onClick={handleProfileClick} className="p-2 rounded-full hover:bg-gray-100">
-                  <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">R</span>
-                  </div>
+                <button
+                  onClick={handleProfileClick}
+                  className="hidden lg:block w-10 h-10 bg-indigo-500 rounded-full text-white font-bold"
+                >
+                  R
                 </button>
               )}
+
+              {/* Mobile Menu Toggle */}
+              <button
+                className="lg:hidden"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X /> : <Menu />}
+              </button>
             </div>
           </div>
         </div>
+
+        {/* ================= MOBILE MENU ================= */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden bg-white border-t shadow-md">
+            <MobileNavItem label="Home" onClick={() => handleNavClick("/")} />
+            <MobileNavItem label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
+            <MobileNavItem label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs/:jobId")} />
+
+            <MobileNavItem label="Notification" onClick={() => handleNavClick("/notification")} />
+            <MobileNavItem label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
+
+            {!isAuthenticated ? (
+              <button
+                onClick={() => {
+                  setShowWelcomeModal(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 text-blue-600 font-medium"
+              >
+                Login
+              </button>
+            ) : (
+              <button
+                onClick={handleProfileClick}
+                className="w-full text-left px-4 py-3"
+              >
+                Profile
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       {/* ================= AUTH MODALS ================= */}
@@ -155,7 +171,7 @@ const Navbar: React.FC = () => {
       />
 
       {showOTPModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center">
           <OTPVerification
             phoneNumber={phoneNumber}
             onVerify={() => { }}
@@ -164,10 +180,32 @@ const Navbar: React.FC = () => {
             onClose={handleLoginSuccess}
             onContinue={handleLoginSuccess}
           />
+
         </div>
       )}
     </>
   );
 };
+
+/* ================= HELPERS ================= */
+
+const NavItem = ({ icon: Icon, label, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className="flex items-center space-x-1 text-gray-700 hover:text-blue-600"
+  >
+    <Icon className="w-4 h-4" />
+    <span>{label}</span>
+  </button>
+);
+
+const MobileNavItem = ({ label, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left px-4 py-3 hover:bg-gray-100"
+  >
+    {label}
+  </button>
+);
 
 export default Navbar;

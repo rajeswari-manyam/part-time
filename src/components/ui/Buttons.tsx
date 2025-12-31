@@ -16,6 +16,7 @@ interface ButtonProps {
     disabled?: boolean;
     fullWidth?: boolean;
     className?: string;
+    title?: string; // Added title prop for tooltips
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -29,6 +30,7 @@ const Button: React.FC<ButtonProps> = ({
     disabled = false,
     fullWidth = false,
     className = "",
+    title,
 }) => {
     // Combine all styles using buttonStyles configuration
     const combinedStyles = `
@@ -43,7 +45,7 @@ const Button: React.FC<ButtonProps> = ({
     // If it's a Link (internal navigation)
     if (to && !disabled) {
         return (
-            <Link to={to} className={combinedStyles}>
+            <Link to={to} className={combinedStyles} title={title}>
                 {children}
             </Link>
         );
@@ -52,7 +54,7 @@ const Button: React.FC<ButtonProps> = ({
     // If it's an external link
     if (href && !disabled) {
         return (
-            <a href={href} className={combinedStyles} target="_blank" rel="noopener noreferrer">
+            <a href={href} className={combinedStyles} target="_blank" rel="noopener noreferrer" title={title}>
                 {children}
             </a>
         );
@@ -65,6 +67,7 @@ const Button: React.FC<ButtonProps> = ({
             onClick={onClick}
             disabled={disabled}
             className={combinedStyles}
+            title={title}
         >
             {children}
         </button>

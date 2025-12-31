@@ -1,17 +1,17 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react"; // Back arrow
-import VoiceIcon from "../assets/icons/Voice.png";
-import Button from "../components/ui/Buttons";
-import typography, { combineTypography } from "../styles/typography";
-import locationIcon from "../assets/icons/Location.png";
-import BudgetIcon from "../assets/icons/Budget.png";
+import { ArrowLeft } from "lucide-react";
 
-import CategoriesData from "../../src/data/categories.json";
-import SubCategoriesData from "../../src/data/subcategories.json";
+import VoiceIcon from "../assets/icons/Voice.png";
+import locationIcon from "../assets/icons/Location.png";
+
+import CategoriesData from "../data/categories.json";
+import SubCategoriesData from "../data/subcategories.json";
 
 import VoiceService from "../services/voiceService";
+import { createJob, CreateJobPayload } from "../services/api.service";
 
+/* ================= TYPES ================= */
 interface Category {
     id: number;
     name: string;
@@ -29,40 +29,61 @@ interface SubCategoryGroup {
 }
 
 interface FormData {
-    name: string;
-    email: string;
-    type: string;
+    title: string;
     category: string;
     subcategory: string;
-    budget: string;
+    price: string;
     location: string;
     description: string;
-    preferredDates: string[];
     images: File[];
+    latitude?: number;
+    longitude?: number;
 }
 
+/* ================= DATA ================= */
 const categories: Category[] = CategoriesData.categories;
-const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories;
-const allSubcategories: SubCategory[] = subcategoryGroups.flatMap(
-    (group) => group.items
-);
+const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
+const allSubcategories: SubCategory[] = subcategoryGroups.flatMap((group) => group.items);
 
+/* ================= COMPONENT ================= */
 const UserProfile: React.FC = () => {
     const navigate = useNavigate();
 
+    // Logged-in user
+    const storedUser = localStorage.getItem("user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
     const [formData, setFormData] = useState<FormData>({
-        name: "",
-        email: "",
-        type: "",
+        title: "",
         category: "",
         subcategory: "",
-        budget: "",
+        price: "",
         location: "",
         description: "",
-        preferredDates: [],
         images: [],
+        latitude: undefined,
+        longitude: undefined,
     });
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    /* ================= LOCATION ================= */
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setFormData((prev) => ({
+                    ...prev,
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                }));
+            },
+            (err) => console.error("Location error:", err)
+        );
+    }, []);
+
+    /* ================= HANDLERS ================= */
     const handleInputChange = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
@@ -70,28 +91,21 @@ const UserProfile: React.FC = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const dates = e.target.value.split(",").map((d) => d.trim());
-        setFormData((prev) => ({ ...prev, preferredDates: dates }));
-    };
-
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) {
-            setFormData((prev) => ({ ...prev, images: Array.from(files) }));
-        }
+        if (!files) return;
+
+        setFormData((prev) => ({
+            ...prev,
+            images: Array.from(files),
+        }));
     };
 
-    const handleSubmit = () => {
-        console.log("Form submitted:", formData);
-        alert("Job details submitted!");
-        navigate("/matched-workers");
-    };
-
-    const handleVoiceClickFor = (fieldName: keyof FormData) => () => {
+    const handleVoiceClickFor = (field: keyof FormData) => () => {
         const voiceService = VoiceService.getInstance();
+
         if (!voiceService.isSpeechRecognitionSupported()) {
-            alert("Speech recognition not supported in your browser");
+            alert("Speech recognition not supported");
             return;
         }
 
@@ -99,17 +113,95 @@ const UserProfile: React.FC = () => {
             (result) => {
                 setFormData((prev) => ({
                     ...prev,
-                    [fieldName]: prev[fieldName] + " " + result.transcript,
+                    [field]: `${prev[field] || ""} ${result.transcript}`,
                 }));
             },
             (error) => alert(error)
         );
     };
 
+    /* ================= VALIDATION ================= */
+    const validateForm = (): boolean => {
+        if (!formData.title.trim()) {
+            alert("Please enter a job title");
+            return false;
+        }
+
+        if (!formData.category) {
+            alert("Please select a category");
+            return false;
+        }
+
+        if (!formData.description.trim()) {
+            alert("Please enter a description");
+            return false;
+        }
+
+        if (!formData.latitude || !formData.longitude) {
+            alert("Location is required. Please enable location access.");
+            return false;
+        }
+
+        if (!user?._id) {
+            alert("User not logged in. Please log in first.");
+            return false;
+        }
+
+        return true;
+    };
+
+    /* ================= SUBMIT ================= */
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
+
+        try {
+            setIsSubmitting(true);
+
+            // ✅ FIX: Ensure category is sent as string (without extra spaces)
+            const jobData: CreateJobPayload = {
+                userId: user._id,
+                title: formData.title.trim(),
+                description: formData.description.trim(),
+                category: formData.category.trim(), // ✅ Trim to remove spaces
+                latitude: formData.latitude!,
+                longitude: formData.longitude!,
+                images: formData.images,
+            };
+
+            console.log("Submitting job data:", jobData); // Debug log
+
+            const response = await createJob(jobData);
+
+            console.log("API Response:", response); // Debug log
+
+            if (response.success && response.data?._id) {
+                const jobId = response.data._id;
+                console.log("Navigating to job:", jobId); // Debug log
+
+                // Small delay to ensure backend is ready
+                setTimeout(() => {
+                    navigate(`/listed-jobs/${jobId}`);
+                }, 500);
+            } else {
+                alert(response.message || "Job created but couldn't redirect");
+                navigate("/jobs");
+            }
+        } catch (error: any) {
+            console.error("Error creating job:", error);
+            alert(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to create job. Please try again."
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    /* ================= UI ================= */
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-2xl mx-auto relative">
-                {/* Back Button */}
                 <button
                     onClick={() => navigate(-1)}
                     className="absolute left-0 top-0 p-3 rounded-full hover:bg-gray-200"
@@ -117,267 +209,156 @@ const UserProfile: React.FC = () => {
                     <ArrowLeft size={24} />
                 </button>
 
-                <h1
-                    className={combineTypography(
-                        typography.heading.h2,
-                        "text-gray-900 mb-8 text-center"
-                    )}
-                >
-                    User Profile
+                <h1 className="text-3xl font-bold text-center mb-8">
+                    Post a Job
                 </h1>
 
-                <div className="space-y-6">
-                    {/* Name */}
-                    <div className="relative">
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Name
+                <div className="space-y-5">
+                    {/* TITLE */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Job Title *
                         </label>
                         <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
+                            name="title"
+                            placeholder="e.g., Fix leaking kitchen sink"
+                            value={formData.title}
                             onChange={handleInputChange}
-                            placeholder="Enter your name"
-                            className="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleVoiceClickFor("name")}
-                            className="absolute right-3 top-3/4 transform -translate-y-1/2 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-2 rounded-full"
-                        >
-                            <img src={VoiceIcon} alt="Voice" className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Email */}
-                    <div className="relative">
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter your email"
-                            className="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleVoiceClickFor("email")}
-                            className="absolute right-3 top-3/4 transform -translate-y-1/2 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-2 rounded-full"
-                        >
-                            <img src={VoiceIcon} alt="Voice" className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Job Type Dropdown */}
-                    <div>
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Job Type
-                        </label>
-                        <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="">Select Job Type</option>
-                            <option value="hourly">Hourly</option>
-                            <option value="daily">Daily</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="project">Project-based</option>
-                        </select>
-                    </div>
-
-                    {/* Preferred Dates */}
-                    <div>
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Preferred Dates (comma separated)
-                        </label>
-                        <input
-                            type="text"
-                            name="preferredDates"
-                            value={formData.preferredDates.join(", ")}
-                            onChange={handleDateChange}
-                            placeholder="YYYY-MM-DD, YYYY-MM-DD"
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                            required
                         />
                     </div>
 
-                    {/* Upload Images */}
+                    {/* CATEGORY */}
                     <div>
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Upload Images
-                        </label>
-                        <input
-                            type="file"
-                            multiple
-                            onChange={handleFileChange}
-                            className="w-full text-gray-700"
-                        />
-                    </div>
-
-                    {/* Service Category */}
-                    <div>
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Select Category
+                        <label className="block text-sm font-medium mb-1">
+                            Category *
                         </label>
                         <select
                             name="category"
                             value={formData.category}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                            required
                         >
-                            <option value="">Choose a category</option>
+                            <option value="">Select Category</option>
                             {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                    {cat.name}
+                                <option key={cat.id} value={String(cat.id)}>
+                                    {cat.icon} {cat.name}
                                 </option>
                             ))}
                         </select>
                     </div>
 
-                    {/* Service SubCategory */}
+                    {/* SUBCATEGORY */}
                     <div>
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Select SubCategory
+                        <label className="block text-sm font-medium mb-1">
+                            Subcategory
                         </label>
                         <select
                             name="subcategory"
                             value={formData.subcategory}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                         >
-                            <option value="">Select SubCategory</option>
-                            {allSubcategories.map((sub, index) => (
-                                <option key={index} value={sub.name}>
-                                    {sub.name}
+                            <option value="">Select Subcategory (Optional)</option>
+                            {allSubcategories.map((sub, i) => (
+                                <option key={i} value={sub.name}>
+                                    {sub.icon} {sub.name}
                                 </option>
                             ))}
                         </select>
                     </div>
 
-                    {/* Budget */}
-                    <div className="relative">
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block flex items-center gap-2"
-                            )}
-                        >
-                            <img src={BudgetIcon} alt="Budget" className="w-5 h-5" />
-                            Service Charges
-                        </label>
-                        <input
-                            type="text"
-                            name="budget"
-                            value={formData.budget}
-                            onChange={handleInputChange}
-                            placeholder="Enter budget"
-                            className="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleVoiceClickFor("budget")}
-                            className="absolute right-3 top-3/4 transform -translate-y-1/2 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-2 rounded-full"
-                        >
-                            <img src={VoiceIcon} alt="Voice" className="w-5 h-5" />
-                        </button>
+                    {/* PRICE */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Budget/Price</label>
+                        <div className="relative">
+                            <input
+                                name="price"
+                                placeholder="e.g., ₹500 - ₹1000"
+                                value={formData.price}
+                                onChange={handleInputChange}
+                                className="w-full p-3 border rounded-xl pr-12 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleVoiceClickFor("price")}
+                                className="absolute right-3 top-3 hover:opacity-70"
+                            >
+                                <img src={VoiceIcon} className="w-5 h-5" alt="Voice input" />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Location */}
-                    <div className="relative">
-                        <label className="flex items-center gap-2 mb-2">
-                            <img src={locationIcon} alt="Location" className="w-5 h-5" />
-                            Service Location
-                        </label>
-                        <input
-                            type="text"
-                            name="location"
-                            value={formData.location}
-                            onChange={handleInputChange}
-                            placeholder="Enter service address"
-                            className="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleVoiceClickFor("location")}
-                            className="absolute right-3 top-3/4 transform -translate-y-1/2 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-2 rounded-full"
-                        >
-                            <img src={VoiceIcon} alt="Voice" className="w-5 h-5" />
-                        </button>
+                    {/* LOCATION */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Location *</label>
+                        <div className="relative">
+                            <input
+                                name="location"
+                                placeholder="Your location (auto-detected)"
+                                value={formData.location}
+                                onChange={handleInputChange}
+                                className="w-full p-3 border rounded-xl pr-12 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                            <img
+                                src={locationIcon}
+                                className="w-5 h-5 absolute right-3 top-3"
+                                alt="Location"
+                            />
+                        </div>
+                        {formData.latitude && formData.longitude && (
+                            <p className="text-xs text-green-600 mt-1">
+                                ✓ Location detected: {formData.latitude.toFixed(4)},{" "}
+                                {formData.longitude.toFixed(4)}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Description */}
-                    <div className="relative">
-                        <label
-                            className={combineTypography(
-                                typography.form.label,
-                                "text-gray-700 mb-2 block"
-                            )}
-                        >
-                            Description
+                    {/* DESCRIPTION */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Description *
                         </label>
                         <textarea
                             name="description"
+                            placeholder="Describe the job in detail..."
+                            rows={4}
                             value={formData.description}
                             onChange={handleInputChange}
-                            rows={6}
-                            placeholder="Describe the work in detail..."
-                            className="w-full px-4 py-3 pr-12 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                            required
                         />
-                        <button
-                            type="button"
-                            onClick={handleVoiceClickFor("description")}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-2 rounded-full"
-                        >
-                            <img src={VoiceIcon} alt="Voice" className="w-5 h-5" />
-                        </button>
                     </div>
 
-                    {/* Submit */}
-                    <Button
+                    {/* IMAGES */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Images (Optional)
+                        </label>
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                        {formData.images.length > 0 && (
+                            <p className="text-xs text-gray-600 mt-1">
+                                {formData.images.length} image(s) selected
+                            </p>
+                        )}
+                    </div>
+
+                    {/* SUBMIT */}
+                    <button
                         onClick={handleSubmit}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold hover:opacity-90 shadow-lg"
+                        disabled={isSubmitting}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
                     >
-                        Submit Profile
-                    </Button>
+                        {isSubmitting ? "Creating Job..." : "Submit Job"}
+                    </button>
                 </div>
             </div>
         </div>

@@ -46,25 +46,25 @@ const RoleSelection: React.FC = () => {
         stopListening
     } = useVoiceRecognition(setSelectedRole);
     const handleRoleSelection = (role: 'worker' | 'customer') => {
-        setSelectedRole(role);
-        stopListening();
-        login();
+    setSelectedRole(role);
+    stopListening();
 
-        if (role === 'worker') {
-            navigate("/worker-profile");   // Worker profile
-        } else {
-            navigate("/matched-workers"); // ✅ Customer profile
-        }
-    };
+    if (role === 'worker') {
+        navigate("/worker-profile");
+    } else {
+        navigate("/matched-workers");
+    }
+};
 
-    const handleContinue = () => {
-        login();
-        navigate("/select-category");
-    };
+const handleContinue = () => {
+    navigate("/select-category");
+};
+
 
     const handleBack = () => {
-        navigate(-1);
+        navigate("/home");
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-4 md:p-6">

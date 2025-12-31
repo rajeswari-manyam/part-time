@@ -5,7 +5,7 @@ import typography from "../../styles/typography";
 import OTPVerification from "./OTPVerification";
 import voiceIcon from "../../assets/icons/Voice.png";
 import VoiceService from "../../services/voiceService";
-
+import { sendOtp } from "../../services/api.service";
 interface LoginFormProps {
     onClose: () => void;
     initialMode?: "signup" | "login";
@@ -16,7 +16,7 @@ interface LoginFormProps {
 type FormStep = "phone" | "otp";
 
 const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack, onOpenOTP }) => {
-  
+
     const [phoneNumber, setPhoneNumber] = useState("");
     const [isLogin, setIsLogin] = useState(initialMode === "login");
     const [currentStep, setCurrentStep] = useState<FormStep>("phone");
@@ -102,19 +102,26 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
         setPhoneNumber(value);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (phoneNumber.length === 10) {
-            console.log("Sending OTP to:", phoneNumber);
+            try {
+                const response = await sendOtp(phoneNumber);
 
-            // 🔥 If onOpenOTP callback exists (from Navbar), use it
-            if (onOpenOTP) {
-                console.log("Using Navbar OTP modal");
-                onOpenOTP(phoneNumber); // This will close Welcome and open OTP modal in Navbar
-            } else {
-                // Fallback: show OTP inline (for standalone use)
-                console.log("Using inline OTP");
-                setCurrentStep("otp");
+                if (response.success) {
+                    console.log("OTP sent:", response);
+                    if (onOpenOTP) {
+                        onOpenOTP(phoneNumber); // Show Navbar OTP
+                    } else {
+                        setCurrentStep("otp"); // Inline OTP fallback
+                    }
+                } else {
+                    alert(response.message || "Failed to send OTP");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Failed to send OTP. Try again.");
             }
         }
     };

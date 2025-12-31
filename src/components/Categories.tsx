@@ -1,6 +1,5 @@
 import React from "react";
 import { fontSize, fontWeight } from "../styles/typography";
-import { useTranslation } from "react-i18next";
 
 interface Category {
     id: string;
@@ -133,7 +132,7 @@ export const categories: Category[] = [
 ];
 
 const Categories: React.FC = () => {
-    const { t } = useTranslation();
+   
 
     const handleCategoryClick = (link: string) => {
         window.location.href = link;
@@ -166,7 +165,7 @@ const Categories: React.FC = () => {
             "Wedding Services": "wedding"
         };
         const key = keyMap[cat.name];
-        return key ? t(`categories.${key}`) : cat.name;
+        return key ? `categories.${key}` : cat.name;
     };
 
     return (
@@ -175,10 +174,10 @@ const Categories: React.FC = () => {
                 {/* Section Header */}
                 <div className="mb-6">
                     <h2 className={`${fontSize["3xl"]} ${fontWeight.bold} text-gray-800`}>
-                        {t("popularCategories")}
+                        {"popularCategories"}
                     </h2>
                     <p className={`${fontSize.base} text-gray-600 mt-2`}>
-                        {t("exploreServices")}
+                        {"exploreServices"}
                     </p>
                 </div>
 
@@ -208,7 +207,7 @@ const Categories: React.FC = () => {
                 {/* View All Button */}
                 <div className="mt-8 text-center">
                     <button className={`bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:from-[#090B7A] hover:to-[#5A95E0] text-white px-8 py-3 rounded-full ${fontWeight.semibold} ${fontSize.base} transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105`}>
-                        {t("viewAllCategories")}
+                        {"viewAllCategories"}
                     </button>
                 </div>
             </div>

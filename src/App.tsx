@@ -15,10 +15,10 @@ import Navbar from "./components/layout/NavBar";
 
 import HomePage from "./pages/Home";
 import FreeListing from "./pages/FreeListing";
-import Jobs from "./pages/MyJobs";
+
 import Favorites from "./pages/Favorites";
 import Saved from "./pages/Saved";
-import RoleSelection from "./pages/RoleSelection";
+
 import LoginPage from "./pages/LoginPage";
 import Notifications from "./pages/Notifications";
 import Policy from "./pages/Policy";
@@ -32,6 +32,16 @@ import UserProfile from "./pages/UserProfile";
 import MatchedWorkers from "./pages/MatchedWorkers";
 import ServiceWorkerProfile from "./pages/WorkerDetails";
 import ChatScreen from "./pages/Chat";
+
+import CallingScreen from "./pages/Call";
+import ServiceEnquiryForm from "./pages/ServiceEnquiryForm";
+import FeedbackForm from "./pages/FeedBack";
+import ThankYouScreen from "./pages/ThankYouscreen";
+import NotificationScreen from "./pages/Notificationcsreen";
+import RoleSelection from "./pages/RoleSelection";
+import AllJobs from "./pages/AllJobs";
+import UpdateJob from "./pages/UpdateJob";
+import ListedJobs from "./pages/Listedjobs";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -56,6 +66,7 @@ const AppRoutes: React.FC = () => {
             <Layout>
                 <Routes location={background || location}>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/role-selection" element={<RoleSelection />} />
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
                     <Route path="/service-marketplace" element={<ServiceMarketplace />} />
@@ -63,7 +74,20 @@ const AppRoutes: React.FC = () => {
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
                     <Route path="/worker-profile/:id" element={<ServiceWorkerProfile />} />
-                     <Route path="/chat/:id" element={<ChatScreen />} />
+                    <Route path="/chat/:id" element={<ChatScreen />} />
+                    <Route path="/call/:id" element={<CallingScreen />} />
+                    <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
+                    <Route path="/feedback/:id" element={<FeedbackForm />} />
+                    <Route path="/thank-you/:id" element={<ThankYouScreen />} />
+                    <Route path="/notification/:id" element={<NotificationScreen />} />
+                    <Route path="/all-jobs" element={<AllJobs />} />
+                    <Route path="/update-job/:jobId" element={<UpdateJob />} />
+
+
+
+                    {/* Fix this route - use :jobId NOT jobId */}
+                    <Route path="/listed-jobs/:jobId" element={<ListedJobs />} />
+
                     <Route
                         path="/free-listing"
                         element={
@@ -73,10 +97,10 @@ const AppRoutes: React.FC = () => {
                         }
                     />
                     <Route
-                        path="/jobs"
+                        path="/matched-workers"
                         element={
                             <ProtectedRoute>
-                                <Jobs />
+                                <MatchedWorkers />
                             </ProtectedRoute>
                         }
                     />
