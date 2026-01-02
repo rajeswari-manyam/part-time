@@ -88,15 +88,14 @@ const Navbar: React.FC = () => {
               <div className="hidden lg:flex items-center space-x-6">
                 <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/")} />
                 <NavItem icon={User} label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
-                <NavItem icon={User} label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs/:jobId")} />
-
+                <NavItem icon={Briefcase} label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs")} />
                 <NavItem icon={Briefcase} label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
               </div>
 
               {/* Notification */}
               <button
                 onClick={() => handleNavClick("/notification")}
-                className="text-gray-700"
+                className="text-gray-700 hover:text-blue-600 transition-colors"
               >
                 <Bell className="w-5 h-5" />
               </button>
@@ -114,7 +113,7 @@ const Navbar: React.FC = () => {
               ) : (
                 <button
                   onClick={handleProfileClick}
-                  className="hidden lg:block w-10 h-10 bg-indigo-500 rounded-full text-white font-bold"
+                  className="hidden lg:block w-10 h-10 bg-indigo-500 rounded-full text-white font-bold hover:bg-indigo-600 transition-colors"
                 >
                   R
                 </button>
@@ -122,10 +121,10 @@ const Navbar: React.FC = () => {
 
               {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden"
+                className="lg:hidden text-gray-700"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                {isMobileMenuOpen ? <X /> : <Menu />}
+                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
           </div>
@@ -136,10 +135,9 @@ const Navbar: React.FC = () => {
           <div className="lg:hidden bg-white border-t shadow-md">
             <MobileNavItem label="Home" onClick={() => handleNavClick("/")} />
             <MobileNavItem label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
-            <MobileNavItem label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs/:jobId")} />
-
-            <MobileNavItem label="Notification" onClick={() => handleNavClick("/notification")} />
+            <MobileNavItem label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs")} />
             <MobileNavItem label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
+            <MobileNavItem label="Notification" onClick={() => handleNavClick("/notification")} />
 
             {!isAuthenticated ? (
               <button
@@ -147,14 +145,14 @@ const Navbar: React.FC = () => {
                   setShowWelcomeModal(true);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full text-left px-4 py-3 text-blue-600 font-medium"
+                className="w-full text-left px-4 py-3 text-blue-600 font-medium hover:bg-gray-100"
               >
                 Login
               </button>
             ) : (
               <button
                 onClick={handleProfileClick}
-                className="w-full text-left px-4 py-3"
+                className="w-full text-left px-4 py-3 hover:bg-gray-100"
               >
                 Profile
               </button>
@@ -180,7 +178,6 @@ const Navbar: React.FC = () => {
             onClose={handleLoginSuccess}
             onContinue={handleLoginSuccess}
           />
-
         </div>
       )}
     </>
@@ -192,17 +189,17 @@ const Navbar: React.FC = () => {
 const NavItem = ({ icon: Icon, label, onClick }: any) => (
   <button
     onClick={onClick}
-    className="flex items-center space-x-1 text-gray-700 hover:text-blue-600"
+    className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
   >
     <Icon className="w-4 h-4" />
-    <span>{label}</span>
+    <span className="text-sm font-medium">{label}</span>
   </button>
 );
 
 const MobileNavItem = ({ label, onClick }: any) => (
   <button
     onClick={onClick}
-    className="w-full text-left px-4 py-3 hover:bg-gray-100"
+    className="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors"
   >
     {label}
   </button>

@@ -35,7 +35,7 @@ const CustomerIconComponent = ({ size, ...props }: any) => (
 const RoleSelection: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<'worker' | 'customer' | null>(null);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { user } = useAuth(); // ✅ Get user from auth context
 
     const {
         isListening,
@@ -45,26 +45,31 @@ const RoleSelection: React.FC = () => {
         handleVoiceClick,
         stopListening
     } = useVoiceRecognition(setSelectedRole);
+
     const handleRoleSelection = (role: 'worker' | 'customer') => {
-    setSelectedRole(role);
-    stopListening();
+        setSelectedRole(role);
+        stopListening();
 
-    if (role === 'worker') {
-        navigate("/worker-profile");
-    } else {
-        navigate("/matched-workers");
-    }
-};
+        if (role === 'worker') {
+            navigate("/worker-profile");
+        } else {
+            // ✅ Customer flow: Navigate to user profile or job listing
+            // Since we don't have a workerId yet, go to profile/job selection first
+            navigate("/home");
 
-const handleContinue = () => {
-    navigate("/select-category");
-};
+            // Alternative: If you have a jobId or want to show all jobs:
+            // navigate("/all-jobs");
+            // navigate("/service-marketplace");
+        }
+    };
 
+    const handleContinue = () => {
+        navigate("/select-category");
+    };
 
     const handleBack = () => {
         navigate("/home");
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-4 md:p-6">
@@ -123,7 +128,7 @@ const handleContinue = () => {
                     {selectedRole === 'customer' && (
                         <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center animate-fade-in">
                             <button
-                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 dark: '#2C3E50' hover:opacity-90 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
+                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
                                 onClick={handleContinue}
                             >
                                 Continue as Customer

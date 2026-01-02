@@ -40,17 +40,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     const [accountType, setAccountType] = useState<AccountType>(
         user.accountType ?? "user"
     );
-
-    // ✅ SWITCH ACCOUNT + NAVIGATION
     const switchAccount = (type: AccountType) => {
         setAccountType(type);
         onSwitchAccount?.(type);
 
-        // ✅ NAVIGATION LOGIC
         if (type === "user") {
-            onNavigate("/profile"); // User profile
+            onNavigate("/user-profile");     // ✅ Guest
         } else {
-            onNavigate("/worker-profile"); // Worker profile
+            onNavigate("/worker-profile");   // ✅ Worker
         }
     };
 
@@ -148,6 +145,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             )
                         }
                     />
+
                     <MenuItem icon={<Globe />} label="Change Language" />
                     <MenuItem icon={<Bell />} label="Notifications" onClick={() => onNavigate("/notification/:id")} />
 
@@ -238,8 +236,8 @@ const MenuItem: React.FC<MenuItemProps> = ({
     <button
         onClick={onClick}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${danger
-                ? "text-red-600 hover:bg-red-50"
-                : "text-gray-700 hover:bg-gray-100"
+            ? "text-red-600 hover:bg-red-50"
+            : "text-gray-700 hover:bg-gray-100"
             }`}
     >
         <span className="w-5 h-5">{icon}</span>

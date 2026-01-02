@@ -27,17 +27,27 @@ interface SubCategoryGroup {
     categoryId: number;
     items: SubCategory[];
 }
-
 interface FormData {
-    title: string;
-    category: string;
-    subcategory: string;
-    price: string;
-    location: string;
-    description: string;
-    images: File[];
-    latitude?: number;
-    longitude?: number;
+  title: string;
+  category: string;
+  subcategory: string;
+
+  jobType: "FULL_TIME" | "PART_TIME"; // ✅ NEW
+  servicecharges: string;
+
+  startDate: string; // ✅ NEW (ISO date string)
+  endDate: string;   // ✅ NEW
+
+  description: string;
+
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+
+  images: File[];
+  latitude?: number;
+  longitude?: number;
 }
 
 /* ================= DATA ================= */
@@ -48,24 +58,76 @@ const allSubcategories: SubCategory[] = subcategoryGroups.flatMap((group) => gro
 /* ================= COMPONENT ================= */
 const UserProfile: React.FC = () => {
     const navigate = useNavigate();
+const reverseGeocode = async (lat: number, lng: number) => {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+  );
+  return res.json();
+};
 
     // Logged-in user
     const storedUser = localStorage.getItem("user");
     const user = storedUser ? JSON.parse(storedUser) : null;
-
     const [formData, setFormData] = useState<FormData>({
-        title: "",
-        category: "",
-        subcategory: "",
-        price: "",
-        location: "",
-        description: "",
-        images: [],
-        latitude: undefined,
-        longitude: undefined,
-    });
+  title: "",
+  category: "",
+  subcategory: "",
+
+  jobType: "FULL_TIME", // default
+  servicecharges: "",
+
+  startDate: "",
+  endDate: "",
+
+  description: "",
+
+  area: "",
+  city: "",
+  state: "",
+  pincode: "",
+
+  images: [],
+  latitude: undefined,
+  longitude: undefined,
+});
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+const handleUseCurrentLocation = async () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+
+      try {
+        const data = await reverseGeocode(latitude, longitude);
+
+        setFormData((prev) => ({
+          ...prev,
+          latitude,
+          longitude,
+          area:
+            data.address.suburb ||
+            data.address.neighbourhood ||
+            "",
+          city:
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            "",
+          state: data.address.state || "",
+          pincode: data.address.postcode || "",
+        }));
+      } catch (err) {
+        alert("Failed to fetch address");
+      }
+    },
+    () => alert("Location permission denied")
+  );
+};
 
     /* ================= LOCATION ================= */
     useEffect(() => {
@@ -176,9 +238,8 @@ const UserProfile: React.FC = () => {
 
             if (response.success && response.data?._id) {
                 const jobId = response.data._id;
-                console.log("Navigating to job:", jobId); // Debug log
+                console.log("Navigating to job:", jobId);
 
-                // Small delay to ensure backend is ready
                 setTimeout(() => {
                     navigate(`/listed-jobs/${jobId}`);
                 }, 500);
@@ -215,19 +276,23 @@ const UserProfile: React.FC = () => {
 
                 <div className="space-y-5">
                     {/* TITLE */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">
-                            Job Title *
-                        </label>
-                        <input
-                            name="title"
-                            placeholder="e.g., Fix leaking kitchen sink"
-                            value={formData.title}
-                            onChange={handleInputChange}
-                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                            required
-                        />
-                    </div>
+                   {/* JOB TYPE */}
+<div>
+  <label className="block text-sm font-medium mb-1">
+    Job Type *
+  </label>
+  <select
+    name="jobType"
+    value={formData.jobType}
+    onChange={handleInputChange}
+    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+    required
+  >
+    <option value="FULL_TIME">Full Time</option>
+    <option value="PART_TIME">Part Time</option>
+  </select>
+</div>
+
 
                     {/* CATEGORY */}
                     <div>
@@ -270,51 +335,116 @@ const UserProfile: React.FC = () => {
                         </select>
                     </div>
 
-                    {/* PRICE */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Budget/Price</label>
-                        <div className="relative">
-                            <input
-                                name="price"
-                                placeholder="e.g., ₹500 - ₹1000"
-                                value={formData.price}
-                                onChange={handleInputChange}
-                                className="w-full p-3 border rounded-xl pr-12 focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleVoiceClickFor("price")}
-                                className="absolute right-3 top-3 hover:opacity-70"
-                            >
-                                <img src={VoiceIcon} className="w-5 h-5" alt="Voice input" />
-                            </button>
-                        </div>
-                    </div>
+                 {/* SERVICE CHARGES */}
+<div>
+  <label className="block text-sm font-medium mb-1">
+    Service Charges (₹) *
+  </label>
+  <input
+    name="servicecharges"
+    type="number"
+    placeholder="e.g., 2000"
+    value={formData.servicecharges}
+    onChange={handleInputChange}
+    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+    required
+  />
+</div>
 
-                    {/* LOCATION */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Location *</label>
-                        <div className="relative">
-                            <input
-                                name="location"
-                                placeholder="Your location (auto-detected)"
-                                value={formData.location}
-                                onChange={handleInputChange}
-                                className="w-full p-3 border rounded-xl pr-12 focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                            <img
-                                src={locationIcon}
-                                className="w-5 h-5 absolute right-3 top-3"
-                                alt="Location"
-                            />
-                        </div>
-                        {formData.latitude && formData.longitude && (
-                            <p className="text-xs text-green-600 mt-1">
-                                ✓ Location detected: {formData.latitude.toFixed(4)},{" "}
-                                {formData.longitude.toFixed(4)}
-                            </p>
-                        )}
-                    </div>
+
+{/* DATE RANGE */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium mb-1">
+      Start Date *
+    </label>
+    <input
+      type="date"
+      name="startDate"
+      value={formData.startDate}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">
+      End Date *
+    </label>
+    <input
+      type="date"
+      name="endDate"
+      value={formData.endDate}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+</div>
+
+
+                {/* LOCATION DETAILS */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium mb-1">Area *</label>
+    <input
+      name="area"
+      placeholder="e.g., Madhapur"
+      value={formData.area}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">City *</label>
+    <input
+      name="city"
+      placeholder="e.g., Hyderabad"
+      value={formData.city}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">State *</label>
+    <input
+      name="state"
+      placeholder="e.g., Telangana"
+      value={formData.state}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">Pincode *</label>
+    <input
+      name="pincode"
+      placeholder="e.g., 500081"
+      value={formData.pincode}
+      onChange={handleInputChange}
+      className="w-full p-3 border rounded-xl"
+      required
+    />
+  </div>
+</div>
+<div className="flex justify-end">
+  <button
+    type="button"
+    onClick={handleUseCurrentLocation}
+    className="flex items-center gap-2 text-blue-600 text-sm font-medium hover:underline"
+  >
+    <img src={locationIcon} className="w-4 h-4" />
+    Use Current Location
+  </button>
+</div>
+
 
                     {/* DESCRIPTION */}
                     <div>

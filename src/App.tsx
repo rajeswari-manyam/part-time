@@ -10,7 +10,6 @@ import {
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
-
 import Navbar from "./components/layout/NavBar";
 
 import HomePage from "./pages/Home";
@@ -27,10 +26,10 @@ import Help from "./pages/Help";
 import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
 import ServiceMarketplace from "./pages/ServiceMarketPlace";
-import JobDetails from "./pages/JobDetails";
+import JobDetailsPage from "./pages/JobDetails";
 import UserProfile from "./pages/UserProfile";
 import MatchedWorkers from "./pages/MatchedWorkers";
-import ServiceWorkerProfile from "./pages/WorkerDetails";
+import WorkerProfile from "./pages/WorkerProfile";
 import ChatScreen from "./pages/Chat";
 
 import CallingScreen from "./pages/Call";
@@ -42,11 +41,43 @@ import RoleSelection from "./pages/RoleSelection";
 import AllJobs from "./pages/AllJobs";
 import UpdateJob from "./pages/UpdateJob";
 import ListedJobs from "./pages/Listedjobs";
+import EditProfile from "./pages/EditProfile";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? children : <Navigate to="/" replace />;
 };
+
+/* ---------------- ListedJobs Wrapper to get userId ---------------- */
+const ListedJobsWrapper: React.FC = () => {
+    const { user } = useAuth(); // Get the current user from AuthContext
+
+    if (!user?._id) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-red-600">Please log in to view your jobs</p>
+            </div>
+        );
+    }
+
+    return <ListedJobs userId={user._id} />;
+};
+
+// /* ---------------- EditProfile Wrapper to get userId ---------------- */
+// const EditProfileWrapper: React.FC = () => {
+//     const { user } = useAuth();
+
+//     if (!user?._id) {
+//         return (
+//             <div className="min-h-screen flex items-center justify-center">
+//                 <p className="text-red-600">Please log in to edit your profile</p>
+//             </div>
+//         );
+//     }
+
+//     // After
+// // return <EditProfile />;
+// };
 
 /* ---------------- Layout ---------------- */
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -70,10 +101,14 @@ const AppRoutes: React.FC = () => {
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
                     <Route path="/service-marketplace" element={<ServiceMarketplace />} />
-                    <Route path="/jobs/:jobId" element={<JobDetails />} />
+                    <Route path="/job-details/:jobId" element={<JobDetailsPage />} />
                     <Route path="/user-profile" element={<UserProfile />} />
+
+                    {/* ✅ Routes for matched-workers - both with and without ID */}
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
-                    <Route path="/worker-profile/:id" element={<ServiceWorkerProfile />} />
+                    <Route path="/matched-workers/:workerId" element={<MatchedWorkers />} />
+
+                    <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/chat/:id" element={<ChatScreen />} />
                     <Route path="/call/:id" element={<CallingScreen />} />
                     <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
@@ -82,11 +117,25 @@ const AppRoutes: React.FC = () => {
                     <Route path="/notification/:id" element={<NotificationScreen />} />
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
+                    {/* <Route
+                        path="/profile/edit"
+                        element={
+                            <ProtectedRoute>
+                                <EditProfileWrapper />
+                            </ProtectedRoute>
+                        }
+                    /> */}
 
-
-
-                    {/* Fix this route - use :jobId NOT jobId */}
-                    <Route path="/listed-jobs/:jobId" element={<ListedJobs />} />
+                    {/* Add worker routes if needed */}
+                    {/* ✅ ListedJobs route now passes current userId */}
+                    <Route
+                        path="/listed-jobs"
+                        element={
+                            <ProtectedRoute>
+                                <ListedJobsWrapper />
+                            </ProtectedRoute>
+                        }
+                    />
 
                     <Route
                         path="/free-listing"
@@ -96,14 +145,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                        path="/matched-workers"
-                        element={
-                            <ProtectedRoute>
-                                <MatchedWorkers />
-                            </ProtectedRoute>
-                        }
-                    />
+
                     <Route
                         path="/favorites"
                         element={
@@ -112,6 +154,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
+
                     <Route
                         path="/saved"
                         element={
@@ -120,14 +163,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                        path="/role-selection"
-                        element={
-                            <ProtectedRoute>
-                                <RoleSelection />
-                            </ProtectedRoute>
-                        }
-                    />
+
                     <Route
                         path="/notifications"
                         element={
@@ -136,6 +172,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
+
                     <Route
                         path="/policy"
                         element={
@@ -144,6 +181,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
+
                     <Route
                         path="/feedback"
                         element={
@@ -152,6 +190,7 @@ const AppRoutes: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
+
                     <Route
                         path="/help"
                         element={

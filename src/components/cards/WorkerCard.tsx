@@ -2,11 +2,11 @@ import React from 'react';
 import { Star, MapPin, Flame } from 'lucide-react';
 import Button from '../ui/Buttons';
 import typography, { combineTypography } from '../../styles/typography';
-import {MatchedWorkersProps} from "../../types/MatchedWorkers";
+import { MatchedWorkersProps } from "../../types/MatchedWorkers";
 
 interface WorkerCardProps {
   worker: MatchedWorkersProps;
-  onViewProfile: (id: number) => void;
+  onViewProfile: (id: number | string) => void; // ✅ Changed to accept both types
 }
 
 const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onViewProfile }) => {

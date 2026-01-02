@@ -55,7 +55,7 @@ const SelectCategoriesScreen: React.FC = () => {
 
         if (result.isFinal) {
             // Split spoken text into individual words
-            const spokenWords = spokenText.split(/\s+/).filter(word => word.length > 2);
+            const spokenWords = spokenText.split(/\s+/).filter((word: string) => word.length > 2);
 
             // Find all matching categories
             const matchedCategories = categories.filter(category => {
@@ -63,7 +63,7 @@ const SelectCategoriesScreen: React.FC = () => {
                 const categoryWords = categoryName.split(/[\s&]+/); // Split by space and &
 
                 // Check if any spoken word matches any part of category name
-                return spokenWords.some(spokenWord =>
+                return spokenWords.some((spokenWord: string) =>
                     categoryWords.some(categoryWord =>
                         categoryWord.includes(spokenWord) ||
                         spokenWord.includes(categoryWord) ||

@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import VoiceService from "../services/voiceService";
-import { VoiceRecognitionResult } from "../types/search.types";
 import VoiceIcon from "../assets/icons/Voice.png";
 import CategoriesData from "../components/data/Categories.json";
 import SubCategoriesData from "../components/data/SubCategories.json";
@@ -17,6 +16,7 @@ import LocationSection from "../components/WorkerProfile/LocationSection";
 import AvailabilitySection from "../components/WorkerProfile/AvailabilitySection";
 import WorkImagesUpload from "../components/WorkerProfile/WorkImagesUpload";
 import { useNavigate } from "react-router-dom";
+import { VoiceRecognitionResult } from "../components/Auth/OtpVerification/types";
 
 type VoiceField = "all" | "fullName" | "email" | "bio" | "skills" | "location" | "city" | "serviceCharges" | null;
 

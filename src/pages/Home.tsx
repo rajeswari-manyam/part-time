@@ -2,13 +2,13 @@ import React from "react";
 import SearchContainer from "../components/SearchContainer";
 import PromoSlides from "../components/PromoSlides";
 import Categories from "../components/Categories";
-
+import MatchedWorkers from "./MatchedWorkers";
 interface HomePageProps {
     onOtpSuccess?: () => void; // optional callback for OTP success
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onOtpSuccess }) => {
-   
+
 
     // Example: You can call onOtpSuccess() after OTP verification
     const handleOtpSuccess = () => {
@@ -30,8 +30,12 @@ const HomePage: React.FC<HomePageProps> = ({ onOtpSuccess }) => {
                 <PromoSlides />
             </div>
 
-            {/* Categories Section */}
-            <Categories />
+            {/* Promo Slides Section - Full Width */}
+            <div className="w-full px-4 md:px-6">
+                <MatchedWorkers />
+            </div>
+
+
         </div>
     );
 };
