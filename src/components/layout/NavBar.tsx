@@ -5,19 +5,22 @@ import {
   X,
   User,
   Bell,
-  Briefcase,
-  Home
+  Home,
+  Bookmark
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useAccount } from "../../context/AccountContext";
 import Button from "../ui/Buttons";
 import typography, { combineTypography } from "../../styles/typography";
 import WelcomePage from "../Auth/WelcomePage";
 import OTPVerification from "../Auth/OTPVerification";
 import LanguageSelector from "../LanguageSelector";
+import ProfileSidebar from "../overlays/ProfileSideBar";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
+  const { accountType } = useAccount();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,6 +28,7 @@ const Navbar: React.FC = () => {
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showProfileSidebar, setShowProfileSidebar] = useState(false);
 
   /* ---------------- Navigation ---------------- */
   const handleNavClick = (path: string) => {
@@ -41,7 +45,7 @@ const Navbar: React.FC = () => {
       setShowWelcomeModal(true);
       return;
     }
-    navigate("/profile", { state: { background: location } });
+    setShowProfileSidebar(true);
     setIsMobileMenuOpen(false);
   };
 
@@ -86,10 +90,17 @@ const Navbar: React.FC = () => {
 
               {/* Desktop Menu */}
               <div className="hidden lg:flex items-center space-x-6">
-                <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/")} />
-                <NavItem icon={User} label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
-                <NavItem icon={Briefcase} label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs")} />
-                <NavItem icon={Briefcase} label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
+                {accountType === "user" ? (
+                  <>
+                    <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
+                    <NavItem icon={Bookmark} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                  </>
+                ) : (
+                  <>
+                    <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
+                    <NavItem icon={Bell} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+                  </>
+                )}
               </div>
 
               {/* Notification */}
@@ -100,7 +111,7 @@ const Navbar: React.FC = () => {
                 <Bell className="w-5 h-5" />
               </button>
 
-              {/* Auth Button */}
+              {/* Auth / Profile */}
               {!isAuthenticated ? (
                 <Button
                   variant="gradient-blue"
@@ -133,10 +144,17 @@ const Navbar: React.FC = () => {
         {/* ================= MOBILE MENU ================= */}
         {isMobileMenuOpen && (
           <div className="lg:hidden bg-white border-t shadow-md">
-            <MobileNavItem label="Home" onClick={() => handleNavClick("/")} />
-            <MobileNavItem label="Free Listing" onClick={() => handleNavClick("/user-profile")} />
-            <MobileNavItem label="Listed Jobs" onClick={() => handleNavClick("/listed-jobs")} />
-            <MobileNavItem label="All Jobs" onClick={() => handleNavClick("/all-jobs")} />
+            {accountType === "user" ? (
+              <>
+                <MobileNavItem label="Home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
+              </>
+            ) : (
+              <>
+                <MobileNavItem label="Home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+              </>
+            )}
             <MobileNavItem label="Notification" onClick={() => handleNavClick("/notification")} />
 
             {!isAuthenticated ? (
@@ -179,6 +197,32 @@ const Navbar: React.FC = () => {
             onContinue={handleLoginSuccess}
           />
         </div>
+      )}
+      {/* ================= PROFILE SIDEBAR (RIGHT SLIDE) ================= */}
+      {showProfileSidebar && (
+        <div className="fixed inset-0 z-[9999] flex justify-end">
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setShowProfileSidebar(false)}
+          />
+
+          {/* Sidebar Panel */}
+          <div className="relative w-80 h-full bg-white shadow-xl transform transition-transform duration-300 translate-x-0">
+            <ProfileSidebar
+              user={{ name: "Rajeshwari", initial: "R" }}
+              onNavigate={(path: string) => {
+                navigate(path);
+                setShowProfileSidebar(false);
+              }}
+              onLogout={() => {
+                logout();
+                setShowProfileSidebar(false);
+              }}
+            />
+          </div>
+        </div>
+
       )}
     </>
   );

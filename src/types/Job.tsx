@@ -40,7 +40,8 @@ export interface JobCardProps {
     onAccept?: (jobId: string) => void;
 }
 
-export interface ServiceMarketplaceProps {
+// Renamed from Props to NearByJobsProps
+export interface NearByJobsProps {
     initialTab?: TabType;
     jobs?: Job[];
     onJobAccept?: (jobId: string) => Promise<void>;

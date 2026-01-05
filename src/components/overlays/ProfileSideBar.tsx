@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAccount } from "../../context/AccountContext"; // Add this import
 import {
     Heart,
     Bookmark,
@@ -20,11 +21,9 @@ type AccountType = "user" | "worker";
 interface ProfileSidebarProps {
     onNavigate: (path: string) => void;
     onLogout: () => void;
-    onSwitchAccount?: (type: AccountType) => void;
     user: {
         name: string;
         initial: string;
-        accountType?: AccountType;
     };
 }
 
@@ -33,22 +32,14 @@ interface ProfileSidebarProps {
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     onNavigate,
     onLogout,
-    onSwitchAccount,
     user,
 }) => {
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-    const [accountType, setAccountType] = useState<AccountType>(
-        user.accountType ?? "user"
-    );
-    const switchAccount = (type: AccountType) => {
-        setAccountType(type);
-        onSwitchAccount?.(type);
+    const { accountType, setAccountType } = useAccount(); // Use context
 
-        if (type === "user") {
-            onNavigate("/user-profile");     // ✅ Guest
-        } else {
-            onNavigate("/worker-profile");   // ✅ Worker
-        }
+    const switchAccount = (type: AccountType) => {
+        setAccountType(type); // This will now update the context and navbar
+        onNavigate("/home"); // Navigate to home regardless of type
     };
 
     return (
@@ -82,17 +73,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 {/* ================= SWITCH ACCOUNT ================= */}
                 <div className="px-4 py-4 border-b">
                     <div className="flex items-center justify-between bg-white border rounded-xl px-4 py-3">
-
-                        {/* Left */}
                         <div className="flex items-center gap-3 text-[#1F3B64] font-semibold">
                             <Briefcase className="w-5 h-5" />
                             <span>Switch Account</span>
                         </div>
 
-                        {/* Right Toggle */}
                         <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
-
-                            {/* Active pill */}
                             <div
                                 className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
                                 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
@@ -103,7 +89,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                                     }`}
                             />
 
-                            {/* Guest */}
                             <button
                                 onClick={() => switchAccount("user")}
                                 className={`relative z-10 w-1/2 text-xs font-semibold
@@ -115,7 +100,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                                 Guest
                             </button>
 
-                            {/* Worker */}
                             <button
                                 onClick={() => switchAccount("worker")}
                                 className={`relative z-10 w-1/2 text-xs font-semibold
@@ -130,8 +114,41 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     </div>
                 </div>
 
-                {/* ================= MENU ================= */}
+                {/* ================= MENU (ACCOUNT-SPECIFIC) ================= */}
                 <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
+                    {accountType === "user" ? (
+                        <>
+                            {/* GUEST NAVIGATION */}
+                            <MenuItem
+                                icon={<Heart />}
+                                label="Home"
+                                onClick={() => onNavigate("/home")}
+                            />
+                            <MenuItem
+                                icon={<Bookmark />}
+                                label="Free Listing"
+                                onClick={() => onNavigate("/free-listing")}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            {/* WORKER NAVIGATION */}
+                            <MenuItem
+                                icon={<Globe />}
+                                label="Home"
+                                onClick={() => onNavigate("/home")}
+                            />
+                            <MenuItem
+                                icon={<Bell />}
+                                label="My Bookings"
+                                onClick={() => onNavigate("/my-bookings")}
+                            />
+                        </>
+                    )}
+
+                    <div className="my-3 border-t" />
+
+                    {/* COMMON MENU ITEMS */}
                     <MenuItem icon={<Heart />} label="Favourite" onClick={() => onNavigate("/favorites")} />
                     <MenuItem icon={<Bookmark />} label="Saved" onClick={() => onNavigate("/saved")} />
                     <MenuItem
@@ -192,13 +209,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             <div className="space-y-3">
                                 <button
                                     onClick={onLogout}
-                                    className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl"
+                                    className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold"
                                 >
                                     Yes, Logout
                                 </button>
                                 <button
                                     onClick={() => setShowLogoutPopup(false)}
-                                    className="w-full py-3 bg-gray-100 rounded-xl"
+                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold"
                                 >
                                     Cancel
                                 </button>
@@ -235,7 +252,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
 }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${danger
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${danger
             ? "text-red-600 hover:bg-red-50"
             : "text-gray-700 hover:bg-gray-100"
             }`}

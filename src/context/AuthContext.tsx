@@ -16,8 +16,8 @@ interface User {
   latitude?: string;
   longitude?: string;
   isVerified: boolean;
+  role?: 'user' | 'worker'; // Add this line
 }
-
 /* =======================
    Context Interface
 ======================= */
@@ -26,6 +26,7 @@ interface AuthContextType {
   user: User | null;
   login: (user: User) => void;
   logout: () => void;
+  loading: boolean;
 }
 
 /* =======================
@@ -37,46 +38,50 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
    Provider
 ======================= */
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 🔄 Restore auth + user on refresh
+  // 🔄 Restore auth on refresh / reopen
   useEffect(() => {
-    const storedAuth = localStorage.getItem("isAuthenticated");
-    const storedUser = localStorage.getItem("user");
+    try {
+      const storedUser = localStorage.getItem("user");
 
-    if (storedAuth === "true" && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-      console.log("🔄 Auth & user restored");
+      if (storedUser) {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        console.log("🔄 User restored:", parsedUser);
+      }
+    } catch (error) {
+      console.error("❌ Failed to restore auth:", error);
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // ✅ Login (store user)
+  // ✅ Login
   const login = (userData: User) => {
-    setIsAuthenticated(true);
     setUser(userData);
-
-    localStorage.setItem("isAuthenticated", "true");
+    setIsAuthenticated(true);
     localStorage.setItem("user", JSON.stringify(userData));
-
-    console.log("✅ User authenticated:", userData);
+    console.log("✅ User logged in");
   };
 
-  // ❌ Logout (clear everything)
+  // ❌ Logout (ONLY when user clicks logout)
   const logout = () => {
-    setIsAuthenticated(false);
     setUser(null);
-
-    localStorage.removeItem("isAuthenticated");
+    setIsAuthenticated(false);
     localStorage.removeItem("user");
-
     console.log("❌ User logged out");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
-      {children}
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, login, logout, loading }}
+    >
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
@@ -84,7 +89,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 /* =======================
    Hook
 ======================= */
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");

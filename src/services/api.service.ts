@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// ✅ UPDATED: Changed to match your actual backend IP
 export const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || "http://192.168.1.40:3000";
+    process.env.REACT_APP_API_BASE_URL || "http://192.168.1.22:3000";
 
 // Axios instance for x-www-form-urlencoded requests
 const API_FORM = axios.create({
@@ -14,37 +15,129 @@ const API_FORM = axios.create({
 // Axios instance for multipart/form-data (file uploads)
 const API_MULTIPART = axios.create({
     baseURL: API_BASE_URL,
-    // Do NOT set Content-Type manually, axios will handle it
 });
 
-// ------------------- OTP APIs -------------------
-export const sendOtp = async (phone: string) => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const body = new URLSearchParams({ phone: cleanPhone }).toString();
-    const response = await API_FORM.post("/send-otp", body);
-    return response.data;
+export const registerWithOtp = async (data: {
+    phone: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+}) => {
+    try {
+        const cleanPhone = data.phone.replace(/\D/g, '').slice(-10);
+
+        console.log("Registering with:", {
+            phone: cleanPhone,
+            name: data.name,
+            latitude: data.latitude,
+            longitude: data.longitude
+        });
+
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("phone", cleanPhone);
+        urlencoded.append("name", data.name);
+        urlencoded.append("latitude", data.latitude.toString());
+        urlencoded.append("longitude", data.longitude.toString());
+
+        const response = await fetch(`${API_BASE_URL}/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: urlencoded.toString(),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Registration error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Registration failed:", error);
+        throw error;
+    }
 };
 
-export const verifyOtp = async (phone: string, otp: string) => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const body = new URLSearchParams({ phone: cleanPhone, otp }).toString();
-    const response = await API_FORM.post("/verify-otp", body);
-    return response.data;
+export const verifyOtp = async (data: { phone: string; otp: string }) => {
+    try {
+        const cleanPhone = data.phone.replace(/\D/g, '').slice(-10);
+
+        console.log("Verifying OTP with:", {
+            phone: cleanPhone,
+            otp: data.otp
+        });
+
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("phone", cleanPhone);
+        urlencoded.append("otp", data.otp);
+
+        const response = await fetch(`${API_BASE_URL}/verify-otp`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: urlencoded.toString(),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Verify OTP error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Verify OTP failed:", error);
+        throw error;
+    }
 };
 
 export const resendOtp = async (phone: string) => {
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const body = new URLSearchParams({ phone: cleanPhone }).toString();
-    const response = await API_FORM.post("/resend-otp", body);
-    return response.data;
-};
+    try {
+        const cleanPhone = phone.replace(/\D/g, '').slice(-10);
 
+        console.log("Resending OTP to:", cleanPhone);
+
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("phone", cleanPhone);
+
+        const response = await fetch(`${API_BASE_URL}/resend-otp`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: urlencoded.toString(),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Resend OTP error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Resend OTP failed:", error);
+        throw error;
+    }
+};
 
 export interface CreateJobPayload {
     userId: string;
     title: string;
     description: string;
     category: string;
+    subcategory?: string;
+    jobType: "FULL_TIME" | "PART_TIME";
+    servicecharges: string;
+    startDate: string;
+    endDate: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
     latitude: number | string;
     longitude: number | string;
     images?: File[];
@@ -57,6 +150,19 @@ export const createJob = async (data: CreateJobPayload) => {
     formData.append("title", data.title);
     formData.append("description", data.description);
     formData.append("category", data.category);
+
+    if (data.subcategory) {
+        formData.append("subcategory", data.subcategory);
+    }
+
+    formData.append("jobType", data.jobType);
+    formData.append("servicecharges", data.servicecharges);
+    formData.append("startDate", data.startDate);
+    formData.append("endDate", data.endDate);
+    formData.append("area", data.area);
+    formData.append("city", data.city);
+    formData.append("state", data.state);
+    formData.append("pincode", data.pincode);
     formData.append("latitude", String(data.latitude));
     formData.append("longitude", String(data.longitude));
 
@@ -73,13 +179,12 @@ export const createJob = async (data: CreateJobPayload) => {
 export const getJobById = async (id: string) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/getJobById/${id}`);
-        return response.data; // assuming your API responds with { success: true, data: {...} }
+        return response.data;
     } catch (error: any) {
         throw error;
     }
 };
 
-/* ✅ GET ALL JOBS */
 export const getAllJobs = async () => {
     try {
         const response = await axios.get(`${API_BASE_URL}/getAllJobs`);
@@ -89,6 +194,7 @@ export const getAllJobs = async () => {
         throw error;
     }
 };
+
 export const deleteJob = async (jobId: string) => {
     try {
         const response = await axios.delete(`${API_BASE_URL}/deleteJob/${jobId}`)
@@ -99,19 +205,19 @@ export const deleteJob = async (jobId: string) => {
         throw error
     }
 };
+
 export interface UpdateJobPayload {
     title?: string;
     description?: string;
     category?: string;
     latitude?: number | string;
     longitude?: number | string;
-    images?: File[]; // optional
+    images?: File[];
 }
-// In your api.service.ts file
+
 export const updateJob = async (jobId: string, payload: any) => {
     const formData = new FormData();
 
-    // Append all text fields
     if (payload.title) formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
     if (payload.category) formData.append("category", payload.category);
@@ -121,7 +227,6 @@ export const updateJob = async (jobId: string, payload: any) => {
     if (payload.latitude) formData.append("latitude", payload.latitude.toString());
     if (payload.longitude) formData.append("longitude", payload.longitude.toString());
 
-    // Append new image files
     if (payload.images && payload.images.length > 0) {
         payload.images.forEach((image: File) => {
             formData.append("images", image);
@@ -131,51 +236,70 @@ export const updateJob = async (jobId: string, payload: any) => {
     const response = await fetch(`${API_BASE_URL}/updateJob/${jobId}`, {
         method: "PUT",
         body: formData,
-        // DO NOT set Content-Type header - browser will set it automatically with boundary
     });
 
     return response.json();
 };
-export const getNearbyJobsForWorker = async (workerId: string) => {
-    try {
-        const response = await axios.get(
-            `${API_BASE_URL}/getNearbyJobsForWorker/${workerId}`
-        );
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching nearby jobs for worker:", error);
-        throw error;
+
+export const getNearbyWorkers = async (
+    latitude: number,
+    longitude: number,
+    range: number,
+    category: string,
+    subcategory: string
+) => {
+    const cleanCategory = category.trim();
+    const cleanSubcategory = subcategory.trim();
+
+    const url = `${API_BASE_URL}/getNearbyWorkers?latitude=${latitude}&longitude=${longitude}&range=${range}&category=${encodeURIComponent(cleanCategory)}&subcategory=${encodeURIComponent(cleanSubcategory)}`;
+
+    console.log('Fetching workers with URL:', url);
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    return data;
 };
+
+export const getUserLocation = (): Promise<{ latitude: number; longitude: number }> => {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by your browser"));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            },
+            (error) => {
+                reject(error);
+            }
+        );
+    });
+};
+
 export interface GetNearbyWorkersParams {
     latitude: number;
     longitude: number;
     range?: number;
 }
 
-export const getNearbyWorkers = async ({
-    latitude,
-    longitude,
-    range = 10,
-}: GetNearbyWorkersParams) => {
-    try {
-        const response = await axios.get(
-            `${API_BASE_URL}/getNearbyWorkers`,
-            {
-                params: {
-                    latitude,
-                    longitude,
-                    range,
-                },
-            }
-        );
-
-        return response.data; // { success, count, data }
-    } catch (error) {
-        console.error("Error fetching nearby workers:", error);
-        throw error;
-    }
-};
 export const getAllWorkers = async () => {
     try {
         const response = await axios.get(`${API_BASE_URL}/getAllWorkers`);
@@ -185,18 +309,18 @@ export const getAllWorkers = async () => {
         throw error;
     }
 };
+
 export const getUserJobs = async (userId: string) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/getUserJobs`, {
             params: { userId },
         });
-        return response.data; // { success: true, data: [...] }
+        return response.data;
     } catch (error) {
         console.error("Error fetching user jobs:", error);
         throw error;
     }
 };
-// ------------------- WORKER APIs -------------------
 
 export interface Worker {
     _id: string;
@@ -218,12 +342,13 @@ export interface Worker {
 export const getWorkerById = async (workerId: string): Promise<{ success: boolean; data: Worker }> => {
     try {
         const response = await axios.get(`${API_BASE_URL}/getWorkerById/${workerId}`);
-        return response.data; // { success: true, data: {...} }
+        return response.data;
     } catch (error) {
         console.error("Error fetching worker by ID:", error);
         throw error;
     }
 };
+
 export interface UpdateUserPayload {
     name?: string;
     email?: string;
@@ -235,10 +360,8 @@ export interface UpdateUserPayload {
     role?: string;
 }
 
-// Update user by ID
 export const updateUserById = async (userId: string, payload: UpdateUserPayload) => {
     try {
-        // Convert payload to x-www-form-urlencoded format
         const body = new URLSearchParams();
 
         if (payload.name) body.append("name", payload.name);
@@ -251,31 +374,30 @@ export const updateUserById = async (userId: string, payload: UpdateUserPayload)
         if (payload.role) body.append("role", payload.role);
 
         const response = await API_FORM.put(`/updateUserById/${userId}`, body.toString());
-        return response.data; // { success, message, data }
+        return response.data;
     } catch (error) {
         console.error("Error updating user:", error);
         throw error;
     }
 };
-// ------------------- USER APIs -------------------
 
 export interface User {
-  id: string;
-  phone: string;
-  name: string;
-  latitude?: string;
-  longitude?: string;
-  isVerified?: boolean;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    phone: string;
+    name: string;
+    latitude?: string;
+    longitude?: string;
+    isVerified?: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export const getUserById = async (userId: string): Promise<{ success: boolean; data: User }> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/getUserById/${userId}`);
-    return response.data; // { success: true, data: {...} }
-  } catch (error) {
-    console.error("Error fetching user by ID:", error);
-    throw error;
-  }
+    try {
+        const response = await axios.get(`${API_BASE_URL}/getUserById/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching user by ID:", error);
+        throw error;
+    }
 };

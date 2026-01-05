@@ -4,20 +4,44 @@
             "categoryId": 1,
             "items": [
                 {
-                    "name": "Plumbing",
-                    "icon": "🚰"
+                    "name": "Restaurants",
+                    "icon": "🍴"
                 },
                 {
-                    "name": "Electrical",
-                    "icon": "💡"
+                    "name": "Cafes",
+                    "icon": "☕"
                 },
                 {
-                    "name": "Carpentry",
-                    "icon": "🪑"
+                    "name": "Bakeries",
+                    "icon": "🥖"
                 },
                 {
-                    "name": "Painting",
-                    "icon": "🎨"
+                    "name": "Street Food",
+                    "icon": "🌮"
+                },
+                {
+                    "name": "Juice & Smoothie Shops",
+                    "icon": "🥤"
+                },
+                {
+                    "name": "Sweet Shops",
+                    "icon": "🍬"
+                },
+                {
+                    "name": "Ice Cream Parlours",
+                    "icon": "🍦"
+                },
+                {
+                    "name": "Catering Services",
+                    "icon": "🍱"
+                },
+                {
+                    "name": "Food Delivery",
+                    "icon": "🛵"
+                },
+                {
+                    "name": "Mess / Tiffin Services",
+                    "icon": "🍛"
                 }
             ]
         },
@@ -25,20 +49,52 @@
             "categoryId": 2,
             "items": [
                 {
-                    "name": "Full Home Cleaning",
-                    "icon": "🏠"
+                    "name": "Hospitals",
+                    "icon": "🏥"
                 },
                 {
-                    "name": "Kitchen Cleaning",
-                    "icon": "🍽️"
+                    "name": "Clinics",
+                    "icon": "⚕️"
                 },
                 {
-                    "name": "Bathroom Cleaning",
-                    "icon": "🚽"
+                    "name": "Dental Clinics",
+                    "icon": "🦷"
                 },
                 {
-                    "name": "Sofa & Carpet Cleaning",
-                    "icon": "🛋️"
+                    "name": "Eye Hospitals",
+                    "icon": "👁️"
+                },
+                {
+                    "name": "Dermatologists",
+                    "icon": "💆"
+                },
+                {
+                    "name": "Diagnostic Labs",
+                    "icon": "🔬"
+                },
+                {
+                    "name": "Blood Banks",
+                    "icon": "🩸"
+                },
+                {
+                    "name": "Ambulance Services",
+                    "icon": "🚑"
+                },
+                {
+                    "name": "Physiotherapy Centres",
+                    "icon": "🧘"
+                },
+                {
+                    "name": "Nursing Services",
+                    "icon": "👩‍⚕️"
+                },
+                {
+                    "name": "Vet Hospitals / Pet Clinics",
+                    "icon": "🐕"
+                },
+                {
+                    "name": "Pharmacies / Medical Shops",
+                    "icon": "💊"
                 }
             ]
         },
@@ -46,24 +102,56 @@
             "categoryId": 3,
             "items": [
                 {
+                    "name": "Plumbers",
+                    "icon": "🚰"
+                },
+                {
+                    "name": "Electricians",
+                    "icon": "💡"
+                },
+                {
+                    "name": "Carpenters",
+                    "icon": "🪚"
+                },
+                {
+                    "name": "Painters",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Painting Contractors",
+                    "icon": "🖌️"
+                },
+                {
                     "name": "AC Repair",
                     "icon": "❄️"
                 },
                 {
-                    "name": "Washing Machine",
-                    "icon": "🧺"
-                },
-                {
-                    "name": "Refrigerator",
+                    "name": "Fridge Repair",
                     "icon": "🧊"
                 },
                 {
-                    "name": "Water Purifier",
+                    "name": "Washing Machine Repair",
+                    "icon": "🫧"
+                },
+                {
+                    "name": "RO/Water Purifier Service",
                     "icon": "💧"
                 },
                 {
-                    "name": "Microwave",
-                    "icon": "🥓"
+                    "name": "Geyser Repair",
+                    "icon": "🔥"
+                },
+                {
+                    "name": "Gas Stove Repair",
+                    "icon": "🔥"
+                },
+                {
+                    "name": "Home Appliance Repair",
+                    "icon": "🔌"
+                },
+                {
+                    "name": "Solar Panel Installation",
+                    "icon": "☀️"
                 }
             ]
         },
@@ -71,16 +159,44 @@
             "categoryId": 4,
             "items": [
                 {
-                    "name": "Haircut for Men",
-                    "icon": "💇‍♂️"
+                    "name": "Hotels",
+                    "icon": "🏨"
                 },
                 {
-                    "name": "Salon for Women",
-                    "icon": "💇‍♀️"
+                    "name": "Resorts",
+                    "icon": "🏖️"
                 },
                 {
-                    "name": "Massage & Spa",
-                    "icon": "💆"
+                    "name": "Lodges",
+                    "icon": "🛏️"
+                },
+                {
+                    "name": "Guest Houses",
+                    "icon": "🏡"
+                },
+                {
+                    "name": "Travel Agencies",
+                    "icon": "✈️"
+                },
+                {
+                    "name": "Tour Packages",
+                    "icon": "🗺️"
+                },
+                {
+                    "name": "Taxi Services",
+                    "icon": "🚖"
+                },
+                {
+                    "name": "Bike/Car Rentals",
+                    "icon": "🚗"
+                },
+                {
+                    "name": "Bus Ticket Booking",
+                    "icon": "🚌"
+                },
+                {
+                    "name": "Train Ticket Booking",
+                    "icon": "🚆"
                 }
             ]
         },
@@ -88,16 +204,40 @@
             "categoryId": 5,
             "items": [
                 {
-                    "name": "House Shifting",
-                    "icon": "🚚"
+                    "name": "Beauty Parlours",
+                    "icon": "💄"
                 },
                 {
-                    "name": "Office Shifting",
-                    "icon": "🏢"
+                    "name": "Salons",
+                    "icon": "💇"
                 },
                 {
-                    "name": "Vehicle Transport",
-                    "icon": "🏍️"
+                    "name": "Spa & Massage Centres",
+                    "icon": "💆"
+                },
+                {
+                    "name": "Makeup Artists",
+                    "icon": "💅"
+                },
+                {
+                    "name": "Mehendi Artists",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Fitness Centres / Gyms",
+                    "icon": "💪"
+                },
+                {
+                    "name": "Yoga Centres",
+                    "icon": "🧘‍♀️"
+                },
+                {
+                    "name": "Skin Clinics",
+                    "icon": "✨"
+                },
+                {
+                    "name": "Tattoo Studios",
+                    "icon": "🖊️"
                 }
             ]
         },
@@ -105,16 +245,628 @@
             "categoryId": 6,
             "items": [
                 {
-                    "name": "Termite Control",
-                    "icon": "🪵"
+                    "name": "Property Dealers",
+                    "icon": "🏠"
                 },
                 {
-                    "name": "Cockroach Control",
-                    "icon": "🪳"
+                    "name": "Rent/Lease Listings",
+                    "icon": "🔑"
                 },
                 {
-                    "name": "Bed Bug Control",
-                    "icon": "🛏️"
+                    "name": "Builders & Developers",
+                    "icon": "🏗️"
+                },
+                {
+                    "name": "Architect Services",
+                    "icon": "📐"
+                },
+                {
+                    "name": "Interior Designers",
+                    "icon": "🛋️"
+                },
+                {
+                    "name": "Construction Contractors",
+                    "icon": "👷"
+                },
+                {
+                    "name": "Home Cleaning Services",
+                    "icon": "🧽"
+                },
+                {
+                    "name": "Pest Control",
+                    "icon": "🐜"
+                }
+            ]
+        },
+        {
+            "categoryId": 7,
+            "items": [
+                {
+                    "name": "Grocery Stores",
+                    "icon": "🛒"
+                },
+                {
+                    "name": "Supermarkets",
+                    "icon": "🏪"
+                },
+                {
+                    "name": "Clothing Stores",
+                    "icon": "👕"
+                },
+                {
+                    "name": "Shoe Shops",
+                    "icon": "👟"
+                },
+                {
+                    "name": "Mobile Stores",
+                    "icon": "📱"
+                },
+                {
+                    "name": "Electronics Shops",
+                    "icon": "📺"
+                },
+                {
+                    "name": "Furniture Stores",
+                    "icon": "🛋️"
+                },
+                {
+                    "name": "Furniture Repair Services",
+                    "icon": "🔨"
+                },
+                {
+                    "name": "Jewellery Stores",
+                    "icon": "💎"
+                },
+                {
+                    "name": "Jewellery Showrooms",
+                    "icon": "💍"
+                },
+                {
+                    "name": "Stationery Shops",
+                    "icon": "✏️"
+                },
+                {
+                    "name": "Gift Shops",
+                    "icon": "🎁"
+                },
+                {
+                    "name": "Optical Shops",
+                    "icon": "👓"
+                },
+                {
+                    "name": "Hobbies",
+                    "icon": "🎲"
+                }
+            ]
+        },
+        {
+            "categoryId": 8,
+            "items": [
+                {
+                    "name": "Schools",
+                    "icon": "🏫"
+                },
+                {
+                    "name": "Colleges",
+                    "icon": "🎓"
+                },
+                {
+                    "name": "Coaching Centres",
+                    "icon": "📚"
+                },
+                {
+                    "name": "Coaching",
+                    "icon": "📖"
+                },
+                {
+                    "name": "Tuition Teachers",
+                    "icon": "👨‍🏫"
+                },
+                {
+                    "name": "Computer Training",
+                    "icon": "💻"
+                },
+                {
+                    "name": "Computer Training Institutes",
+                    "icon": "🖥️"
+                },
+                {
+                    "name": "Music & Dance Classes",
+                    "icon": "🎵"
+                },
+                {
+                    "name": "Spoken English Classes",
+                    "icon": "🗣️"
+                },
+                {
+                    "name": "Driving Schools",
+                    "icon": "🚗"
+                },
+                {
+                    "name": "Skill Development Centres",
+                    "icon": "🛠️"
+                },
+                {
+                    "name": "Vocational Training",
+                    "icon": "👨‍🔧"
+                }
+            ]
+        },
+        {
+            "categoryId": 9,
+            "items": [
+                {
+                    "name": "Car Repair / Service",
+                    "icon": "🔧"
+                },
+                {
+                    "name": "Bike Repair",
+                    "icon": "🏍️"
+                },
+                {
+                    "name": "Car Wash",
+                    "icon": "🚿"
+                },
+                {
+                    "name": "Bike Wash",
+                    "icon": "🧼"
+                },
+                {
+                    "name": "Tyre Shops",
+                    "icon": "🛞"
+                },
+                {
+                    "name": "Battery Shops",
+                    "icon": "🔋"
+                },
+                {
+                    "name": "Automobile Spare Parts",
+                    "icon": "⚙️"
+                },
+                {
+                    "name": "Towing Services",
+                    "icon": "🚚"
+                },
+                {
+                    "name": "Car Hire / Rentals",
+                    "icon": "🚙"
+                }
+            ]
+        },
+        {
+            "categoryId": 10,
+            "items": [
+                {
+                    "name": "Maid Services",
+                    "icon": "🧹"
+                },
+                {
+                    "name": "Cook Services",
+                    "icon": "👨‍🍳"
+                },
+                {
+                    "name": "Babysitters",
+                    "icon": "👶"
+                },
+                {
+                    "name": "Elderly Care",
+                    "icon": "👴"
+                },
+                {
+                    "name": "Laundry Services",
+                    "icon": "🧺"
+                },
+                {
+                    "name": "Dry Cleaning",
+                    "icon": "👔"
+                },
+                {
+                    "name": "House Cleaning",
+                    "icon": "🏠"
+                },
+                {
+                    "name": "House Keeping Services",
+                    "icon": "🧽"
+                },
+                {
+                    "name": "Water Can Supply",
+                    "icon": "🚰"
+                },
+                {
+                    "name": "Gas Delivery",
+                    "icon": "🔥"
+                }
+            ]
+        },
+        {
+            "categoryId": 11,
+            "items": [
+                {
+                    "name": "CA / Tax Consultants",
+                    "icon": "📊"
+                },
+                {
+                    "name": "Chartered Accountant",
+                    "icon": "💰"
+                },
+                {
+                    "name": "Lawyers",
+                    "icon": "⚖️"
+                },
+                {
+                    "name": "Notary",
+                    "icon": "📝"
+                },
+                {
+                    "name": "Insurance Agents",
+                    "icon": "🛡️"
+                },
+                {
+                    "name": "Marketing Agencies",
+                    "icon": "📢"
+                },
+                {
+                    "name": "Printing & Xerox Shops",
+                    "icon": "🖨️"
+                },
+                {
+                    "name": "Printing & Publishing Services",
+                    "icon": "📰"
+                },
+                {
+                    "name": "Event Planners",
+                    "icon": "🎉"
+                },
+                {
+                    "name": "Photography/Videography",
+                    "icon": "📸"
+                },
+                {
+                    "name": "Courier Services",
+                    "icon": "📦"
+                },
+                {
+                    "name": "Security Services",
+                    "icon": "🔒"
+                },
+                {
+                    "name": "Placement Services",
+                    "icon": "💼"
+                },
+                {
+                    "name": "Registration Consultants",
+                    "icon": "📋"
+                }
+            ]
+        },
+        {
+            "categoryId": 12,
+            "items": [
+                {
+                    "name": "Mobile Repair",
+                    "icon": "📱"
+                },
+                {
+                    "name": "Laptop Repair",
+                    "icon": "💻"
+                },
+                {
+                    "name": "Computer & Laptop Repair",
+                    "icon": "🖥️"
+                },
+                {
+                    "name": "CCTV Installation",
+                    "icon": "📹"
+                },
+                {
+                    "name": "Security System",
+                    "icon": "🔐"
+                },
+                {
+                    "name": "Software Services",
+                    "icon": "💾"
+                },
+                {
+                    "name": "Website Development",
+                    "icon": "🌐"
+                },
+                {
+                    "name": "Internet Website Designers",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Digital Marketing",
+                    "icon": "📱"
+                },
+                {
+                    "name": "Graphic Designers",
+                    "icon": "🖼️"
+                }
+            ]
+        },
+        {
+            "categoryId": 13,
+            "items": [
+                {
+                    "name": "Pet Shops",
+                    "icon": "🐕"
+                },
+                {
+                    "name": "Pet Grooming",
+                    "icon": "✂️"
+                },
+                {
+                    "name": "Pet Training",
+                    "icon": "🦮"
+                },
+                {
+                    "name": "Vet Clinics",
+                    "icon": "🩺"
+                }
+            ]
+        },
+        {
+            "categoryId": 14,
+            "items": [
+                {
+                    "name": "DJ Services",
+                    "icon": "🎧"
+                },
+                {
+                    "name": "Catering",
+                    "icon": "🍽️"
+                },
+                {
+                    "name": "Event Halls",
+                    "icon": "🏛️"
+                },
+                {
+                    "name": "Party Decorations",
+                    "icon": "🎈"
+                },
+                {
+                    "name": "Light & Sound",
+                    "icon": "🔊"
+                },
+                {
+                    "name": "Mandap Decorations",
+                    "icon": "🌺"
+                }
+            ]
+        },
+        {
+            "categoryId": 15,
+            "items": [
+                {
+                    "name": "Packers & Movers",
+                    "icon": "📦"
+                },
+                {
+                    "name": "Transporters",
+                    "icon": "🚚"
+                },
+                {
+                    "name": "Water Tank Cleaning",
+                    "icon": "💧"
+                },
+                {
+                    "name": "Borewell Services",
+                    "icon": "🕳️"
+                },
+                {
+                    "name": "Welding Services",
+                    "icon": "🔥"
+                },
+                {
+                    "name": "Fabrication Work",
+                    "icon": "🔨"
+                },
+                {
+                    "name": "Fabricators",
+                    "icon": "⚒️"
+                },
+                {
+                    "name": "Machine Repair",
+                    "icon": "⚙️"
+                },
+                {
+                    "name": "Scrap Dealers",
+                    "icon": "♻️"
+                },
+                {
+                    "name": "Scrap Buyers",
+                    "icon": "🗑️"
+                }
+            ]
+        },
+        {
+            "categoryId": 16,
+            "items": [
+                {
+                    "name": "Courier offices",
+                    "icon": "📮"
+                },
+                {
+                    "name": "Delivery services",
+                    "icon": "🚚"
+                },
+                {
+                    "name": "Parcel services",
+                    "icon": "📦"
+                },
+                {
+                    "name": "Movers & Packers",
+                    "icon": "📦"
+                }
+            ]
+        },
+        {
+            "categoryId": 17,
+            "items": [
+                {
+                    "name": "Gyms",
+                    "icon": "🏋️"
+                },
+                {
+                    "name": "Sports Clubs",
+                    "icon": "⚽"
+                },
+                {
+                    "name": "Indoor Play Areas",
+                    "icon": "🎮"
+                },
+                {
+                    "name": "Stadiums",
+                    "icon": "🏟️"
+                }
+            ]
+        },
+        {
+            "categoryId": 18,
+            "items": [
+                {
+                    "name": "Construction Labor",
+                    "icon": "👷"
+                },
+                {
+                    "name": "Loading/Unloading Workers",
+                    "icon": "📦"
+                },
+                {
+                    "name": "Garden Workers",
+                    "icon": "🌱"
+                },
+                {
+                    "name": "Cleaning Helpers",
+                    "icon": "🧹"
+                },
+                {
+                    "name": "Event Helpers",
+                    "icon": "🎪"
+                },
+                {
+                    "name": "Watchmen",
+                    "icon": "👮"
+                }
+            ]
+        },
+        {
+            "categoryId": 19,
+            "items": [
+                {
+                    "name": "Fertilizer Shops",
+                    "icon": "🌾"
+                },
+                {
+                    "name": "Tractor Rental",
+                    "icon": "🚜"
+                },
+                {
+                    "name": "Seeds Shops",
+                    "icon": "🌱"
+                },
+                {
+                    "name": "Farming Tools",
+                    "icon": "🔨"
+                },
+                {
+                    "name": "Veterinary Doctors",
+                    "icon": "🐄"
+                },
+                {
+                    "name": "Farm Labour",
+                    "icon": "👨‍🌾"
+                },
+                {
+                    "name": "Water Pump Repair",
+                    "icon": "💧"
+                }
+            ]
+        },
+        {
+            "categoryId": 20,
+            "items": [
+                {
+                    "name": "Office Boy Hiring",
+                    "icon": "👨‍💼"
+                },
+                {
+                    "name": "Receptionist Hiring",
+                    "icon": "💁"
+                },
+                {
+                    "name": "Background Verification",
+                    "icon": "🔍"
+                },
+                {
+                    "name": "Document Courier",
+                    "icon": "📄"
+                },
+                {
+                    "name": "Office Cleaning",
+                    "icon": "🧹"
+                },
+                {
+                    "name": "HR & Recruiting Agencies",
+                    "icon": "👥"
+                }
+            ]
+        },
+        {
+            "categoryId": 21,
+            "items": [
+                {
+                    "name": "Painting Artists",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Caricature Artists",
+                    "icon": "✏️"
+                },
+                {
+                    "name": "Handmade Gift Designers",
+                    "icon": "🎁"
+                },
+                {
+                    "name": "Wall Murals",
+                    "icon": "🖼️"
+                },
+                {
+                    "name": "Craft Training",
+                    "icon": "✂️"
+                },
+                {
+                    "name": "Art Supplies",
+                    "icon": "🖌️"
+                }
+            ]
+        },
+        {
+            "categoryId": 22,
+            "items": [
+                {
+                    "name": "Wedding Planners",
+                    "icon": "💒"
+                },
+                {
+                    "name": "Pandits / Poojari",
+                    "icon": "🕉️"
+                },
+                {
+                    "name": "Band / Music Team",
+                    "icon": "🎺"
+                },
+                {
+                    "name": "Flower Decoration",
+                    "icon": "💐"
+                },
+                {
+                    "name": "Caterers",
+                    "icon": "🍽️"
+                },
+                {
+                    "name": "Sangeet Choreographers",
+                    "icon": "💃"
                 }
             ]
         }

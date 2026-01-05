@@ -9,11 +9,13 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AccountProvider } from "./context/AccountContext"; // Import AccountProvider
 
 import Navbar from "./components/layout/NavBar";
 
 import HomePage from "./pages/Home";
 import FreeListing from "./pages/FreeListing";
+import CategoryPage from "./pages/CategoriesPage";
 
 import Favorites from "./pages/Favorites";
 import Saved from "./pages/Saved";
@@ -25,8 +27,8 @@ import FeedBack from "./pages/FeedBack";
 import Help from "./pages/Help";
 import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
-import ServiceMarketplace from "./pages/ServiceMarketPlace";
-import JobDetailsPage from "./pages/JobDetails";
+import NearByJobs from "./pages/NearByJobs";
+import JobDetails from "./pages/JobDetails";
 import UserProfile from "./pages/UserProfile";
 import MatchedWorkers from "./pages/MatchedWorkers";
 import WorkerProfile from "./pages/WorkerProfile";
@@ -42,6 +44,7 @@ import AllJobs from "./pages/AllJobs";
 import UpdateJob from "./pages/UpdateJob";
 import ListedJobs from "./pages/Listedjobs";
 import EditProfile from "./pages/EditProfile";
+
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -50,7 +53,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
 
 /* ---------------- ListedJobs Wrapper to get userId ---------------- */
 const ListedJobsWrapper: React.FC = () => {
-    const { user } = useAuth(); // Get the current user from AuthContext
+    const { user } = useAuth();
 
     if (!user?._id) {
         return (
@@ -62,22 +65,6 @@ const ListedJobsWrapper: React.FC = () => {
 
     return <ListedJobs userId={user._id} />;
 };
-
-// /* ---------------- EditProfile Wrapper to get userId ---------------- */
-// const EditProfileWrapper: React.FC = () => {
-//     const { user } = useAuth();
-
-//     if (!user?._id) {
-//         return (
-//             <div className="min-h-screen flex items-center justify-center">
-//                 <p className="text-red-600">Please log in to edit your profile</p>
-//             </div>
-//         );
-//     }
-
-//     // After
-// // return <EditProfile />;
-// };
 
 /* ---------------- Layout ---------------- */
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -97,16 +84,17 @@ const AppRoutes: React.FC = () => {
             <Layout>
                 <Routes location={background || location}>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/home" element={<HomePage />} />
                     <Route path="/role-selection" element={<RoleSelection />} />
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
-                    <Route path="/service-marketplace" element={<ServiceMarketplace />} />
-                    <Route path="/job-details/:jobId" element={<JobDetailsPage />} />
+                    <Route path="/NearByJobs" element={<NearByJobs />} />
+                    <Route path="/jobs/:jobId" element={<JobDetails />} />
                     <Route path="/user-profile" element={<UserProfile />} />
+                    <Route path="/category/:id" element={<CategoryPage />} />
+                    <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
 
-                    {/* ✅ Routes for matched-workers - both with and without ID */}
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
-                    <Route path="/matched-workers/:workerId" element={<MatchedWorkers />} />
 
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/chat/:id" element={<ChatScreen />} />
@@ -117,17 +105,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/notification/:id" element={<NotificationScreen />} />
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
-                    {/* <Route
-                        path="/profile/edit"
-                        element={
-                            <ProtectedRoute>
-                                <EditProfileWrapper />
-                            </ProtectedRoute>
-                        }
-                    /> */}
 
-                    {/* Add worker routes if needed */}
-                    {/* ✅ ListedJobs route now passes current userId */}
                     <Route
                         path="/listed-jobs"
                         element={
@@ -204,7 +182,7 @@ const AppRoutes: React.FC = () => {
                 </Routes>
             </Layout>
 
-            {/* 🔥 Overlay Route */}
+            {/* Overlay Route */}
             {background && (
                 <Routes>
                     <Route
@@ -224,9 +202,11 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
     return (
         <AuthProvider>
-            <Router>
-                <AppRoutes />
-            </Router>
+            <AccountProvider>
+                <Router>
+                    <AppRoutes />
+                </Router>
+            </AccountProvider>
         </AuthProvider>
     );
 };

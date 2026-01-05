@@ -1,29 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Button from "../ui/Buttons";
 import typography from "../../styles/typography";
 import OTPVerification from "./OTPVerification";
 import voiceIcon from "../../assets/icons/Voice.png";
 import VoiceService from "../../services/voiceService";
-import { sendOtp } from "../../services/api.service";
+import { registerWithOtp, verifyOtp } from "../../services/api.service";
+
 interface LoginFormProps {
     onClose: () => void;
     initialMode?: "signup" | "login";
     onBack?: () => void;
-    onOpenOTP?: (phone: string) => void; // 🔥 This comes from Navbar
+    onOpenOTP?: (phone: string) => void;
 }
 
 type FormStep = "phone" | "otp";
 
 const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack, onOpenOTP }) => {
+    const navigate = useNavigate();
 
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [name, setName] = useState("");
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
     const [isLogin, setIsLogin] = useState(initialMode === "login");
     const [currentStep, setCurrentStep] = useState<FormStep>("phone");
     const [isListening, setIsListening] = useState(false);
     const [voiceError, setVoiceError] = useState<string | null>(null);
 
     const voiceService = VoiceService.getInstance();
+
+    // Get user's location on component mount
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLatitude(position.coords.latitude);
+                    setLongitude(position.coords.longitude);
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                }
+            );
+        }
+    }, []);
 
     const extractPhoneNumber = (text: string): string => {
         // convert words → digits
@@ -102,45 +123,98 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
         setPhoneNumber(value);
     };
 
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (phoneNumber.length === 10) {
-            try {
-                const response = await sendOtp(phoneNumber);
 
-                if (response.success) {
-                    console.log("OTP sent:", response);
-                    if (onOpenOTP) {
-                        onOpenOTP(phoneNumber); // Show Navbar OTP
-                    } else {
-                        setCurrentStep("otp"); // Inline OTP fallback
-                    }
+        if (phoneNumber.length !== 10) return;
+
+        try {
+            const response = await registerWithOtp({
+                phone: phoneNumber,
+                name,
+                latitude: latitude ?? 0,
+                longitude: longitude ?? 0,
+            });
+
+            if (response.success) {
+                console.log("OTP sent:", response.otp);
+
+                if (onOpenOTP) {
+                    onOpenOTP(phoneNumber); // Navbar OTP screen
                 } else {
-                    alert(response.message || "Failed to send OTP");
+                    setCurrentStep("otp"); // Inline OTP
                 }
-            } catch (error) {
-                console.error(error);
-                alert("Failed to send OTP. Try again.");
+            } else {
+                alert(response.message || "Registration failed");
             }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to register. Please try again.");
         }
     };
 
-    const handleOTPVerify = (otp: string) => {
+    const handleOTPVerify = async (otp: string) => {
         console.log("Verifying OTP:", otp);
-        // Your API call here
+
+        try {
+            const response = await verifyOtp({
+                phone: phoneNumber,
+                otp: otp,
+            });
+
+            if (response.success && response.data) {
+                // ✅ CRITICAL: Save user data to localStorage
+                const userData = response.data;
+                console.log("User authenticated:", userData);
+
+                localStorage.setItem("user", JSON.stringify(userData));
+                localStorage.setItem("token", response.token || ""); // If your API returns a token
+
+                // Close the login modal
+                onClose();
+
+                // Optional: Navigate to profile or home page
+                // navigate("/profile");
+
+                // Show success message
+                alert("Login successful!");
+            } else {
+                alert(response.message || "Invalid OTP");
+            }
+        } catch (error: any) {
+            console.error("OTP verification error:", error);
+            alert(error.response?.data?.message || "Failed to verify OTP");
+        }
     };
 
-    const handleOTPResend = () => {
+    const handleOTPResend = async () => {
         console.log("Resending OTP to:", phoneNumber);
-        // Your API call here
+
+        try {
+            const response = await registerWithOtp({
+                phone: phoneNumber,
+                name,
+                latitude: latitude ?? 0,
+                longitude: longitude ?? 0,
+            });
+
+            if (response.success) {
+                console.log("OTP resent:", response.otp);
+                alert("OTP sent successfully!");
+            } else {
+                alert(response.message || "Failed to resend OTP");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Failed to resend OTP. Please try again.");
+        }
     };
 
     const handleBackToPhone = () => {
         setCurrentStep("phone");
     };
 
-    // 🔥 Only show inline OTP if onOpenOTP is NOT provided
+    // Only show inline OTP if onOpenOTP is NOT provided
     if (currentStep === "otp" && !onOpenOTP) {
         return (
             <OTPVerification
@@ -217,6 +291,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                             className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 transition-colors duration-200 ${typography.form.input}`}
                             required
                         />
+
                         <button
                             type="button"
                             onClick={handleVoiceInput}
@@ -248,6 +323,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                             Verify Text
                         </p>
                     )}
+                </div>
+
+                {/* Name Input */}
+                <div>
+                    <label className={`block mb-2 text-gray-700 ${typography.form.label}`}>
+                        Name
+                    </label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your name"
+                        className={`w-full py-4 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 ${typography.form.input}`}
+                        required
+                    />
                 </div>
 
                 {/* Submit Button */}

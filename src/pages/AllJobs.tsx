@@ -7,15 +7,17 @@ import Categories from "../../src/data/categories.json";
 interface Job {
     _id: string;
     userId: string;
-    title: string;
     description: string;
     category: string;
     latitude: number;
     longitude: number;
-    images: string[];
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    images?: string[];
     createdAt: string;
     updatedAt: string;
-    __v: number;
     locationString?: string;
 }
 
@@ -24,6 +26,9 @@ interface ApiResponse {
     count: number;
     data: Job[];
 }
+
+// Image base URL - update this to match your backend URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 const AllJobs: React.FC = () => {
     const navigate = useNavigate();
@@ -35,10 +40,21 @@ const AllJobs: React.FC = () => {
     const [locationCache, setLocationCache] = useState<{ [key: string]: string }>({});
     const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
 
+    // Helper function to format image URL
+    const getImageUrl = (imagePath: string) => {
+        if (!imagePath) return '';
+        // Remove leading slash if present and normalize backslashes
+        const cleanPath = imagePath.replace(/^\//, '').replace(/\\/g, '/');
+        return `${API_BASE_URL}/${cleanPath}`;
+    };
 
     useEffect(() => {
         fetchAllJobs();
     }, []);
+
+    const buildLocationFromBackend = (job: Job) => {
+        return [job.area, job.city, job.state, job.pincode].filter(Boolean).join(', ');
+    };
 
     const getLocationFromCoordinates = async (lat: number, lng: number): Promise<string> => {
         const cacheKey = `${lat},${lng}`;
@@ -74,19 +90,15 @@ const AllJobs: React.FC = () => {
             if (response.success) {
                 const jobsWithDetails: Job[] = await Promise.all(
                     response.data.map(async (job: Job) => {
-                        const processedImages = (job.images || []).map((img: string) => {
-                            if (img.startsWith('http://') || img.startsWith('https://')) {
-                                return img;
-                            }
-                            const cleanPath = img.replace(/\\/g, '/');
-                            const path = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
-                            return `http://192.168.1.40:3000/${path}`;
-                        });
+                        const backendLocation = buildLocationFromBackend(job);
 
                         return {
                             ...job,
-                            images: processedImages,
-                            locationString: await getLocationFromCoordinates(job.latitude, job.longitude)
+                            locationString:
+                                backendLocation ??
+                                (job.latitude && job.longitude
+                                    ? await getLocationFromCoordinates(job.latitude, job.longitude)
+                                    : "Location not available")
                         };
                     })
                 );
@@ -125,8 +137,8 @@ const AllJobs: React.FC = () => {
         return Categories.categories.find(c => c.name === name) || { name, icon: '' };
     };
 
-    const handleDeleteJob = async (jobId: string, jobTitle: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${jobTitle}"?`)) {
+    const handleDeleteJob = async (jobId: string, categoryName: string) => {
+        if (!window.confirm(`Are you sure you want to delete this ${categoryName} job?`)) {
             return;
         }
 
@@ -147,10 +159,9 @@ const AllJobs: React.FC = () => {
 
     const filteredJobs = apiData.data.filter(job => {
         const matchesSearch =
-            job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.category.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filterCategory === 'all' || job.category.trim() === filterCategory;
+            (job.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (job.category?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        const matchesFilter = filterCategory === 'all' || (job.category?.trim() || '') === filterCategory;
         return matchesSearch && matchesFilter;
     });
 
@@ -193,10 +204,8 @@ const AllJobs: React.FC = () => {
                     <div className="flex items-center justify-between py-6">
                         {/* Tabs */}
                         <div className="flex gap-2">
-                          
-                        </div>
 
-                       
+                        </div>
                     </div>
                 </div>
             </div>
@@ -254,7 +263,7 @@ const AllJobs: React.FC = () => {
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">
                                             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                                {job.title}
+                                                {getCategoryDetails(job.category).name}
                                             </h3>
                                             <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
                                                 <Briefcase className="w-4 h-4" />
@@ -265,6 +274,22 @@ const AllJobs: React.FC = () => {
                                             available
                                         </span>
                                     </div>
+
+                                    {/* Job Image */}
+                                    {job.images && job.images.length > 0 && (
+                                        <div className="mb-4 h-48 w-full overflow-hidden rounded-lg bg-gray-100">
+                                            <img
+                                                src={getImageUrl(job.images[0])}
+                                                alt={job.category}
+                                                className="h-full w-full object-cover"
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Description */}
                                     <p className="text-gray-600 text-sm mb-4 line-clamp-2">
@@ -295,13 +320,12 @@ const AllJobs: React.FC = () => {
                                                 <span>{formatDate(job.createdAt)}</span>
                                             </div>
                                         </div>
-<button
-  onClick={() => navigate(`/job-details/${job._id}`)}
-  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
->
-  View Details
-</button>
-
+                                        <button
+                                            onClick={() => navigate(`/job-details/${job._id}`)}
+                                            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                                        >
+                                            View Details
+                                        </button>
                                     </div>
 
                                     {/* Action Buttons */}
@@ -313,7 +337,7 @@ const AllJobs: React.FC = () => {
                                             <Edit className="w-4 h-4" /> Edit
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteJob(job._id, job.title)}
+                                            onClick={() => handleDeleteJob(job._id, getCategoryDetails(job.category).name)}
                                             disabled={deletingJobId === job._id}
                                             className="flex-1 px-3 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                                         >

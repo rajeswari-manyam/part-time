@@ -1,201 +1,223 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, Edit, MapPin, Loader2 } from "lucide-react";
+import { Trash2, Edit, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getUserJobs, deleteJob, API_BASE_URL } from "../services/api.service";
-
+import { getUserJobs, deleteJob } from "../services/api.service";
+const IMAGE_BASE_URL = "http://192.168.1.22:3000"; // ✅ ADD THIS
 interface Job {
     _id: string;
-    userId: {
-        _id: string;
-        phone: string;
-        name: string;
-    } | string;
-    title: string;
+    title?: string;
     description: string;
     category: string;
-    latitude: number;
-    longitude: number;
+    subcategory?: string;
+
+    jobType?: string;
+    servicecharges?: string | number;
+
+    startDate?: string;
+    endDate?: string;
+
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+
+    latitude?: number;
+    longitude?: number;
+
     images?: string[];
     createdAt: string;
-    updatedAt: string;
 }
 
 interface ListedJobsProps {
     userId: string;
 }
 
+const InfoRow = ({ label, value }: { label: string; value?: string }) => {
+    if (!value) return null;
+    return (
+        <div className="flex justify-between gap-4">
+            <span className="text-gray-500 min-w-[120px]">{label}</span>
+            <span className="font-medium text-right flex-1">{value}</span>
+        </div>
+    );
+};
+
 const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
     const navigate = useNavigate();
-
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!userId) {
-            setError("Invalid User ID");
-            setLoading(false);
-            return;
-        }
-
         const fetchJobs = async () => {
             try {
-                setLoading(true);
                 const res = await getUserJobs(userId);
-
-                // Handle the response structure from your API
-                if (res.success && Array.isArray(res.jobs)) {
-                    setJobs(res.jobs);
-                } else if (res.success && Array.isArray(res.data)) {
-                    setJobs(res.data);
-                } else {
-                    setError(res.message || "No jobs found for this user");
-                }
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load jobs");
+                setJobs(res.jobs || res.data || []);
+            } catch {
+                setJobs([]);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchJobs();
     }, [userId]);
 
     const handleDelete = async (jobId: string) => {
-        if (!window.confirm("Are you sure you want to delete this job?")) return;
-
+        if (!window.confirm("Delete this job?")) return;
         setDeletingId(jobId);
-        try {
-            await deleteJob(jobId);
-            setJobs((prev) => prev.filter((job) => job._id !== jobId));
-        } catch (err) {
-            console.error(err);
-            alert("Failed to delete job");
-        } finally {
-            setDeletingId(null);
-        }
+        await deleteJob(jobId);
+        setJobs(prev => prev.filter(j => j._id !== jobId));
+        setDeletingId(null);
     };
-
-    const imageUrl = (path?: string) =>
-        path ? `${API_BASE_URL}/${path.replace(/\\/g, "/")}` : "";
 
     if (loading) {
         return (
-            <div className="flex justify-center min-h-screen items-center">
-                <Loader2 className="animate-spin" size={48} />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p className="text-center text-red-600">{error}</p>
-            </div>
-        );
-    }
-
-    if (jobs.length === 0) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-gray-600 text-lg">No jobs found</p>
-                    <button
-                        onClick={() => navigate("/free-listing")}
-                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                    >
-                        Post a Job
-                    </button>
-                </div>
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 size={40} className="animate-spin text-blue-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-2xl mx-auto space-y-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">My Listed Jobs ({jobs.length})</h1>
+        <div className="min-h-screen bg-gray-50 px-4 py-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold">
+                        My Listed Jobs{" "}
+                        <span className="text-sm text-gray-500">
+                            ({jobs.length})
+                        </span>
+                    </h1>
+
                     <button
                         onClick={() => navigate("/free-listing")}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                        className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm hover:bg-blue-700"
                     >
-                        + Add New Job
+                        + Add Job
                     </button>
                 </div>
 
-                {jobs.map((job) => (
+                {/* Job Cards */}
+                {jobs.map(job => (
                     <div
                         key={job._id}
-                        className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                        className="bg-white rounded-3xl border-2 border-blue-500 p-6 space-y-5"
                     >
-                        {job.images?.length ? (
-                            <img
-                                src={imageUrl(job.images[0])}
-                                className="w-full h-64 object-cover"
-                                alt={job.title}
-                                onError={(e) => {
-                                    e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                }}
-                            />
-                        ) : (
-                            <div className="h-64 bg-gray-200 flex items-center justify-center text-gray-500">
-                                No Image Available
+                        {/* Title */}
+                        <h2 className="text-xl font-semibold">
+                            {job.title || job.subcategory}
+                        </h2>
+
+                        {/* Images */}
+                        {job.images && job.images.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {job.images.map((img, i) => (
+                                    <div
+                                        key={i}
+                                        className="relative w-full h-32 rounded-xl overflow-hidden border bg-gray-100"
+                                    >
+                                        <img
+                                            src={`${IMAGE_BASE_URL}${img}`}
+                                            alt={`job-${i}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src =
+                                                    "https://via.placeholder.com/300x200?text=No+Image";
+                                            }}
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         )}
 
-                        <div className="p-6">
-                            <div className="flex justify-between items-start">
-                                <h2 className="text-2xl font-bold">{job.title}</h2>
-                                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
-                                    {job.category}
-                                </span>
-                            </div>
+                        {/* Info */}
+                        <div className="space-y-3 text-gray-800">
+                            <InfoRow label="Category" value={job.category} />
+                            <InfoRow label="Subcategory" value={job.subcategory} />
+                            <InfoRow label="Job Type" value={job.jobType} />
 
-                            <p className="mt-3 text-gray-600 line-clamp-3">{job.description}</p>
-
-                            <button
-                                onClick={() =>
-                                    window.open(
-                                        `https://www.google.com/maps?q=${job.latitude},${job.longitude}`,
-                                        "_blank"
-                                    )
+                            <InfoRow
+                                label="Service Charges"
+                                value={
+                                    job.servicecharges
+                                        ? `₹${job.servicecharges}`
+                                        : undefined
                                 }
-                                className="mt-4 flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                            />
+
+                            <InfoRow
+                                label="Start Date"
+                                value={
+                                    job.startDate
+                                        ? new Date(job.startDate).toLocaleDateString()
+                                        : undefined
+                                }
+                            />
+
+                            <InfoRow
+                                label="End Date"
+                                value={
+                                    job.endDate
+                                        ? new Date(job.endDate).toLocaleDateString()
+                                        : undefined
+                                }
+                            />
+
+                            <InfoRow
+                                label="Location"
+                                value={[
+                                    job.area,
+                                    job.city,
+                                    job.state,
+                                    job.pincode,
+                                ]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                            />
+
+                            <InfoRow label="Description" value={job.description} />
+
+                            <InfoRow
+                                label="Posted On"
+                                value={new Date(job.createdAt).toLocaleDateString()}
+                            />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-4 border-t">
+                            <button
+                                onClick={() => navigate(`/update-job/${job._id}`)}
+                                className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-100"
                             >
-                                <MapPin size={16} /> View Location on Map
+                                <Edit size={14} /> Edit
                             </button>
 
-                            <div className="mt-4 text-sm text-gray-500">
-                                Posted on: {new Date(job.createdAt).toLocaleDateString()}
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={() => navigate(`/update-job/${job._id}`)}
-                                    className="flex-1 flex items-center justify-center gap-2 border border-blue-500 text-blue-600 py-2 rounded hover:bg-blue-50"
-                                >
-                                    <Edit size={16} /> Edit
-                                </button>
-
-                                <button
-                                    onClick={() => handleDelete(job._id)}
-                                    disabled={deletingId === job._id}
-                                    className="flex-1 flex items-center justify-center gap-2 border border-red-500 text-red-600 py-2 rounded hover:bg-red-50 disabled:opacity-50"
-                                >
-                                    {deletingId === job._id ? (
-                                        <Loader2 size={16} className="animate-spin" />
-                                    ) : (
-                                        <Trash2 size={16} />
-                                    )}
-                                    Delete
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => handleDelete(job._id)}
+                                disabled={deletingId === job._id}
+                                className="flex items-center gap-2 px-4 py-2 border border-red-400 text-red-600 rounded-lg text-sm hover:bg-red-50"
+                            >
+                                {deletingId === job._id ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                    <Trash2 size={14} />
+                                )}
+                                Delete
+                            </button>
                         </div>
                     </div>
                 ))}
+
+                {/* Empty */}
+                {jobs.length === 0 && (
+                    <div className="text-center text-gray-500 mt-20">
+                        <p className="text-lg font-medium">No jobs listed yet</p>
+                        <p className="text-sm">
+                            Click “Add Job” to create your first job
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );
