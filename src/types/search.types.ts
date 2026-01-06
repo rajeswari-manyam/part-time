@@ -1,10 +1,9 @@
-// Search Types - Model Layer
 export interface Location {
-  city: string;
-  state: string;
-  country?: string;
-  lat?: number;
-  lng?: number;
+    city: string;
+    state: string;
+    latitude?: number;
+    longitude?: number;
+    fullAddress?: string;
 }
 
 export interface SearchQuery {

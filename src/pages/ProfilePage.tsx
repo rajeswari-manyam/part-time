@@ -1,22 +1,34 @@
-import React from "react";
-
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import ProfileSidebar from "../components/overlays/ProfileSideBar";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Buttons";
-
-import typography, { combineTypography } from "../styles/typography";
+import typography from "../styles/typography";
 
 const ProfilePage: React.FC = () => {
-   
     const navigate = useNavigate();
     const { logout } = useAuth();
 
+    // ✅ SAME SOURCE AS NAVBAR
+    const [userName, setUserName] = useState(
+        localStorage.getItem("userName") || "User"
+    );
+
+    // ✅ Sync when profile updates
+    useEffect(() => {
+        const syncName = () => {
+            setUserName(localStorage.getItem("userName") || "User");
+        };
+
+        window.addEventListener("storage", syncName);
+        return () => window.removeEventListener("storage", syncName);
+    }, []);
+
     return (
         <div className="fixed inset-0 z-50">
-            {/* Background Blur */}
+            {/* Background Overlay */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={() => navigate(-1)}
@@ -27,11 +39,8 @@ const ProfilePage: React.FC = () => {
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-4 border-b">
-                    <h2 className={typography.heading.h5}>
-                        {"profile.title"}
-                    </h2>
+                    <h2 className={typography.heading.h5}>My Profile</h2>
 
-                    {/* Close Button */}
                     <Button
                         variant="outline"
                         size="sm"
@@ -42,14 +51,15 @@ const ProfilePage: React.FC = () => {
                     </Button>
                 </div>
 
-
-                {/* Sidebar Content */}
+                {/* ✅ PROFILE SIDEBAR */}
                 <ProfileSidebar
-                    user={{ name: "RAJESWARI", initial: "R" }}
-                    onNavigate={(path) => navigate(path)}
+                    user={{ name: userName }}
+                    onNavigate={(path) => {
+                        navigate(path);
+                    }}
                     onLogout={() => {
                         logout();
-                        navigate("/");
+                        navigate("/", { replace: true });
                     }}
                 />
             </div>

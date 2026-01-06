@@ -49,7 +49,6 @@ interface FormData {
 /* ================= DATA ================= */
 const categories: Category[] = CategoriesData.categories;
 const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
-const allSubcategories: SubCategory[] = subcategoryGroups.flatMap((group) => group.items);
 
 /* ================= COMPONENT ================= */
 const UserProfile: React.FC = () => {
@@ -85,6 +84,18 @@ const UserProfile: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ✅ Get filtered subcategories based on selected category
+  const getFilteredSubcategories = (): SubCategory[] => {
+    if (!formData.category) return [];
+
+    const categoryId = parseInt(formData.category);
+    const group = subcategoryGroups.find(g => g.categoryId === categoryId);
+
+    return group?.items || [];
+  };
+
+  const filteredSubcategories = getFilteredSubcategories();
+
   // ✅ Load pre-filled data on component mount
   useEffect(() => {
     const prefillDataStr = localStorage.getItem('jobPrefillData');
@@ -92,17 +103,27 @@ const UserProfile: React.FC = () => {
     if (prefillDataStr) {
       try {
         const prefillData = JSON.parse(prefillDataStr);
+        console.log("Prefill data loaded:", prefillData);
 
-        // Find the category ID by name
+        // Find the category by name
         const foundCategory = categories.find(
-          cat => cat.name.toLowerCase() === prefillData.category?.toLowerCase()
+          cat => cat.name.toLowerCase().includes(prefillData.category?.toLowerCase()) ||
+            prefillData.category?.toLowerCase().includes(cat.name.toLowerCase())
         );
 
+        console.log("Found category:", foundCategory);
+
+        // Set the form data
         setFormData(prev => ({
           ...prev,
           category: foundCategory ? String(foundCategory.id) : "",
           subcategory: prefillData.subcategory || ""
         }));
+
+        console.log("Form data updated with:", {
+          category: foundCategory ? String(foundCategory.id) : "",
+          subcategory: prefillData.subcategory || ""
+        });
 
         // Clear the prefill data after using it
         localStorage.removeItem('jobPrefillData');
@@ -111,6 +132,20 @@ const UserProfile: React.FC = () => {
       }
     }
   }, []);
+
+  // ✅ Clear subcategory when category changes (if it doesn't belong to new category)
+  useEffect(() => {
+    if (formData.category && formData.subcategory) {
+      const validSubcategories = getFilteredSubcategories();
+      const isValid = validSubcategories.some(
+        sub => sub.name === formData.subcategory
+      );
+
+      if (!isValid) {
+        setFormData(prev => ({ ...prev, subcategory: "" }));
+      }
+    }
+  }, [formData.category]);
 
   const handleUseCurrentLocation = async () => {
     if (!navigator.geolocation) {
@@ -344,7 +379,7 @@ const UserProfile: React.FC = () => {
             </select>
           </div>
 
-          {/* SUBCATEGORY */}
+          {/* SUBCATEGORY - ✅ Now filtered based on category */}
           <div>
             <label className="block text-sm font-medium mb-1">
               Subcategory
@@ -354,9 +389,14 @@ const UserProfile: React.FC = () => {
               value={formData.subcategory}
               onChange={handleInputChange}
               className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              disabled={!formData.category}
             >
-              <option value="">Select Subcategory (Optional)</option>
-              {allSubcategories.map((sub, i) => (
+              <option value="">
+                {formData.category
+                  ? "Select Subcategory (Optional)"
+                  : "Select a category first"}
+              </option>
+              {filteredSubcategories.map((sub, i) => (
                 <option key={i} value={sub.name}>
                   {sub.icon} {sub.name}
                 </option>

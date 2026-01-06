@@ -2,7 +2,7 @@ import axios from "axios";
 
 // ✅ UPDATED: Changed to match your actual backend IP
 export const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || "http://192.168.1.22:3000";
+    process.env.REACT_APP_API_BASE_URL || "http://192.168.1.13:3000";
 
 // Axios instance for x-www-form-urlencoded requests
 const API_FORM = axios.create({
@@ -17,113 +17,123 @@ const API_MULTIPART = axios.create({
     baseURL: API_BASE_URL,
 });
 
-export const registerWithOtp = async (data: {
+
+interface RegisterWithOtpParams {
     phone: string;
     name: string;
     latitude: number;
     longitude: number;
-}) => {
+}
+
+interface VerifyOtpParams {
+    phone: string;
+    otp: string;
+}
+
+interface ApiResponse {
+    success: boolean;
+    message?: string;
+    otp?: string;
+    data?: any;
+    token?: string;
+    user?: {
+        id: string;
+        phone: string;
+        name: string;
+        token?: string;
+    };
+}
+
+// ✅ Register and send OTP
+export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<ApiResponse> => {
     try {
-        const cleanPhone = data.phone.replace(/\D/g, '').slice(-10);
-
-        console.log("Registering with:", {
-            phone: cleanPhone,
-            name: data.name,
-            latitude: data.latitude,
-            longitude: data.longitude
-        });
-
-        const urlencoded = new URLSearchParams();
-        urlencoded.append("phone", cleanPhone);
-        urlencoded.append("name", data.name);
-        urlencoded.append("latitude", data.latitude.toString());
-        urlencoded.append("longitude", data.longitude.toString());
+        const formData = new URLSearchParams();
+        formData.append("phone", params.phone);
+        formData.append("name", params.name);
+        formData.append("latitude", params.latitude.toString());
+        formData.append("longitude", params.longitude.toString());
 
         const response = await fetch(`${API_BASE_URL}/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: urlencoded.toString(),
+            body: formData,
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Registration error:", errorText);
+            console.error("Register API error:", errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log("Registration response:", data);
+        return data;
     } catch (error) {
-        console.error("Registration failed:", error);
+        console.error("Register with OTP error:", error);
         throw error;
     }
 };
 
-export const verifyOtp = async (data: { phone: string; otp: string }) => {
+// ✅ Verify OTP
+export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> => {
     try {
-        const cleanPhone = data.phone.replace(/\D/g, '').slice(-10);
-
-        console.log("Verifying OTP with:", {
-            phone: cleanPhone,
-            otp: data.otp
-        });
-
-        const urlencoded = new URLSearchParams();
-        urlencoded.append("phone", cleanPhone);
-        urlencoded.append("otp", data.otp);
+        const formData = new URLSearchParams();
+        formData.append("phone", params.phone);
+        formData.append("otp", params.otp);
 
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: urlencoded.toString(),
+            body: formData,
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Verify OTP error:", errorText);
+            console.error("Verify OTP API error:", errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log("Verify OTP response:", data);
+        return data;
     } catch (error) {
-        console.error("Verify OTP failed:", error);
+        console.error("Verify OTP error:", error);
         throw error;
     }
 };
 
-export const resendOtp = async (phone: string) => {
+// ✅ Resend OTP
+export const resendOtp = async (phone: string): Promise<ApiResponse> => {
     try {
-        const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-
-        console.log("Resending OTP to:", cleanPhone);
-
-        const urlencoded = new URLSearchParams();
-        urlencoded.append("phone", cleanPhone);
+        const formData = new URLSearchParams();
+        formData.append("phone", phone);
 
         const response = await fetch(`${API_BASE_URL}/resend-otp`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: urlencoded.toString(),
+            body: formData,
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Resend OTP error:", errorText);
+            console.error("Resend OTP API error:", errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log("Resend OTP response:", data);
+        return data;
     } catch (error) {
-        console.error("Resend OTP failed:", error);
+        console.error("Resend OTP error:", error);
         throw error;
     }
 };
-
 export interface CreateJobPayload {
     userId: string;
     title: string;
@@ -349,6 +359,8 @@ export const getWorkerById = async (workerId: string): Promise<{ success: boolea
     }
 };
 
+// Fixed API functions - Replace in api.service.ts
+
 export interface UpdateUserPayload {
     name?: string;
     email?: string;
@@ -358,46 +370,125 @@ export interface UpdateUserPayload {
     latitude?: number | string;
     longitude?: number | string;
     role?: string;
+    profilePic?: File;
 }
 
-export const updateUserById = async (userId: string, payload: UpdateUserPayload) => {
-    try {
-        const body = new URLSearchParams();
-
-        if (payload.name) body.append("name", payload.name);
-        if (payload.email) body.append("email", payload.email);
-        if (payload.phone) body.append("phone", payload.phone);
-        if (payload.category) body.append("category", payload.category);
-        if (payload.subCategory) body.append("subCategory", payload.subCategory);
-        if (payload.latitude) body.append("latitude", payload.latitude.toString());
-        if (payload.longitude) body.append("longitude", payload.longitude.toString());
-        if (payload.role) body.append("role", payload.role);
-
-        const response = await API_FORM.put(`/updateUserById/${userId}`, body.toString());
-        return response.data;
-    } catch (error) {
-        console.error("Error updating user:", error);
-        throw error;
-    }
-};
-
 export interface User {
-    id: string;
+    _id: string;
     phone: string;
     name: string;
+    email?: string;
     latitude?: string;
     longitude?: string;
+    profilePic?: string;
     isVerified?: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
+// ✅ Get User By ID - with proper error handling
 export const getUserById = async (userId: string): Promise<{ success: boolean; data: User }> => {
     try {
+        console.log("Fetching user:", userId);
+
         const response = await axios.get(`${API_BASE_URL}/getUserById/${userId}`);
+
+        console.log("getUserById response:", response.data);
+
         return response.data;
-    } catch (error) {
-        console.error("Error fetching user by ID:", error);
-        throw error;
+    } catch (error: any) {
+        console.error("Error fetching user by ID:", error.response?.data || error.message);
+
+        // Re-throw with more context
+        throw new Error(
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to fetch user data"
+        );
     }
+};
+
+// ✅ Update User By ID - Always use multipart/form-data
+export const updateUserById = async (
+    userId: string,
+    payload: UpdateUserPayload
+) => {
+    try {
+        console.log("=== UPDATE USER START ===");
+        console.log("User ID:", userId);
+        console.log("Payload:", payload);
+
+        // Always use multipart/form-data for consistency
+        const formData = new FormData();
+
+        // Add all fields to FormData
+        Object.entries(payload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                if (value instanceof File) {
+                    console.log(`Adding file: ${key} = ${value.name}`);
+                    formData.append(key, value);
+                } else {
+                    console.log(`Adding field: ${key} = ${value}`);
+                    formData.append(key, String(value));
+                }
+            }
+        });
+
+        // Log FormData contents (for debugging)
+        console.log("FormData entries:", {
+            hasName: formData.has('name'),
+            hasLatitude: formData.has('latitude'),
+            hasLongitude: formData.has('longitude'),
+            hasProfilePic: formData.has('profilePic')
+        });
+
+        // Make the request
+        const response = await axios.put(
+            `${API_BASE_URL}/updateUserById/${userId}`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        console.log("Update response:", response.data);
+        console.log("=== UPDATE USER END ===");
+
+        return response.data;
+    } catch (error: any) {
+        console.error("=== UPDATE USER ERROR ===");
+        console.error("Error details:", error.response?.data || error.message);
+        console.error("Status:", error.response?.status);
+
+        // Provide detailed error information
+        if (error.response) {
+            throw new Error(
+                error.response.data?.message ||
+                `Server error: ${error.response.status} - ${error.response.statusText}`
+            );
+        } else if (error.request) {
+            throw new Error("No response from server. Please check your connection.");
+        } else {
+            throw new Error(error.message || "Failed to update profile");
+        }
+    }
+};
+const GOOGLE_MAPS_API_KEY = "AIzaSyA6myHzS10YXdcazAFalmXvDkrYCp5cLc8";
+
+// Existing: getUserLocation and getNearbyWorkers remain unchanged
+
+export const getNearbyPlaces = async (
+    lat: number,
+    lng: number,
+    type: string,  // 'restaurant', 'cafe', 'store', etc.
+    radius = 5000
+) => {
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+
+    // For dev: use a CORS proxy. In production, call via backend
+    const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
+    const data = await response.json();
+    return data.results;
 };

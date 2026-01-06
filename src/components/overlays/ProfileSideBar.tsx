@@ -19,13 +19,14 @@ import {
 type AccountType = "user" | "worker";
 
 interface ProfileSidebarProps {
-    onNavigate: (path: string) => void;
-    onLogout: () => void;
-    user: {
-        name: string;
-        initial: string;
-    };
+  onNavigate: (path: string) => void;
+  onLogout: () => void;
+  user: {
+    name: string;
+  };
 }
+
+
 
 /* ================= SIDEBAR ================= */
 
@@ -36,6 +37,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 }) => {
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
     const { accountType, setAccountType } = useAccount(); // Use context
+const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
     const switchAccount = (type: AccountType) => {
         setAccountType(type); // This will now update the context and navbar
@@ -66,7 +68,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     </div>
 
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold">
-                        {user.initial}
+                       {initial}
+
                     </div>
                 </div>
 
@@ -153,12 +156,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     <MenuItem icon={<Bookmark />} label="Saved" onClick={() => onNavigate("/saved")} />
                     <MenuItem
                         icon={<User />}
-                        label="Edit Profile"
+                        label="My Profile"
                         onClick={() =>
                             onNavigate(
                                 accountType === "user"
                                     ? "/profile/edit"
-                                    : "/worker-profile/edit"
+                                    : "/my-profile"
                             )
                         }
                     />

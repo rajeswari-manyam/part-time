@@ -20,10 +20,11 @@ const HomePage: React.FC<HomePageProps> = ({ onOtpSuccess }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-            {/* Sticky Search */}
-            <div className="sticky top-0 z-50">
-                <SearchContainer />
-            </div>
+         {/* Scrollable Search */}
+<div className="w-full">
+    <SearchContainer />
+</div>
+
 
             {/* Promo Slides */}
             <div className="w-full px-4 md:px-6">

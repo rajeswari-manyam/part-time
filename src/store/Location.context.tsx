@@ -1,85 +1,71 @@
-// import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// interface Coordinates {
-//   latitude: number;
-//   longitude: number;
-// }
+interface Coordinates {
+    latitude: number;
+    longitude: number;
+}
 
-// interface LocationContextType {
-//   currentCity: string;
-//   currentCountry: string;
-//   coordinates: Coordinates;
-//   setLocation: (city: string, country?: string) => void;
-//   setCoordinates: (coords: Coordinates) => void;
-//   setLocationWithCoordinates: (city: string, coords: Coordinates, country?: string) => void;
-// }
+interface LocationContextType {
+    currentCity: string;
+    currentCountry: string;
+    coordinates: Coordinates;
+    setLocationWithCoordinates: (city: string, coords: Coordinates, country?: string) => void;
+}
 
-// const LocationContext = createContext<LocationContextType | undefined>(undefined);
+const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
-// interface LocationProviderProps {
-//   children: ReactNode;
-// }
+interface LocationProviderProps {
+    children: ReactNode;
+}
 
-// // Default coordinates for Kakinada
-// const DEFAULT_COORDINATES: Coordinates = {
-//   latitude: 16.9891,
-//   longitude: 82.2475,
-// };
+// Default coordinates for Kakinada
+const DEFAULT_COORDINATES: Coordinates = {
+    latitude: 16.9891,
+    longitude: 82.2475,
+};
 
-// export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) => {
-//   const [currentCity, setCurrentCity] = useState<string>(() => {
-//     return localStorage.getItem('currentCity') || 'Kakinada';
-//   });
-//   const [currentCountry, setCurrentCountry] = useState<string>(() => {
-//     return localStorage.getItem('currentCountry') || 'India';
-//   });
-//   const [coordinates, setCoordinatesState] = useState<Coordinates>(() => {
-//     const savedCoords = localStorage.getItem('coordinates');
-//     return savedCoords ? JSON.parse(savedCoords) : DEFAULT_COORDINATES;
-//   });
+export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) => {
+    const [currentCity, setCurrentCity] = useState<string>(() => {
+        return localStorage.getItem('currentCity') || 'Kakinada';
+    });
+    const [currentCountry, setCurrentCountry] = useState<string>(() => {
+        return localStorage.getItem('currentCountry') || 'India';
+    });
+    const [coordinates, setCoordinates] = useState<Coordinates>(() => {
+        const savedCoords = localStorage.getItem('coordinates');
+        return savedCoords ? JSON.parse(savedCoords) : DEFAULT_COORDINATES;
+    });
 
-//   useEffect(() => {
-//     localStorage.setItem('currentCity', currentCity);
-//     localStorage.setItem('currentCountry', currentCountry);
-//     localStorage.setItem('coordinates', JSON.stringify(coordinates));
-//   }, [currentCity, currentCountry, coordinates]);
+    useEffect(() => {
+        localStorage.setItem('currentCity', currentCity);
+        localStorage.setItem('currentCountry', currentCountry);
+        localStorage.setItem('coordinates', JSON.stringify(coordinates));
+    }, [currentCity, currentCountry, coordinates]);
 
-//   const setLocation = (city: string, country?: string) => {
-//     setCurrentCity(city);
-//     setCurrentCountry(country || 'India');
-//   };
+    const setLocationWithCoordinates = (city: string, coords: Coordinates, country?: string) => {
+        setCurrentCity(city);
+        setCurrentCountry(country || 'India');
+        setCoordinates(coords);
+    };
 
-//   const setCoordinates = (coords: Coordinates) => {
-//     setCoordinatesState(coords);
-//   };
+    return (
+        <LocationContext.Provider
+            value={{
+                currentCity,
+                currentCountry,
+                coordinates,
+                setLocationWithCoordinates
+            }}
+        >
+            {children}
+        </LocationContext.Provider>
+    );
+};
 
-//   const setLocationWithCoordinates = (city: string, coords: Coordinates, country?: string) => {
-//     setCurrentCity(city);
-//     setCurrentCountry(country || 'India');
-//     setCoordinatesState(coords);
-//   };
-
-//   return (
-//     <LocationContext.Provider 
-//       value={{ 
-//         currentCity, 
-//         currentCountry, 
-//         coordinates, 
-//         setLocation, 
-//         setCoordinates,
-//         setLocationWithCoordinates 
-//       }}
-//     >
-//       {children}
-//     </LocationContext.Provider>
-//   );
-// };
-
-// export const useLocation = () => {
-//   const context = useContext(LocationContext);
-//   if (context === undefined) {
-//     throw new Error('useLocation must be used within a LocationProvider');
-//   }
-//   return context;
-// };
-export default {};
+export const useLocation = () => {
+    const context = useContext(LocationContext);
+    if (!context) {
+        throw new Error('useLocation must be used within a LocationProvider');
+    }
+    return context;
+};

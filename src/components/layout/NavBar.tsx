@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -29,6 +29,17 @@ const Navbar: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileSidebar, setShowProfileSidebar] = useState(false);
+  const [userName, setUserName] = useState(
+    localStorage.getItem("userName") || "User"
+  );
+  useEffect(() => {
+    const syncUserName = () => {
+      setUserName(localStorage.getItem("userName") || "User");
+    };
+
+    window.addEventListener("storage", syncUserName);
+    return () => window.removeEventListener("storage", syncUserName);
+  }, []);
 
   /* ---------------- Navigation ---------------- */
   const handleNavClick = (path: string) => {
@@ -126,8 +137,9 @@ const Navbar: React.FC = () => {
                   onClick={handleProfileClick}
                   className="hidden lg:block w-10 h-10 bg-indigo-500 rounded-full text-white font-bold hover:bg-indigo-600 transition-colors"
                 >
-                  R
+                  {userName.charAt(0).toUpperCase()}
                 </button>
+
               )}
 
               {/* Mobile Menu Toggle */}
@@ -210,7 +222,8 @@ const Navbar: React.FC = () => {
           {/* Sidebar Panel */}
           <div className="relative w-80 h-full bg-white shadow-xl transform transition-transform duration-300 translate-x-0">
             <ProfileSidebar
-              user={{ name: "Rajeshwari", initial: "R" }}
+              user={{ name: userName }}
+
               onNavigate={(path: string) => {
                 navigate(path);
                 setShowProfileSidebar(false);

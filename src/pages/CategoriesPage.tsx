@@ -3,6 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import subcategoryData from "../data/subcategories.json";
 import categoryData from "../data/categories.json";
 
+// Define which categories are for workers and which for places
+const WORKER_CATEGORY_IDS = [1, 2, 3, 5, 6, 9, 10, 11, 12, 13, 15, 17, 18, 20, 21, 22];
+const PLACE_CATEGORY_IDS = [1, 4, 7, 8, 14, 16, 19]; // Example: Restaurants, Shops, Hotels, etc.
+
 const CategoryPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -22,7 +26,16 @@ const CategoryPage: React.FC = () => {
 
     const handleSubcategoryClick = (name: string) => {
         const slug = name.toLowerCase().replace(/\s+/g, "-");
-        navigate(`/matched-workers/${slug}`);
+
+        // Decide whether to navigate to workers or places
+        if (WORKER_CATEGORY_IDS.includes(categoryId)) {
+            navigate(`/matched-workers/${slug}`);
+        } else if (PLACE_CATEGORY_IDS.includes(categoryId)) {
+            navigate(`/nearby-places/${slug}`);
+        } else {
+            // Default fallback
+            navigate(`/matched-workers/${slug}`);
+        }
     };
 
     return (

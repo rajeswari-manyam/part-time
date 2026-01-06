@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2, Edit, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getUserJobs, deleteJob } from "../services/api.service";
-const IMAGE_BASE_URL = "http://192.168.1.22:3000"; // ✅ ADD THIS
+const IMAGE_BASE_URL = "http://:3000"; // ✅ ADD THIS
 interface Job {
     _id: string;
     title?: string;

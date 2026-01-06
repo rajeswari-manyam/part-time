@@ -26,13 +26,13 @@ class SearchService {
           try {
             const { latitude, longitude } = position.coords;
             // In production, you would call a reverse geocoding API here
-            const location: Location = {
-              city: "Hyderabad",
-              state: "Telangana",
-              country: "India",
-              lat: latitude,
-              lng: longitude,
-            };
+          const location: Location = {
+  city: "Hyderabad",
+  state: "Telangana",
+  latitude: latitude,
+  longitude: longitude,
+};
+
             resolve(location);
           } catch (error) {
             reject(error);

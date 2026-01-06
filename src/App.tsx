@@ -9,7 +9,8 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { AccountProvider } from "./context/AccountContext"; // Import AccountProvider
+import { AccountProvider } from "./context/AccountContext";
+import { LocationProvider } from "./store/Location.context";
 
 import Navbar from "./components/layout/NavBar";
 
@@ -33,7 +34,7 @@ import UserProfile from "./pages/UserProfile";
 import MatchedWorkers from "./pages/MatchedWorkers";
 import WorkerProfile from "./pages/WorkerProfile";
 import ChatScreen from "./pages/Chat";
-
+import NearbyPlaces from "./pages/NearByPlaces";
 import CallingScreen from "./pages/Call";
 import ServiceEnquiryForm from "./pages/ServiceEnquiryForm";
 import FeedbackForm from "./pages/FeedBack";
@@ -43,8 +44,8 @@ import RoleSelection from "./pages/RoleSelection";
 import AllJobs from "./pages/AllJobs";
 import UpdateJob from "./pages/UpdateJob";
 import ListedJobs from "./pages/Listedjobs";
-import EditProfile from "./pages/EditProfile";
-
+import LocationSelector from "./components/LocationSelector";
+import MyProfile from "./pages/MyProfile";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -92,9 +93,14 @@ const AppRoutes: React.FC = () => {
                     <Route path="/jobs/:jobId" element={<JobDetails />} />
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
+                    {/* ================= NEW ROUTES ================= */}
+                    {/* Matched Workers (for worker subcategories) */}
                     <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
-
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
+
+                    {/* Nearby Places (for place subcategories) */}
+                    <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
+                    <Route path="/nearby-places" element={<NearbyPlaces />} />
 
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/chat/:id" element={<ChatScreen />} />
@@ -105,6 +111,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/notification/:id" element={<NotificationScreen />} />
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
+                    <Route path="/my-profile" element={<MyProfile />} />
+
 
                     <Route
                         path="/listed-jobs"
@@ -203,9 +211,11 @@ const App: React.FC = () => {
     return (
         <AuthProvider>
             <AccountProvider>
-                <Router>
-                    <AppRoutes />
-                </Router>
+                <LocationProvider>
+                    <Router>
+                        <AppRoutes />
+                    </Router>
+                </LocationProvider>
             </AccountProvider>
         </AuthProvider>
     );

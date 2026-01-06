@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
 import Button from "../ui/Buttons";
 import typography from "../../styles/typography";
 import OTPVerification from "./OTPVerification";
 import voiceIcon from "../../assets/icons/Voice.png";
 import VoiceService from "../../services/voiceService";
-import { registerWithOtp, verifyOtp } from "../../services/api.service";
+import { registerWithOtp } from "../../services/api.service";
 
 interface LoginFormProps {
     onClose: () => void;
@@ -17,11 +16,14 @@ interface LoginFormProps {
 
 type FormStep = "phone" | "otp";
 
-const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", onBack, onOpenOTP }) => {
+const LoginForm: React.FC<LoginFormProps> = ({
+    onClose,
+    initialMode = "signup",
+    onBack,
+    onOpenOTP
+}) => {
     const navigate = useNavigate();
-
     const [phoneNumber, setPhoneNumber] = useState("");
-    const [name, setName] = useState("");
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
     const [isLogin, setIsLogin] = useState(initialMode === "login");
@@ -47,19 +49,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
     }, []);
 
     const extractPhoneNumber = (text: string): string => {
-        // convert words → digits
         const map: Record<string, string> = {
-            zero: "0",
-            one: "1",
-            two: "2",
-            three: "3",
-            four: "4",
-            five: "5",
-            six: "6",
-            seven: "7",
-            eight: "8",
-            nine: "9",
-            oh: "0",
+            zero: "0", one: "1", two: "2", three: "3", four: "4",
+            five: "5", six: "6", seven: "7", eight: "8", nine: "9", oh: "0",
         };
 
         let processed = text.toLowerCase();
@@ -71,46 +63,34 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
     };
 
     const handleVoiceInput = () => {
-        console.log("Voice button clicked");
-
         if (!voiceService.isSpeechRecognitionSupported()) {
-            const errorMsg = "Voice not supported";
-            setVoiceError(errorMsg);
-            console.error(errorMsg);
+            setVoiceError("Voice not supported");
             setTimeout(() => setVoiceError(null), 5000);
             return;
         }
 
         if (isListening) {
-            console.log("Stopping voice input");
             voiceService.stopListening();
             setIsListening(false);
             return;
         }
 
-        console.log("Starting voice input");
         setIsListening(true);
         setVoiceError(null);
 
         voiceService.startListening(
             (result) => {
-                console.log("Voice result received:", result.transcript);
                 const extracted = extractPhoneNumber(result.transcript);
-                console.log("Extracted phone number:", extracted);
-
                 if (extracted.length > 0) {
                     setPhoneNumber(extracted);
                 }
 
-                // Stop automatically when we have 10 digits and it's final
                 if (result.isFinal && extracted.length === 10) {
-                    console.log("Complete phone number received, stopping");
                     voiceService.stopListening();
                     setIsListening(false);
                 }
             },
             (error) => {
-                console.error("Voice error:", error);
                 setVoiceError(error);
                 setIsListening(false);
                 setTimeout(() => setVoiceError(null), 5000);
@@ -126,109 +106,73 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (phoneNumber.length !== 10) return;
+        if (phoneNumber.length !== 10) {
+            alert("Please enter a valid 10-digit phone number");
+            return;
+        }
 
         try {
+            console.log("Registering with phone:", phoneNumber);
+
+            // ✅ Store phone number in localStorage immediately
+            localStorage.setItem("userPhone", phoneNumber);
+
             const response = await registerWithOtp({
                 phone: phoneNumber,
-                name,
+                name: "User", // Default name
                 latitude: latitude ?? 0,
                 longitude: longitude ?? 0,
             });
 
+            console.log("Registration response:", response);
+
             if (response.success) {
-                console.log("OTP sent:", response.otp);
+                console.log("OTP sent successfully. OTP:", response.otp);
 
                 if (onOpenOTP) {
-                    onOpenOTP(phoneNumber); // Navbar OTP screen
+                    // Navbar OTP screen
+                    console.log("Opening OTP modal via navbar");
+                    onOpenOTP(phoneNumber);
                 } else {
-                    setCurrentStep("otp"); // Inline OTP
+                    // Inline OTP
+                    console.log("Switching to inline OTP");
+                    setCurrentStep("otp");
                 }
             } else {
                 alert(response.message || "Registration failed");
             }
         } catch (error) {
-            console.error(error);
+            console.error("Registration error:", error);
             alert("Failed to register. Please try again.");
         }
     };
 
-    const handleOTPVerify = async (otp: string) => {
-        console.log("Verifying OTP:", otp);
-
-        try {
-            const response = await verifyOtp({
-                phone: phoneNumber,
-                otp: otp,
-            });
-
-            if (response.success && response.data) {
-                // ✅ CRITICAL: Save user data to localStorage
-                const userData = response.data;
-                console.log("User authenticated:", userData);
-
-                localStorage.setItem("user", JSON.stringify(userData));
-                localStorage.setItem("token", response.token || ""); // If your API returns a token
-
-                // Close the login modal
-                onClose();
-
-                // Optional: Navigate to profile or home page
-                // navigate("/profile");
-
-                // Show success message
-                alert("Login successful!");
-            } else {
-                alert(response.message || "Invalid OTP");
-            }
-        } catch (error: any) {
-            console.error("OTP verification error:", error);
-            alert(error.response?.data?.message || "Failed to verify OTP");
-        }
-    };
-
-    const handleOTPResend = async () => {
-        console.log("Resending OTP to:", phoneNumber);
-
-        try {
-            const response = await registerWithOtp({
-                phone: phoneNumber,
-                name,
-                latitude: latitude ?? 0,
-                longitude: longitude ?? 0,
-            });
-
-            if (response.success) {
-                console.log("OTP resent:", response.otp);
-                alert("OTP sent successfully!");
-            } else {
-                alert(response.message || "Failed to resend OTP");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Failed to resend OTP. Please try again.");
-        }
-    };
-
     const handleBackToPhone = () => {
+        console.log("Going back to phone input");
         setCurrentStep("phone");
     };
 
-    // Only show inline OTP if onOpenOTP is NOT provided
+    // ✅ Handle OTP Continue - Navigate to role selection
+    const handleOTPContinue = () => {
+        console.log("OTP verification successful, closing modal and navigating");
+        onClose(); // Close the modal
+        navigate("/role-selection", { replace: true });
+    };
+
+    // Show inline OTP if onOpenOTP is NOT provided
     if (currentStep === "otp" && !onOpenOTP) {
         return (
             <OTPVerification
                 phoneNumber={phoneNumber}
-                onVerify={handleOTPVerify}
-                onResend={handleOTPResend}
                 onBack={handleBackToPhone}
+                onContinue={handleOTPContinue}
+                onClose={onClose}
             />
         );
     }
 
     return (
         <div className="space-y-8">
-            {/* Back Button */}
             {onBack && (
                 <button
                     type="button"
@@ -318,26 +262,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, initialMode = "signup", 
                             {voiceError}
                         </p>
                     )}
-                    {!isLogin && !voiceError && (
-                        <p className={`mt-2 text-gray-500 ${typography.form.helper}`}>
-                            Verify Text
-                        </p>
-                    )}
-                </div>
-
-                {/* Name Input */}
-                <div>
-                    <label className={`block mb-2 text-gray-700 ${typography.form.label}`}>
-                        Name
-                    </label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your name"
-                        className={`w-full py-4 px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 ${typography.form.input}`}
-                        required
-                    />
                 </div>
 
                 {/* Submit Button */}
