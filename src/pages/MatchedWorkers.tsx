@@ -281,11 +281,6 @@
 
 // export default MatchedWorkers;
 
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -299,8 +294,6 @@ import {
 import { getNearbyWorkers, getUserLocation } from "../services/api.service";
 import CategoriesData from "../data/categories.json";
 import SubCategoriesData from "../data/subcategories.json";
-
-
 
 interface Category {
     id: number;
@@ -358,7 +351,6 @@ const categories: Category[] = CategoriesData.categories;
 const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
 
 /* ================= HELPER FUNCTION ================= */
-// Find category name from subcategory name
 const findCategoryFromSubcategory = (subcategoryName: string): string => {
     const normalizedSubcat = subcategoryName.toLowerCase().trim();
 
@@ -382,53 +374,65 @@ const MatchedWorkers: React.FC = () => {
     const navigate = useNavigate();
     const { subcategory, category } = useParams<{ subcategory: string; category?: string }>();
 
-    const selectedSubcategory = subcategory?.replace(/-/g, " ");
-    const selectedCategory = category?.replace(/-/g, " ");
+    // Keep original URL params (don't replace hyphens yet)
+    const selectedSubcategory = subcategory;
+    const selectedCategory = category;
 
     const [workers, setWorkers] = useState<Worker[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // User location state
-    const [userLocation, setUserLocation] = useState({
-        latitude: 17.4940,
-        longitude: 78.4595,
-        range: 5
+    // User location state - null means location not fetched yet
+    const [userLocation, setUserLocation] = useState<{
+        latitude: number | null;
+        longitude: number | null;
+        range: number;
+    }>({
+        latitude: null,
+        longitude: null,
+        range: 10
     });
 
-    /* ---------------- GET USER LOCATION ---------------- */
-    useEffect(() => {
-        const fetchLocation = async () => {
-            try {
-                const location = await getUserLocation();
-                setUserLocation(prev => ({
-                    ...prev,
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                }));
-            } catch (err) {
-                console.log("Using default location", err);
-            }
-        };
-        fetchLocation();
-    }, []);
+    // Location is not used - we fetch workers by category and subcategory only
 
-    /* ---------------- FETCH WORKERS ---------------- */
+    /* ---------------- FETCH WORKERS BY CATEGORY AND SUBCATEGORY ---------------- */
     useEffect(() => {
+        if (!selectedSubcategory) return;
+
         const fetchWorkers = async () => {
-            if (!selectedSubcategory) return;
-
             setLoading(true);
             setError("");
 
             try {
-                const response = await getNearbyWorkers(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    userLocation.range,
-                    selectedCategory || "Home Services",
-                    selectedSubcategory
-                );
+                // Use category from URL or find it from subcategory
+                let categoryName = selectedCategory;
+
+                if (!categoryName) {
+                    // Try to find category from subcategory
+                    categoryName = findCategoryFromSubcategory(selectedSubcategory);
+                }
+
+                // If still no category, use a default or the subcategory itself
+                if (!categoryName) {
+                    categoryName = "Electrician"; // Default fallback
+                }
+
+                console.log("Fetching workers with params:", {
+                    category: categoryName,
+                    subcategory: selectedSubcategory
+                });
+
+                // Build URL without encoding spaces in subcategory (API expects "Home Wiring,Industrial Wiring")
+                const url = `http://192.168.1.13:3000/getNearbyWorkers?category=${categoryName}&subcategory=${selectedSubcategory}`;
+
+                console.log("Fetching workers with URL:", url);
+
+                const res = await fetch(url, {
+                    method: "GET",
+                    redirect: "follow"
+                });
+
+                const response = await res.json();
 
                 if (response.success) {
                     const data: WorkerData[] = response.data || [];
@@ -454,6 +458,7 @@ const MatchedWorkers: React.FC = () => {
                         distance: item.distance
                     }));
 
+                    console.log(`Found ${mapped.length} workers`);
                     setWorkers(mapped);
                 } else {
                     setError("Failed to load workers");
@@ -467,17 +472,11 @@ const MatchedWorkers: React.FC = () => {
         };
 
         fetchWorkers();
-    }, [selectedSubcategory, selectedCategory, userLocation]);
+    }, [selectedSubcategory, selectedCategory, userLocation.range]);
 
-    // ✅ Handle Post Job button - find category and store prefill data
+    // Handle Post Job button
     const handlePostJob = () => {
-        // Find the category from the subcategory
         const categoryName = selectedCategory || findCategoryFromSubcategory(selectedSubcategory || "");
-
-        console.log("Storing prefill data:", {
-            category: categoryName,
-            subcategory: selectedSubcategory
-        });
 
         const prefillData = {
             category: categoryName,
@@ -485,7 +484,6 @@ const MatchedWorkers: React.FC = () => {
         };
 
         localStorage.setItem('jobPrefillData', JSON.stringify(prefillData));
-
         navigate("/user-profile");
     };
 
@@ -515,7 +513,11 @@ const MatchedWorkers: React.FC = () => {
 
             {/* LIST */}
             <div className="p-4 space-y-4">
-                {loading && <p className="text-center text-gray-600 py-8">Loading nearby workers...</p>}
+                {loading && (
+                    <p className="text-center text-gray-600 py-8">
+                        Loading workers...
+                    </p>
+                )}
 
                 {!loading && error && (
                     <div className="text-center py-8">
@@ -532,7 +534,7 @@ const MatchedWorkers: React.FC = () => {
                 {!loading && !error && workers.length === 0 && (
                     <div className="text-center py-8">
                         <p className="text-gray-500">
-                            No workers found for "{selectedSubcategory}" within {userLocation.range}km
+                            No workers found for "{selectedSubcategory}"
                         </p>
                     </div>
                 )}

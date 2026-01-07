@@ -17,6 +17,7 @@ import WelcomePage from "../Auth/WelcomePage";
 import OTPVerification from "../Auth/OTPVerification";
 import LanguageSelector from "../LanguageSelector";
 import ProfileSidebar from "../overlays/ProfileSideBar";
+import { getUserById, API_BASE_URL } from "../../services/api.service";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
@@ -32,14 +33,70 @@ const Navbar: React.FC = () => {
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || "User"
   );
+  const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  // ✅ Fetch user profile picture on mount and when authenticated
   useEffect(() => {
-    const syncUserName = () => {
-      setUserName(localStorage.getItem("userName") || "User");
+    const fetchUserProfile = async () => {
+      if (!isAuthenticated) return;
+
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+
+      try {
+        setIsLoadingProfile(true);
+        const response = await getUserById(userId);
+
+        if (response.success && response.data) {
+          const name = response.data.name || "User";
+          setUserName(name);
+          localStorage.setItem("userName", name);
+
+          // ✅ Set profile picture if available
+          if (response.data.profilePic) {
+            const picUrl = response.data.profilePic.startsWith('http')
+              ? response.data.profilePic
+              : `${API_BASE_URL}${response.data.profilePic}`;
+            setProfilePic(picUrl);
+            console.log("✅ Profile pic loaded:", picUrl);
+          } else {
+            setProfilePic(null);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error fetching user profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
     };
 
-    window.addEventListener("storage", syncUserName);
-    return () => window.removeEventListener("storage", syncUserName);
-  }, []);
+    fetchUserProfile();
+  }, [isAuthenticated]);
+
+  // ✅ Listen for profile updates from localStorage
+  useEffect(() => {
+    const syncUserData = () => {
+      const name = localStorage.getItem("userName") || "User";
+      setUserName(name);
+
+      // Re-fetch profile to get updated picture
+      const userId = localStorage.getItem("userId");
+      if (userId && isAuthenticated) {
+        getUserById(userId).then(response => {
+          if (response.success && response.data?.profilePic) {
+            const picUrl = response.data.profilePic.startsWith('http')
+              ? response.data.profilePic
+              : `${API_BASE_URL}${response.data.profilePic}`;
+            setProfilePic(picUrl);
+          }
+        }).catch(err => console.error("Error syncing profile:", err));
+      }
+    };
+
+    window.addEventListener("storage", syncUserData);
+    return () => window.removeEventListener("storage", syncUserData);
+  }, [isAuthenticated]);
 
   /* ---------------- Navigation ---------------- */
   const handleNavClick = (path: string) => {
@@ -135,11 +192,25 @@ const Navbar: React.FC = () => {
               ) : (
                 <button
                   onClick={handleProfileClick}
-                  className="hidden lg:block w-10 h-10 bg-indigo-500 rounded-full text-white font-bold hover:bg-indigo-600 transition-colors"
+                  className="hidden lg:block w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all shadow-md hover:shadow-lg"
                 >
-                  {userName.charAt(0).toUpperCase()}
+                  {profilePic ? (
+                    <img
+                      src={profilePic}
+                      alt={userName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to initial if image fails to load
+                        console.error("Failed to load profile image");
+                        setProfilePic(null);
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold">
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </button>
-
               )}
 
               {/* Mobile Menu Toggle */}
@@ -182,9 +253,20 @@ const Navbar: React.FC = () => {
             ) : (
               <button
                 onClick={handleProfileClick}
-                className="w-full text-left px-4 py-3 hover:bg-gray-100"
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
               >
-                Profile
+                {profilePic ? (
+                  <img
+                    src={profilePic}
+                    alt={userName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold text-sm">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span>Profile</span>
               </button>
             )}
           </div>
@@ -210,6 +292,7 @@ const Navbar: React.FC = () => {
           />
         </div>
       )}
+
       {/* ================= PROFILE SIDEBAR (RIGHT SLIDE) ================= */}
       {showProfileSidebar && (
         <div className="fixed inset-0 z-[9999] flex justify-end">
@@ -223,19 +306,19 @@ const Navbar: React.FC = () => {
           <div className="relative w-80 h-full bg-white shadow-xl transform transition-transform duration-300 translate-x-0">
             <ProfileSidebar
               user={{ name: userName }}
-
+              profilePic={profilePic}
               onNavigate={(path: string) => {
                 navigate(path);
                 setShowProfileSidebar(false);
               }}
               onLogout={() => {
                 logout();
+                setProfilePic(null);
                 setShowProfileSidebar(false);
               }}
             />
           </div>
         </div>
-
       )}
     </>
   );

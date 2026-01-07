@@ -46,6 +46,7 @@ import UpdateJob from "./pages/UpdateJob";
 import ListedJobs from "./pages/Listedjobs";
 import LocationSelector from "./components/LocationSelector";
 import MyProfile from "./pages/MyProfile";
+import BookNow from "./pages/BookNow";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -97,6 +98,9 @@ const AppRoutes: React.FC = () => {
                     {/* Matched Workers (for worker subcategories) */}
                     <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
+                  <Route path="/booknow/:jobId" element={<BookNow />} />
+
+
 
                     {/* Nearby Places (for place subcategories) */}
                     <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />

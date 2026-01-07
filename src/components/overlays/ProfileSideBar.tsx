@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useAccount } from "../../context/AccountContext"; // Add this import
+import React, { useState, useEffect } from "react";
+import { useAccount } from "../../context/AccountContext";
 import {
     Heart,
     Bookmark,
@@ -13,35 +13,106 @@ import {
     X,
     Briefcase,
 } from "lucide-react";
-
-/* ================= TYPES ================= */
+import { getUserById, API_BASE_URL } from "../../services/api.service";
 
 type AccountType = "user" | "worker";
 
 interface ProfileSidebarProps {
-  onNavigate: (path: string) => void;
-  onLogout: () => void;
-  user: {
-    name: string;
-  };
+    onNavigate: (path: string) => void;
+    onLogout: () => void;
+    user: {
+        name: string;
+        id?: string;
+        _id?: string;
+    };
+    profilePic?: string | null;
 }
-
-
-
-/* ================= SIDEBAR ================= */
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     onNavigate,
     onLogout,
     user,
+    profilePic: initialProfilePic,
 }) => {
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-    const { accountType, setAccountType } = useAccount(); // Use context
-const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
+    const [userName, setUserName] = useState(user.name || "User");
+    const [profilePic, setProfilePic] = useState<string | null>(initialProfilePic || null);
+    const [isLoadingName, setIsLoadingName] = useState(false);
+    const { accountType, setAccountType } = useAccount();
+
+    // ✅ Fetch user name and profile picture dynamically on mount
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                // Try to get from localStorage first
+                const cachedName = localStorage.getItem("userName");
+                if (cachedName && cachedName !== "User") {
+                    setUserName(cachedName);
+                }
+
+                // Get userId from multiple sources
+                const userId =
+                    user.id ||
+                    user._id ||
+                    localStorage.getItem("userId");
+
+                if (!userId) {
+                    console.log("No userId available");
+                    return;
+                }
+
+                setIsLoadingName(true);
+                console.log("📡 Fetching user profile for:", userId);
+
+                const response = await getUserById(userId);
+                console.log("📥 User profile response:", response);
+
+                if (response.success && response.data) {
+                    // Update name
+                    if (response.data.name) {
+                        const fetchedName = response.data.name;
+                        setUserName(fetchedName);
+                        localStorage.setItem("userName", fetchedName);
+                        console.log("✅ Updated user name:", fetchedName);
+                    }
+
+                    // Update profile picture
+                    if (response.data.profilePic) {
+                        const picUrl = response.data.profilePic.startsWith('http')
+                            ? response.data.profilePic
+                            : `${API_BASE_URL}${response.data.profilePic}`;
+                        setProfilePic(picUrl);
+                        console.log("✅ Updated profile pic:", picUrl);
+                    }
+                }
+            } catch (error) {
+                console.error("❌ Error fetching user profile:", error);
+            } finally {
+                setIsLoadingName(false);
+            }
+        };
+
+        fetchUserProfile();
+    }, [user.id, user._id]);
+
+    // ✅ Update profile pic when prop changes
+    useEffect(() => {
+        if (initialProfilePic) {
+            setProfilePic(initialProfilePic);
+        }
+    }, [initialProfilePic]);
+
+    // ✅ Get initial from name
+    const getInitial = (name: string) => {
+        if (!name || name === "User") return "U";
+        return name.charAt(0).toUpperCase();
+    };
+
+    const initial = getInitial(userName);
 
     const switchAccount = (type: AccountType) => {
-        setAccountType(type); // This will now update the context and navbar
-        onNavigate("/home"); // Navigate to home regardless of type
+        setAccountType(type);
+        onNavigate("/home");
     };
 
     return (
@@ -49,9 +120,13 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
             <div className="h-full flex flex-col">
                 {/* ================= HEADER ================= */}
                 <div className="flex items-center justify-between p-6 border-b">
-                    <div>
+                    <div className="flex-1">
                         <h2 className="text-lg font-semibold text-gray-900">
-                            {user.name}
+                            {isLoadingName ? (
+                                <span className="animate-pulse">Loading...</span>
+                            ) : (
+                                userName
+                            )}
                         </h2>
                         <button
                             onClick={() =>
@@ -67,9 +142,23 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                         </button>
                     </div>
 
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold">
-                       {initial}
-
+                    {/* Profile Avatar - Show picture or initial */}
+                    <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white">
+                        {profilePic ? (
+                            <img
+                                src={profilePic}
+                                alt={userName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    console.error("Failed to load profile image in sidebar");
+                                    setProfilePic(null);
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold text-lg">
+                                {initial}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -121,12 +210,6 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                 <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
                     {accountType === "user" ? (
                         <>
-                            {/* GUEST NAVIGATION */}
-                            <MenuItem
-                                icon={<Heart />}
-                                label="Home"
-                                onClick={() => onNavigate("/home")}
-                            />
                             <MenuItem
                                 icon={<Bookmark />}
                                 label="Free Listing"
@@ -135,16 +218,10 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                         </>
                     ) : (
                         <>
-                            {/* WORKER NAVIGATION */}
-                            <MenuItem
-                                icon={<Globe />}
-                                label="Home"
-                                onClick={() => onNavigate("/home")}
-                            />
                             <MenuItem
                                 icon={<Bell />}
-                                label="My Bookings"
-                                onClick={() => onNavigate("/my-bookings")}
+                                label="Worker Skills"
+                                onClick={() => onNavigate("/worker-skills")}
                             />
                         </>
                     )}
@@ -152,8 +229,16 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                     <div className="my-3 border-t" />
 
                     {/* COMMON MENU ITEMS */}
-                    <MenuItem icon={<Heart />} label="Favourite" onClick={() => onNavigate("/favorites")} />
-                    <MenuItem icon={<Bookmark />} label="Saved" onClick={() => onNavigate("/saved")} />
+                    <MenuItem
+                        icon={<Heart />}
+                        label="Favourite"
+                        onClick={() => onNavigate("/favorites")}
+                    />
+                    <MenuItem
+                        icon={<Bookmark />}
+                        label="Saved"
+                        onClick={() => onNavigate("/saved")}
+                    />
                     <MenuItem
                         icon={<User />}
                         label="My Profile"
@@ -167,13 +252,29 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                     />
 
                     <MenuItem icon={<Globe />} label="Change Language" />
-                    <MenuItem icon={<Bell />} label="Notifications" onClick={() => onNavigate("/notification/:id")} />
+                    <MenuItem
+                        icon={<Bell />}
+                        label="Notifications"
+                        onClick={() => onNavigate("/notification/:id")}
+                    />
 
                     <div className="my-3 border-t" />
 
-                    <MenuItem icon={<Shield />} label="Policy" onClick={() => onNavigate("/policy")} />
-                    <MenuItem icon={<MessageSquare />} label="Feedback" onClick={() => onNavigate("/feedback/:id")} />
-                    <MenuItem icon={<HelpCircle />} label="Help" onClick={() => onNavigate("/help")} />
+                    <MenuItem
+                        icon={<Shield />}
+                        label="Policy"
+                        onClick={() => onNavigate("/policy")}
+                    />
+                    <MenuItem
+                        icon={<MessageSquare />}
+                        label="Feedback"
+                        onClick={() => onNavigate("/feedback/:id")}
+                    />
+                    <MenuItem
+                        icon={<HelpCircle />}
+                        label="Help"
+                        onClick={() => onNavigate("/help")}
+                    />
 
                     <div className="my-3 border-t" />
 
@@ -212,13 +313,13 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
                             <div className="space-y-3">
                                 <button
                                     onClick={onLogout}
-                                    className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold"
+                                    className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold hover:brightness-110 transition-all"
                                 >
                                     Yes, Logout
                                 </button>
                                 <button
                                     onClick={() => setShowLogoutPopup(false)}
-                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold"
+                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -227,9 +328,9 @@ const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
                         <button
                             onClick={() => setShowLogoutPopup(false)}
-                            className="absolute top-4 right-4"
+                            className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
                         >
-                            <X className="w-5 h-5 text-white" />
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
@@ -15,8 +16,13 @@ import ServiceChargesSection from "../components/WorkerProfile/ServiceCharges";
 import LocationSection from "../components/WorkerProfile/LocationSection";
 import AvailabilitySection from "../components/WorkerProfile/AvailabilitySection";
 import WorkImagesUpload from "../components/WorkerProfile/WorkImagesUpload";
-import { useNavigate } from "react-router-dom";
 import { VoiceRecognitionResult } from "../components/Auth/OtpVerification/types";
+
+// Import API functions
+import {
+    createOrUpdateWorkerProfile,
+    CreateWorkerPayload
+} from "../services/api.service";
 
 type VoiceField = "all" | "fullName" | "email" | "bio" | "skills" | "location" | "city" | "serviceCharges" | null;
 
@@ -38,6 +44,10 @@ interface SubcategoryGroup {
 
 const WorkerProfileScreen: React.FC = () => {
     const navigate = useNavigate();
+
+    // Get userId from localStorage (assuming you store it after login)
+    const [userId] = useState(() => localStorage.getItem("userId") || "");
+
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [bio, setBio] = useState("");
@@ -48,6 +58,8 @@ const WorkerProfileScreen: React.FC = () => {
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
     const [pincode, setPincode] = useState("");
+    const [latitude, setLatitude] = useState<number>(0);
+    const [longitude, setLongitude] = useState<number>(0);
 
     // Service Charges State
     const [chargeType, setChargeType] = useState<"hourly" | "daily" | "fixed">("hourly");
@@ -64,13 +76,19 @@ const WorkerProfileScreen: React.FC = () => {
 
     // Media State
     const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+    const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
     const [workImages, setWorkImages] = useState<string[]>([]);
+    const [workImageFiles, setWorkImageFiles] = useState<File[]>([]);
 
     // Voice State
     const [isListening, setIsListening] = useState<VoiceField>(null);
     const [voiceError, setVoiceError] = useState<string | null>(null);
     const [voiceService] = useState(() => VoiceService.getInstance());
     const [isVoiceSupported, setIsVoiceSupported] = useState(true);
+
+    // Loading and error states
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const categories: Category[] = CategoriesData.categories;
     const subcategories: SubcategoryGroup[] = SubCategoriesData.subcategories;
@@ -82,7 +100,25 @@ const WorkerProfileScreen: React.FC = () => {
 
     useEffect(() => {
         setIsVoiceSupported(voiceService.isSpeechRecognitionSupported());
+
+        // Get user's current location
+        getUserLocation();
     }, [voiceService]);
+
+    // Get user's current location
+    const getUserLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLatitude(position.coords.latitude);
+                    setLongitude(position.coords.longitude);
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                }
+            );
+        }
+    };
 
     // Voice Recognition Handlers
     const handleVoiceResult = (field: VoiceField) => (result: VoiceRecognitionResult) => {
@@ -128,7 +164,7 @@ const WorkerProfileScreen: React.FC = () => {
 
     const startListening = (field: VoiceField) => {
         if (!isVoiceSupported) {
-            setVoiceError("welcome.voiceNotSupported");
+            setVoiceError("Voice input is not supported in your browser");
             return;
         }
         setIsListening(field);
@@ -144,6 +180,7 @@ const WorkerProfileScreen: React.FC = () => {
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setProfilePhotoFile(file);
             const reader = new FileReader();
             reader.onloadend = () => setProfilePhoto(reader.result as string);
             reader.readAsDataURL(file);
@@ -153,12 +190,15 @@ const WorkerProfileScreen: React.FC = () => {
     const handleWorkImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
+            const newFiles = Array.from(files);
+            setWorkImageFiles(prev => [...prev, ...newFiles]);
+
             const newImages: string[] = [];
-            Array.from(files).forEach((file) => {
+            newFiles.forEach((file) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     newImages.push(reader.result as string);
-                    if (newImages.length === files.length) {
+                    if (newImages.length === newFiles.length) {
                         setWorkImages((prev) => [...prev, ...newImages]);
                     }
                 };
@@ -169,6 +209,7 @@ const WorkerProfileScreen: React.FC = () => {
 
     const removeWorkImage = (index: number) => {
         setWorkImages((prev) => prev.filter((_, i) => i !== index));
+        setWorkImageFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
     // Category Handlers
@@ -185,42 +226,128 @@ const WorkerProfileScreen: React.FC = () => {
         );
     };
 
-    const handleSubmit = () => {
-        const profileData = {
-            fullName,
-            email,
-            bio,
-            skills,
-            location: { address, city, state, pincode },
-            serviceCharges: { type: chargeType, amount: chargeAmount },
-            availability: { from: availableFrom, to: availableTo, workingDays },
-            category: selectedCategory,
-            subcategory: selectedSubcategory,
-            profilePhoto,
-            workImages,
-        };
-
-        console.log("Profile Data:", profileData);
-
-        // ✅ Navigate to Service Marketplace
-        navigate("/service-marketplace");
+    // Map chargeType to API format
+    const getChargeTypeForAPI = (): "hour" | "day" | "fixed" => {
+        if (chargeType === "hourly") return "hour";
+        if (chargeType === "daily") return "day";
+        return "fixed";
     };
 
+    // Get category name from ID
+    const getCategoryName = (categoryId: number | ""): string => {
+        if (categoryId === "") return "";
+        const category = categories.find(cat => cat.id === categoryId);
+        return category?.name || "";
+    };
+    // This is the CORRECTED way to call createOrUpdateWorkerProfile
+    // Replace in your WorkerProfile.tsx or wherever you're submitting the worker form
+    // Replace the handleSubmit and handleFormSubmit functions in your WorkerProfile.tsx
+    // with this CORRECTED version that uses your actual state variables:
 
+    const handleSubmit = async () => {
+        try {
+            // ✅ Get userId from localStorage (MongoDB _id)
+            const userId = localStorage.getItem("userId");
+
+            if (!userId) {
+                alert("User ID not found. Please log in again.");
+                navigate("/login");
+                return;
+            }
+
+            // Validate it's a proper MongoDB ObjectId
+            if (!/^[a-f\d]{24}$/i.test(userId)) {
+                console.error("❌ Invalid userId format:", userId);
+                alert("Invalid user session. Please log in again.");
+                localStorage.clear();
+                navigate("/login");
+                return;
+            }
+
+            console.log("✅ Using userId:", userId);
+
+            // Validate required fields
+            if (!fullName.trim()) {
+                alert("Please enter your full name");
+                return;
+            }
+
+            if (selectedCategory === "") {
+                alert("Please select a category");
+                return;
+            }
+
+            if (!selectedSubcategory) {
+                alert("Please select a subcategory");
+                return;
+            }
+
+            if (!chargeAmount.trim()) {
+                alert("Please enter service charges");
+                return;
+            }
+
+            setIsSubmitting(true);
+            setSubmitError(null);
+
+            // ✅ Build payload using your actual state variables
+            const payload: CreateWorkerPayload = {
+                name: fullName.trim(),
+                email: email.trim() || undefined,
+                category: getCategoryName(selectedCategory),
+                subCategories: selectedSubcategory,
+                skills: skills.trim() || undefined,
+                bio: bio.trim() || undefined,
+                serviceCharge: Number(chargeAmount),
+                chargeType: getChargeTypeForAPI(),
+                latitude: latitude,
+                longitude: longitude,
+                workerid: userId, // ✅ CORRECT: Use actual userId, not phone
+                images: workImageFiles.length > 0 ? workImageFiles : undefined,
+                profilePic: profilePhotoFile || undefined,
+            };
+
+            console.log("📤 Submitting worker profile:", payload);
+
+            // ✅ Call API with userId as the route parameter
+            const response = await createOrUpdateWorkerProfile(userId, payload);
+
+            if (response.success) {
+                console.log("✅ Worker profile created/updated:", response.data);
+                alert("Worker profile saved successfully!");
+
+                // Navigate to dashboard or next step
+                navigate("/worker-dashboard");
+            } else {
+                setSubmitError(response.message || "Failed to save worker profile");
+            }
+        } catch (error: any) {
+            console.error("❌ Error saving worker profile:", error);
+            setSubmitError(error.message || "Failed to save worker profile");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const isFormValid =
         fullName.trim() !== "" &&
         selectedCategory !== "" &&
         selectedSubcategory !== "" &&
-        city.trim() !== "" &&
-        chargeAmount.trim() !== "";
+        chargeAmount.trim() !== "" &&
+        !isSubmitting;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-10 px-4">
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white rounded-3xl shadow-xl p-6">
                     <h2 className={`${typography.heading.h3} text-gray-800 mb-6`}>
-                        {"workerProfile.title"}
+                        Create Worker Profile
                     </h2>
+
+                    {submitError && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm">{submitError}</p>
+                        </div>
+                    )}
 
                     {/* Profile Photo */}
                     <ProfilePhotoUpload
@@ -238,7 +365,7 @@ const WorkerProfileScreen: React.FC = () => {
                             }`}
                     >
                         <img src={VoiceIcon} className="w-5 h-5" alt="Voice" />
-                        {"workerProfile.fillVoice"}
+                        Fill with Voice
                     </Button>
 
                     {voiceError && (
@@ -247,17 +374,17 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Basic Info Fields */}
                     <VoiceInputField
-                        label={"workerProfile.fullName"}
+                        label="Full Name *"
                         value={fullName}
                         onChange={setFullName}
                         onVoiceClick={() => startListening("fullName")}
                         isListening={isListening === "fullName"}
-                        placeholder={"workerProfile.fullNamePlaceholder"}
+                        placeholder="Enter your full name"
                         required
                     />
 
                     <VoiceInputField
-                        label={"workerProfile.email"}
+                        label="Email"
                         value={email}
                         onChange={setEmail}
                         onVoiceClick={() => startListening("email")}
@@ -278,12 +405,12 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Skills */}
                     <VoiceInputField
-                        label={"workerProfile.skills"}
+                        label="Skills"
                         value={skills}
                         onChange={setSkills}
                         onVoiceClick={() => startListening("skills")}
                         isListening={isListening === "skills"}
-                        placeholder={"workerProfile.skillsPlaceholder"}
+                        placeholder="e.g., Wiring, Switch Boards, Maintenance"
                     />
 
                     {/* Service Charges */}
@@ -298,13 +425,13 @@ const WorkerProfileScreen: React.FC = () => {
 
                     {/* Bio */}
                     <div className="mb-6">
-                        <label className={typography.form.label}>{"workerProfile.bio"}</label>
+                        <label className={typography.form.label}>Bio</label>
                         <textarea
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
                             rows={5}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl resize-none focus:border-[#0B0E92] focus:outline-none"
-                            placeholder={"workerProfile.bioPlaceholder"}
+                            placeholder="Tell clients about your experience and expertise"
                         />
                         <Button
                             variant="secondary"
@@ -314,7 +441,7 @@ const WorkerProfileScreen: React.FC = () => {
                                 }`}
                         >
                             <img src={VoiceIcon} className="w-4 h-4" alt="Voice" />
-                            {"workerProfile.speakBio"}
+                            Speak Bio
                         </Button>
                     </div>
 
@@ -359,12 +486,12 @@ const WorkerProfileScreen: React.FC = () => {
                         fullWidth
                         className="rounded-2xl bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white hover:opacity-90 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
-                        {"workerProfile.saveContinue"}
+                        {isSubmitting ? "Creating Profile..." : "Save & Continue"}
                     </Button>
 
-                    {!isFormValid && (
+                    {!isFormValid && !isSubmitting && (
                         <p className="text-center text-sm text-red-500 mt-3">
-                            {"workerProfile.validationError"}
+                            Please fill all required fields (*)
                         </p>
                     )}
                 </div>

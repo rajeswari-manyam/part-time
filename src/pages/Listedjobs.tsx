@@ -1,29 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, Edit, Loader2 } from "lucide-react";
+import { Trash2, Edit, Loader2, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getUserJobs, deleteJob } from "../services/api.service";
-const IMAGE_BASE_URL = "http://:3000"; // ✅ ADD THIS
+import { typography } from "../styles/typography";
+
+const IMAGE_BASE_URL = "http://192.168.1.13:3000";
+
 interface Job {
     _id: string;
     title?: string;
     description: string;
     category: string;
     subcategory?: string;
-
     jobType?: string;
     servicecharges?: string | number;
-
     startDate?: string;
     endDate?: string;
-
     area?: string;
     city?: string;
     state?: string;
     pincode?: string;
-
     latitude?: number;
     longitude?: number;
-
     images?: string[];
     createdAt: string;
 }
@@ -32,12 +30,12 @@ interface ListedJobsProps {
     userId: string;
 }
 
-const InfoRow = ({ label, value }: { label: string; value?: string }) => {
+const DetailRow = ({ label, value }: { label: string; value?: string }) => {
     if (!value) return null;
     return (
-        <div className="flex justify-between gap-4">
-            <span className="text-gray-500 min-w-[120px]">{label}</span>
-            <span className="font-medium text-right flex-1">{value}</span>
+        <div className="py-3 border-b border-gray-100 last:border-b-0">
+            <p className={`${typography.body.small} text-gray-600 mb-1`}>{label}</p>
+            <p className={`${typography.body.base} text-gray-900`}>{value}</p>
         </div>
     );
 };
@@ -82,139 +80,176 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
         <div className="min-h-screen bg-gray-50 px-4 py-6">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">
-                        My Listed Jobs{" "}
-                        <span className="text-sm text-gray-500">
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className={`${typography.heading.h3} text-gray-900`}>
+                        My Listed Jobs
+                        <span className={`${typography.body.base} text-gray-500 ml-2`}>
                             ({jobs.length})
                         </span>
                     </h1>
 
                     <button
-                        onClick={() => navigate("/free-listing")}
-                        className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm hover:bg-blue-700"
+                        onClick={() => navigate("/user-profile")}
+                        className={`${typography.body.base} bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors`}
                     >
                         + Add Job
                     </button>
                 </div>
 
                 {/* Job Cards */}
-                {jobs.map(job => (
-                    <div
-                        key={job._id}
-                        className="bg-white rounded-3xl border-2 border-blue-500 p-6 space-y-5"
-                    >
-                        {/* Title */}
-                        <h2 className="text-xl font-semibold">
-                            {job.title || job.subcategory}
-                        </h2>
+                {jobs.map(job => {
+                    const mainImage = job.images?.[0];
 
-                        {/* Images */}
-                        {job.images && job.images.length > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {job.images.map((img, i) => (
-                                    <div
-                                        key={i}
-                                        className="relative w-full h-32 rounded-xl overflow-hidden border bg-gray-100"
-                                    >
-                                        <img
-                                            src={`${IMAGE_BASE_URL}${img}`}
-                                            alt={`job-${i}`}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src =
-                                                    "https://via.placeholder.com/300x200?text=No+Image";
-                                            }}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                    return (
+                        <div
+                            key={job._id}
+                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                        >
+                            {/* Image Section */}
+                            {job.images && job.images.length > 0 ? (
+                                <div className="relative w-full h-64 bg-gray-100">
+                                    <img
+                                        src={`${IMAGE_BASE_URL}/${mainImage}`}
+                                        alt={job.title || "Job image"}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src =
+                                                "https://via.placeholder.com/400x300?text=No+Image";
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
+                                    <span className={`${typography.body.base} text-gray-400`}>
+                                        No images available
+                                    </span>
+                                </div>
+                            )}
 
-                        {/* Info */}
-                        <div className="space-y-3 text-gray-800">
-                            <InfoRow label="Category" value={job.category} />
-                            <InfoRow label="Subcategory" value={job.subcategory} />
-                            <InfoRow label="Job Type" value={job.jobType} />
+                            {/* Content Section */}
+                            <div className="p-6">
+                                {/* Category Badge */}
+                                <div className="mb-3">
+                                    <span className={`${typography.misc.badge} inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full`}>
+                                        {job.category}
+                                    </span>
+                                </div>
 
-                            <InfoRow
-                                label="Service Charges"
-                                value={
-                                    job.servicecharges
-                                        ? `₹${job.servicecharges}`
-                                        : undefined
-                                }
-                            />
+                                {/* Title */}
+                                <h2 className={`${typography.card.title} text-gray-900 mb-2`}>
+                                    {job.title || job.subcategory || "Untitled Job"}
+                                </h2>
 
-                            <InfoRow
-                                label="Start Date"
-                                value={
-                                    job.startDate
-                                        ? new Date(job.startDate).toLocaleDateString()
-                                        : undefined
-                                }
-                            />
-
-                            <InfoRow
-                                label="End Date"
-                                value={
-                                    job.endDate
-                                        ? new Date(job.endDate).toLocaleDateString()
-                                        : undefined
-                                }
-                            />
-
-                            <InfoRow
-                                label="Location"
-                                value={[
-                                    job.area,
-                                    job.city,
-                                    job.state,
-                                    job.pincode,
-                                ]
-                                    .filter(Boolean)
-                                    .join(", ")}
-                            />
-
-                            <InfoRow label="Description" value={job.description} />
-
-                            <InfoRow
-                                label="Posted On"
-                                value={new Date(job.createdAt).toLocaleDateString()}
-                            />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-3 pt-4 border-t">
-                            <button
-                                onClick={() => navigate(`/update-job/${job._id}`)}
-                                className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-100"
-                            >
-                                <Edit size={14} /> Edit
-                            </button>
-
-                            <button
-                                onClick={() => handleDelete(job._id)}
-                                disabled={deletingId === job._id}
-                                className="flex items-center gap-2 px-4 py-2 border border-red-400 text-red-600 rounded-lg text-sm hover:bg-red-50"
-                            >
-                                {deletingId === job._id ? (
-                                    <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                    <Trash2 size={14} />
+                                {/* Subcategory */}
+                                {job.subcategory && (
+                                    <p className={`${typography.body.base} text-gray-600 mb-4`}>
+                                        {job.subcategory}
+                                    </p>
                                 )}
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                ))}
 
-                {/* Empty */}
+                                {/* Job Type */}
+                                {job.jobType && (
+                                    <p className={`${typography.body.small} text-gray-700 mb-4 uppercase tracking-wide font-medium`}>
+                                        {job.jobType}
+                                    </p>
+                                )}
+
+                                {/* Service Charges */}
+                                {job.servicecharges && (
+                                    <div className="mb-4">
+                                        <p className={`${typography.heading.h4} text-green-600`}>
+                                            ₹{job.servicecharges}
+                                        </p>
+                                        <p className={`${typography.body.xs} text-gray-500`}>
+                                            Service Charges
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Description */}
+                                <div className="mb-4">
+                                    <h3 className={`${typography.form.label} text-gray-900 mb-2`}>
+                                        Description
+                                    </h3>
+                                    <p className={`${typography.body.base} text-gray-700 leading-relaxed`}>
+                                        {job.description}
+                                    </p>
+                                </div>
+
+                                {/* Location */}
+                                {(job.area || job.city || job.state || job.pincode) && (
+                                    <div className="mb-4 flex items-start gap-2">
+                                        <MapPin size={20} className="text-gray-400 mt-1 flex-shrink-0" />
+                                        <div>
+                                            <h3 className={`${typography.form.label} text-gray-900 mb-1`}>
+                                                Location
+                                            </h3>
+                                            <p className={`${typography.body.base} text-gray-700`}>
+                                                {[job.area, job.city, job.state, job.pincode]
+                                                    .filter(Boolean)
+                                                    .join(", ")}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Additional Details */}
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <DetailRow
+                                        label="Start Date"
+                                        value={
+                                            job.startDate
+                                                ? new Date(job.startDate).toLocaleDateString()
+                                                : undefined
+                                        }
+                                    />
+                                    <DetailRow
+                                        label="End Date"
+                                        value={
+                                            job.endDate
+                                                ? new Date(job.endDate).toLocaleDateString()
+                                                : undefined
+                                        }
+                                    />
+                                    <DetailRow
+                                        label="Posted On"
+                                        value={new Date(job.createdAt).toLocaleDateString()}
+                                    />
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                                    <button
+                                        onClick={() => navigate(`/update-job/${job._id}`)}
+                                        className={`${typography.body.base} flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors`}
+                                    >
+                                        <Edit size={18} /> Edit
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleDelete(job._id)}
+                                        disabled={deletingId === job._id}
+                                        className={`${typography.body.base} flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-red-400 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50`}
+                                    >
+                                        {deletingId === job._id ? (
+                                            <Loader2 size={18} className="animate-spin" />
+                                        ) : (
+                                            <Trash2 size={18} />
+                                        )}
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Empty State */}
                 {jobs.length === 0 && (
                     <div className="text-center text-gray-500 mt-20">
-                        <p className="text-lg font-medium">No jobs listed yet</p>
-                        <p className="text-sm">
-                            Click “Add Job” to create your first job
+                        <p className={`${typography.heading.h5} mb-2`}>No jobs listed yet</p>
+                        <p className={typography.body.base}>
+                            Click "Add Job" to create your first job
                         </p>
                     </div>
                 )}

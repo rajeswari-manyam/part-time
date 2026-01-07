@@ -325,13 +325,12 @@ export const getUserJobs = async (userId: string) => {
         const response = await axios.get(`${API_BASE_URL}/getUserJobs`, {
             params: { userId },
         });
-        return response.data;
+        return response.data; // Returns { message, count, jobs: [...] }
     } catch (error) {
         console.error("Error fetching user jobs:", error);
         throw error;
     }
 };
-
 export interface Worker {
     _id: string;
     name: string;
@@ -491,4 +490,379 @@ export const getNearbyPlaces = async (
     const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
     const data = await response.json();
     return data.results;
+};
+// Add these interfaces and functions to your api.service.ts file
+
+// ==================== WORKER PROFILE INTERFACES ====================
+export interface CreateWorkerPayload {
+    name: string;
+    email?: string;
+    category: string;
+    subCategories?: string; // Comma-separated string
+    skills?: string; // Comma-separated string
+    bio?: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    latitude: number | string;
+    longitude: number | string;
+    workerid: string; // User ID that becomes a worker
+    images?: File[];
+    profilePic?: File;
+}
+
+export interface WorkerProfile {
+    _id: string;
+    name: string;
+    email?: string;
+    category: string;
+    subCategories?: string;
+    skills?: string;
+    bio?: string;
+    serviceCharge: number;
+    chargeType: string;
+    profilePic?: string;
+    images?: string;
+    latitude: number;
+    longitude: number;
+    isActive?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+// ==================== AVAILABILITY INTERFACES ====================
+export interface CreateNotAvailabilityPayload {
+    workerId: string;
+    availabilityType: "HOURLY" | "DAILY";
+    fromDate: string; // Format: "YYYY-MM-DD"
+    toDate: string; // Format: "YYYY-MM-DD"
+    fromTime?: string; // Format: "HH:mm" (required for HOURLY)
+    toTime?: string; // Format: "HH:mm" (required for HOURLY)
+    isNotAvailable: boolean;
+}
+
+export interface AvailabilitySlot {
+    fromTime: string;
+    toTime: string;
+}
+
+export interface DailyAvailability {
+    date: string;
+    status: "Available" | "Not Available";
+    slots: AvailabilitySlot[];
+}
+
+export interface AvailabilityRecord {
+    _id: string;
+    workerId: string;
+    availabilityType: "HOURLY" | "DAILY";
+    fromDate: string;
+    toDate: string;
+    fromTime?: string;
+    toTime?: string;
+    isNotAvailable: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// ==================== WORKER PROFILE API FUNCTIONS ====================
+
+/**
+ * Create or Update Worker Profile
+ * This uses PUT method to create/update a worker profile
+ */
+export const createOrUpdateWorkerProfile = async (
+    workerId: string,
+    payload: CreateWorkerPayload
+): Promise<{ success: boolean; message: string; data: WorkerProfile }> => {
+    try {
+        console.log("Creating/Updating worker profile:", workerId, payload);
+
+        const formData = new FormData();
+
+        // Add all text fields
+        formData.append("name", payload.name);
+        if (payload.email) formData.append("email", payload.email);
+        formData.append("category", payload.category);
+        if (payload.subCategories) formData.append("subCategories", payload.subCategories);
+        if (payload.skills) formData.append("skills", payload.skills);
+        if (payload.bio) formData.append("bio", payload.bio);
+        formData.append("serviceCharge", String(payload.serviceCharge));
+        formData.append("chargeType", payload.chargeType);
+        formData.append("latitude", String(payload.latitude));
+        formData.append("longitude", String(payload.longitude));
+        formData.append("workerid", payload.workerid);
+
+        // Add files
+        if (payload.profilePic) {
+            formData.append("profilePic", payload.profilePic);
+        }
+
+        if (payload.images && payload.images.length > 0) {
+            payload.images.forEach((image) => {
+                formData.append("images", image);
+            });
+        }
+
+        const response = await fetch(`${API_BASE_URL}/worker/${workerId}`, {
+            method: "PUT",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Worker API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Worker profile response:", data);
+        return data;
+    } catch (error) {
+        console.error("Create/Update worker error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get Worker Profile by ID
+ */
+export const getWorkerProfile = async (
+    workerId: string
+): Promise<{ success: boolean; data: WorkerProfile }> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/worker/${workerId}`, {
+            method: "GET",
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Get worker profile error:", error);
+        throw error;
+    }
+};
+
+// ==================== AVAILABILITY API FUNCTIONS ====================
+
+/**
+ * Create Not Available Period
+ * Mark specific dates/times when worker is NOT available
+ */
+export const createNotAvailability = async (
+    payload: CreateNotAvailabilityPayload
+): Promise<{ success: boolean; message: string; data: AvailabilityRecord }> => {
+    try {
+        console.log("Creating not-available period:", payload);
+
+        const formData = new URLSearchParams();
+        formData.append("workerId", payload.workerId);
+        formData.append("availabilityType", payload.availabilityType);
+        formData.append("fromDate", payload.fromDate);
+        formData.append("toDate", payload.toDate);
+
+        if (payload.fromTime) formData.append("fromTime", payload.fromTime);
+        if (payload.toTime) formData.append("toTime", payload.toTime);
+
+        formData.append("isNotAvailable", String(payload.isNotAvailable));
+
+        const response = await fetch(`${API_BASE_URL}/createNotAvailability`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Create not-availability error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Not-availability created:", data);
+        return data;
+    } catch (error) {
+        console.error("Create not-availability error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get Worker Availability for Date Range
+ * Returns available dates within the specified range
+ */
+export const getWorkerAvailability = async (
+    workerId: string,
+    startDate: string, // Format: "YYYY-MM-DD"
+    endDate: string // Format: "YYYY-MM-DD"
+): Promise<{ success: boolean; message: string; availability: DailyAvailability[] }> => {
+    try {
+        console.log("Fetching worker availability:", { workerId, startDate, endDate });
+
+        const url = `${API_BASE_URL}/getWorkerAvailability?workerId=${workerId}&startDate=${startDate}&endDate=${endDate}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Get availability error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Worker availability response:", data);
+        return data;
+    } catch (error) {
+        console.error("Get worker availability error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get Availability Record by ID
+ * Get details of a specific availability record
+ */
+export const getAvailabilityById = async (
+    availabilityId: string
+): Promise<{ success: boolean; data: AvailabilityRecord }> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getAvailabilityById/${availabilityId}`,
+            {
+                method: "GET",
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Get availability by ID error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Delete/Update Availability Record
+ * You might want to add these functions too
+ */
+export const deleteAvailabilityRecord = async (
+    availabilityId: string
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/deleteAvailability/${availabilityId}`,
+            {
+                method: "DELETE",
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Delete availability error:", error);
+        throw error;
+    }
+};
+
+export const getAllUsers = async (): Promise<{ success: boolean; data: User[] }> => {
+    try {
+        console.log("Fetching all users...");
+
+        const response = await axios.get(`${API_BASE_URL}/getAllUsers`);
+
+        console.log("getAllUsers response:", response.data);
+
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching all users:", error.response?.data || error.message);
+
+        throw new Error(
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to fetch users"
+        );
+    }
+};
+// ==================== CREATE BOOKING ====================
+
+export interface CreateBookingPayload {
+    customer: string;
+    worker: string;
+    bookingType: "HOURLY" | "DAILY" | "MONTHLY";
+    hours?: number;
+    days?: number;
+    months?: number;
+    price: number;
+    startDate: string; // YYYY-MM-DD
+    remarks?: string;
+}
+
+export const createBooking = async (
+    payload: CreateBookingPayload
+): Promise<{ success: boolean; message: string; data: any }> => {
+    try {
+        const formData = new URLSearchParams();
+
+        formData.append("customer", payload.customer);
+        formData.append("worker", payload.worker);
+        formData.append("bookingType", payload.bookingType);
+        formData.append("price", String(payload.price));
+        formData.append("startDate", payload.startDate);
+
+        if (payload.hours) formData.append("hours", String(payload.hours));
+        if (payload.days) formData.append("days", String(payload.days));
+        if (payload.months) formData.append("months", String(payload.months));
+        if (payload.remarks) formData.append("remarks", payload.remarks);
+
+        const response = await fetch(`${API_BASE_URL}/createBooking`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Create booking error:", error);
+        throw error;
+    }
+};
+export const getNearbyJobs = async (
+  latitude: number,
+  longitude: number
+): Promise<{ success: boolean; count: number; jobs: any[] }> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/getNearbyJobs`,
+      {
+        params: { latitude, longitude },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching nearby jobs:", error);
+    throw error;
+  }
 };

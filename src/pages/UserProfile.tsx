@@ -117,13 +117,13 @@ const UserProfile: React.FC = () => {
         setFormData(prev => ({
           ...prev,
           category: foundCategory ? String(foundCategory.id) : "",
-          subcategory: prefillData.subcategory || ""
+          subcategory: prefillData.subcategory || "",
+          area: prefillData.area || "",
+          latitude: prefillData.latitude,
+          longitude: prefillData.longitude,
         }));
 
-        console.log("Form data updated with:", {
-          category: foundCategory ? String(foundCategory.id) : "",
-          subcategory: prefillData.subcategory || ""
-        });
+        console.log("Form data updated");
 
         // Clear the prefill data after using it
         localStorage.removeItem('jobPrefillData');
@@ -177,6 +177,7 @@ const UserProfile: React.FC = () => {
     );
   };
 
+  // ✅ Auto-get location on mount
   useEffect(() => {
     if (!navigator.geolocation) return;
 
@@ -303,16 +304,15 @@ const UserProfile: React.FC = () => {
 
       console.log("API Response:", response);
 
-      if (response.success && response.data?._id) {
-        const jobId = response.data._id;
-        console.log("Navigating to job:", jobId);
+      if (response.success || response.data?._id) {
+        // ✅ Show success message
+        alert("Job created successfully!");
 
-        setTimeout(() => {
-          navigate(`/listed-jobs/${jobId}`);
-        }, 500);
+        // ✅ Navigate to listed jobs page (not to a specific job)
+        navigate("/listed-jobs");
       } else {
         alert(response.message || "Job created but couldn't redirect");
-        navigate("/jobs");
+        navigate("/listed-jobs");
       }
     } catch (error: any) {
       console.error("Error creating job:", error);
