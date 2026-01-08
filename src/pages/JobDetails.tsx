@@ -30,12 +30,11 @@ const JobDetailsPage: React.FC = () => {
 
     useEffect(() => {
         if (!jobId) return;
-
         const fetchJobDetails = async () => {
             try {
                 setLoading(true);
-                const jobResponse = await getJobById(jobId);
 
+                const jobResponse = await getJobById(jobId!);
                 if (!jobResponse.success) {
                     setError("Job not found");
                     return;
@@ -44,33 +43,38 @@ const JobDetailsPage: React.FC = () => {
                 const jobData = jobResponse.data;
 
                 let customerName = "Customer";
-                let customerPhone = "N/A";
+                let customerPhone = "";
+                let customerLat: number | null = null;
+                let customerLng: number | null = null;
 
+                // ✅ FETCH USER USING job.userId
                 try {
                     const userResponse = await getUserById(jobData.userId);
                     if (userResponse.success) {
                         customerName = userResponse.data.name;
                         customerPhone = userResponse.data.phone;
+
+                        customerLat = Number(userResponse.data.latitude);
+                        customerLng = Number(userResponse.data.longitude);
                     }
-                } catch { }
+                } catch (err) {
+                    console.error("User fetch failed");
+                }
 
-                const formattedPhone =
-                    customerPhone !== "N/A"
-                        ? `+91 ${customerPhone.slice(0, 5)} ${customerPhone.slice(5)}`
-                        : customerPhone;
-
+                // ✅ DISTANCE CALCULATION
                 let distance = "N/A";
-                if (navigator.geolocation) {
+                if (navigator.geolocation && customerLat && customerLng) {
                     try {
                         const position = await new Promise<GeolocationPosition>(
                             (resolve, reject) =>
                                 navigator.geolocation.getCurrentPosition(resolve, reject)
                         );
+
                         distance = calculateDistance(
                             position.coords.latitude,
                             position.coords.longitude,
-                            jobData.latitude,
-                            jobData.longitude
+                            customerLat,
+                            customerLng
                         );
                     } catch { }
                 }
@@ -79,13 +83,15 @@ const JobDetailsPage: React.FC = () => {
                     title: jobData.subcategory
                         ? `${jobData.subcategory} - ${jobData.category}`
                         : jobData.category,
+
                     customerDetails: {
                         name: customerName,
-                        phone: formattedPhone,
+                        phone: customerPhone,
                         distance,
                         rating: 4.7,
-                        reviewCount: 23,
+                        reviewCount: 23
                     },
+
                     jobInformation: {
                         type: jobData.jobType,
                         budget: jobData.servicecharges,
@@ -93,20 +99,21 @@ const JobDetailsPage: React.FC = () => {
                         description: jobData.description || "No description provided",
                         startDate: new Date(jobData.startDate).toLocaleDateString(),
                         endDate: new Date(jobData.endDate).toLocaleDateString(),
-                        area: jobData.area || "N/A",
-                        city: jobData.city || "N/A",
-                        state: jobData.state || "N/A",
-                        pincode: jobData.pincode || "N/A",
+                        area: jobData.area,
+                        city: jobData.city,
+                        state: jobData.state,
+                        pincode: jobData.pincode,
                         location: `${jobData.area}, ${jobData.city}, ${jobData.state} - ${jobData.pincode}`,
-                        category: jobData.category || "N/A",
-                        subcategory: jobData.subcategory || "N/A",
+                        category: jobData.category,
+                        subcategory: jobData.subcategory,
                         latitude: jobData.latitude,
                         longitude: jobData.longitude,
                         images: jobData.images || [],
                         createdAt: jobData.createdAt,
-                        updatedAt: jobData.updatedAt,
+                        updatedAt: jobData.updatedAt
                     },
-                    mapUrl: `https://www.google.com/maps?q=${jobData.latitude},${jobData.longitude}&output=embed`,
+
+                    mapUrl: `https://www.google.com/maps?q=${jobData.latitude},${jobData.longitude}&output=embed`
                 });
             } catch {
                 setError("Failed to load job");
@@ -114,6 +121,7 @@ const JobDetailsPage: React.FC = () => {
                 setLoading(false);
             }
         };
+
 
         fetchJobDetails();
     }, [jobId]);
@@ -225,11 +233,9 @@ const JobDetailsPage: React.FC = () => {
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <button
-                            onClick={() =>
-                                (window.location.href = `tel:${job.customerDetails.phone.replace(/\s/g, "")}`)
-                            }
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            onClick={() => window.location.href = `sms:+91${job.customerDetails.phone}`}
                         >
+
                             <Phone className="w-5 h-5" />
                             Call Customer
                         </button>

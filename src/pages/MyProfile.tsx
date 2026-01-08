@@ -22,12 +22,12 @@ const MyProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ================= GET USER ID ================= */
   const getUserId = () => {
-    // Try multiple sources for userId
     const storedUserId = localStorage.getItem("userId");
     const storedUserData = localStorage.getItem("userData");
 
@@ -44,7 +44,6 @@ const MyProfile: React.FC = () => {
 
     return null;
   };
-
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -63,33 +62,25 @@ const MyProfile: React.FC = () => {
 
         console.log("Fetching profile for userId:", userId);
 
-        // ✅ Get phone from localStorage as fallback
         const savedPhone = localStorage.getItem("userPhone");
-
         const res = await getUserById(userId);
 
         console.log("User data received:", res);
 
         if (res.success && res.data) {
-          // Set all user data
           setName(res.data.name || "");
 
-          // ✅ Use API phone OR fallback to localStorage phone
           const userPhone = res.data.phone || savedPhone || "";
           setPhone(userPhone);
 
-          // ✅ Update localStorage if we got phone from API
           if (res.data.phone && res.data.phone !== savedPhone) {
             localStorage.setItem("userPhone", res.data.phone);
           }
 
           setEmail(res.data.email || "");
-
-          // Set coordinates
           setLatitude(res.data.latitude ? Number(res.data.latitude) : null);
           setLongitude(res.data.longitude ? Number(res.data.longitude) : null);
 
-          // Set profile picture
           if (res.data?.profilePic) {
             const picUrl = res.data.profilePic.startsWith('http')
               ? res.data.profilePic
@@ -99,11 +90,7 @@ const MyProfile: React.FC = () => {
           }
 
           console.log("✅ Profile loaded successfully");
-          console.log("- Name:", res.data.name);
-          console.log("- Phone:", userPhone);
-          console.log("- Email:", res.data.email);
         } else {
-          // ✅ If API fails but we have phone in localStorage, still show it
           if (savedPhone) {
             console.log("API failed but using localStorage phone:", savedPhone);
             setPhone(savedPhone);
@@ -113,7 +100,6 @@ const MyProfile: React.FC = () => {
       } catch (error: any) {
         console.error("Profile fetch error:", error);
 
-        // ✅ Even on error, try to show phone from localStorage
         const savedPhone = localStorage.getItem("userPhone");
         if (savedPhone) {
           console.log("Error occurred but using localStorage phone:", savedPhone);
@@ -127,11 +113,10 @@ const MyProfile: React.FC = () => {
     };
 
     fetchProfile();
-  }, []); // Run once on mount
-  /* ================= GEO LOCATION ================= */
+  }, []);
 
+  /* ================= GEO LOCATION ================= */
   useEffect(() => {
-    // Only fetch location if we don't have it from user data
     if (latitude !== null && longitude !== null) return;
 
     if (!navigator.geolocation) {
@@ -152,7 +137,6 @@ const MyProfile: React.FC = () => {
   }, [latitude, longitude]);
 
   /* ================= IMAGE HANDLING ================= */
-
   const handleImageClick = () => {
     if (isEditing) {
       fileInputRef.current?.click();
@@ -163,13 +147,11 @@ const MyProfile: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert("Please select a valid image file");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert("Image size should be less than 5MB");
       return;
@@ -180,7 +162,6 @@ const MyProfile: React.FC = () => {
   };
 
   /* ================= SAVE PROFILE ================= */
-
   const handleSave = async () => {
     const userId = getUserId();
 
@@ -202,30 +183,29 @@ const MyProfile: React.FC = () => {
         name: name.trim(),
       };
 
-      // Include location if available
       if (latitude !== null && longitude !== null) {
         payload.latitude = latitude;
         payload.longitude = longitude;
       }
 
-      // Include profile picture if changed
       if (profilePicFile) {
         payload.profilePic = profilePicFile;
       }
 
-      console.log("Saving profile with payload:", {
+      console.log("💾 Saving profile with payload:", {
         ...payload,
         profilePic: profilePicFile ? `File: ${profilePicFile.name}` : "No file"
       });
 
       const res = await updateUserById(userId, payload);
 
-      console.log("Update response:", res);
+      console.log("📥 Update response:", res);
 
       if (res.success) {
         alert("Profile updated successfully ✓");
         setIsEditing(false);
         setProfilePicFile(null);
+        navigate("/", { replace: true });
 
         // Update localStorage with new name
         localStorage.setItem("userName", name.trim());
@@ -236,15 +216,20 @@ const MyProfile: React.FC = () => {
             ? res.data.profilePic
             : `${API_BASE_URL}${res.data.profilePic}`;
           setProfilePic(picUrl);
+          console.log("✅ Updated profile pic URL:", picUrl);
         }
 
-        // Trigger storage event for other components
+        // ✅ IMPORTANT: Trigger event for sidebar to update
+        console.log("🔄 Dispatching profile update event...");
         window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("profileUpdated"));
+        console.log("✅ Profile update event dispatched");
+
       } else {
         throw new Error(res.message || "Update failed");
       }
     } catch (error: any) {
-      console.error("Save error:", error);
+      console.error("❌ Save error:", error);
       const errorMsg = error.message || "Failed to update profile";
       setError(errorMsg);
       alert("Error: " + errorMsg);
@@ -254,15 +239,12 @@ const MyProfile: React.FC = () => {
   };
 
   /* ================= CANCEL ================= */
-
   const handleCancel = async () => {
     setIsEditing(false);
     setProfilePicFile(null);
     setError(null);
 
-    // Reload profile data to reset changes
     const userId = getUserId();
-    console.log("User ID:", userId);
     if (userId) {
       try {
         const res = await getUserById(userId);
@@ -287,7 +269,6 @@ const MyProfile: React.FC = () => {
   };
 
   /* ================= LOADING ================= */
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -298,7 +279,6 @@ const MyProfile: React.FC = () => {
   }
 
   /* ================= ERROR STATE ================= */
-
   if (error && !getUserId()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -318,7 +298,6 @@ const MyProfile: React.FC = () => {
   }
 
   /* ================= UI ================= */
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl p-8 shadow-sm">

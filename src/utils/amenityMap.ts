@@ -1,42 +1,51 @@
 export const AMENITY_MAP: Record<string, string[]> = {
-  restaurants: ["restaurant"],
-  cafes: ["cafe"],
-  bakeries: ["bakery"],
-  "street food": ["fast_food"],
-  "juice & smoothie shops": ["juice_bar", "cafe"],
-  "sweet shops": ["confectionery"],
-  "ice cream parlours": ["ice_cream"],
+  // 🍽 FOOD
+  restaurants: ["amenity=restaurant"],
+  cafes: ["amenity=cafe"],
+  bakeries: ["shop=bakery"],
+  "street food": ["amenity=fast_food"],
+  "juice & smoothie shops": ["amenity=cafe", "shop=beverages"],
+  "sweet shops": ["shop=confectionery"],
+  "ice cream parlours": ["amenity=ice_cream"],
 
-  hospitals: ["hospital"],
-  clinics: ["clinic", "doctors"],
-  "dental clinics": ["dentist"],
-  "eye hospitals": ["hospital"],
-  pharmacies: ["pharmacy"],
-  "diagnostic labs": ["laboratory"],
-  "blood banks": ["blood_bank"],
+  // 🏥 MEDICAL
+  hospitals: ["amenity=hospital"],
+  clinics: ["amenity=clinic", "amenity=doctors"],
+  "dental clinics": ["amenity=dentist"],
+  "eye hospitals": ["amenity=hospital"],
+  pharmacies: ["amenity=pharmacy"],
+  "diagnostic labs": ["amenity=laboratory"],
+  "blood banks": ["amenity=blood_bank"],
 
-  hotels: ["hotel"],
-  resorts: ["resort"],
-  lodges: ["guest_house"],
-  "guest houses": ["guest_house"],
+  // 🏨 STAY
+  hotels: ["tourism=hotel"],
+  resorts: ["tourism=resort"],
+  lodges: ["tourism=guest_house"],
+  "guest houses": ["tourism=guest_house"],
 
-  gyms: ["gym", "fitness_centre"],
-  "fitness centres / gyms": ["gym", "fitness_centre"],
-  "yoga centres": ["yoga"],
+  // 💪 FITNESS
+  gyms: ["leisure=fitness_centre"],
+  "fitness centres / gyms": ["leisure=fitness_centre"],
+  "yoga centres": ["leisure=sports_centre"],
 
-  schools: ["school"],
-  colleges: ["college"],
-  "coaching centres": ["training"],
-  coaching: ["training"],
+  // 🎓 EDUCATION
+  schools: ["amenity=school"],
+  colleges: ["amenity=college"],
+  "coaching centres": ["amenity=training"],
+  coaching: ["amenity=training"],
 
-  supermarkets: ["supermarket"],
-  "grocery stores": ["supermarket", "convenience"],
+  // 🛒 SHOPPING
+  supermarkets: ["shop=supermarket"],
+  "grocery stores": ["shop=convenience", "shop=supermarket"],
 
-  "pet shops": ["pet"],
-  "vet clinics": ["veterinary"],
+  // 🐾 PETS
+  "pet shops": ["shop=pet"],
+  "vet clinics": ["amenity=veterinary"],
 
-  "mobile repair": ["mobile_phone"],
-  "courier offices": ["courier"],
+  // 📱 SERVICES
+  "mobile repair": ["shop=mobile_phone"],
+  "courier offices": ["amenity=courier"],
 
-  default: ["restaurant"],
+  // fallback
+  default: ["amenity=restaurant"],
 };

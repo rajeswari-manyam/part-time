@@ -158,30 +158,28 @@ const UpdateJob: React.FC = () => {
             const fd = new FormData();
 
             // ===== REQUIRED FIELDS =====
-            fd.append("jobType", formData.jobType);
-            fd.append("description", formData.description);
-            fd.append("category", formData.category);
+            fd.append("jobType", formData.jobType.trim());
+            fd.append("description", formData.description.trim());
+            fd.append("category", formData.category.trim());
             fd.append("latitude", String(formData.latitude));
             fd.append("longitude", String(formData.longitude));
 
             // ===== OPTIONAL FIELDS =====
-            if (formData.subcategory) fd.append("subcategory", formData.subcategory);
-            if (formData.area) fd.append("area", formData.area);
-            if (formData.city) fd.append("city", formData.city);
-            if (formData.state) fd.append("state", formData.state);
-            if (formData.pincode) fd.append("pincode", formData.pincode);
+            if (formData.subcategory) fd.append("subcategory", formData.subcategory.trim());
+            if (formData.area) fd.append("area", formData.area.trim());
+            if (formData.city) fd.append("city", formData.city.trim());
+            if (formData.state) fd.append("state", formData.state.trim());
+            if (formData.pincode) fd.append("pincode", formData.pincode.trim());
             if (formData.servicecharges)
                 fd.append("servicecharges", String(formData.servicecharges));
 
-            // ===== DATE FORMAT (DD-MM-YYYY) =====
+            // ===== DATE FORMAT (YYYY-MM-DD) =====
             if (formData.startDate) {
-                const [y, m, d] = formData.startDate.split("-");
-                fd.append("startDate", `${d}-${m}-${y}`);
+                fd.append("startDate", formData.startDate);
             }
 
             if (formData.endDate) {
-                const [y, m, d] = formData.endDate.split("-");
-                fd.append("endDate", `${d}-${m}-${y}`);
+                fd.append("endDate", formData.endDate);
             }
 
             // ===== IMAGES =====
@@ -198,6 +196,10 @@ const UpdateJob: React.FC = () => {
                 }
             );
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const result = await response.json();
 
             if (result.success) {
@@ -208,7 +210,13 @@ const UpdateJob: React.FC = () => {
             }
         } catch (error) {
             console.error("Update Job Error:", error);
-            alert("Something went wrong while updating the job");
+
+            // Check if it's a network error
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                alert("Cannot connect to server. Please ensure the backend server is running at " + API_BASE_URL);
+            } else {
+                alert("Something went wrong while updating the job: " + (error instanceof Error ? error.message : "Unknown error"));
+            }
         } finally {
             setIsSubmitting(false);
         }

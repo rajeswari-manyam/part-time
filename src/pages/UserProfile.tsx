@@ -61,6 +61,30 @@ const UserProfile: React.FC = () => {
     return res.json();
   };
 
+  // ✅ Forward Geocoding - Get lat/lng from address (like Google Maps)
+  const forwardGeocode = async (area: string, city: string, state: string, pincode: string) => {
+    try {
+      // Build search query with all available location fields
+      const query = `${area}, ${city}, ${state}, ${pincode}, India`;
+
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+      );
+      const data = await res.json();
+
+      if (data && data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon)
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      return null;
+    }
+  };
+
   const storedUser = localStorage.getItem("user");
   const user = storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
 
@@ -83,6 +107,7 @@ const UserProfile: React.FC = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
 
   // ✅ Get filtered subcategories based on selected category
   const getFilteredSubcategories = (): SubCategory[] => {
@@ -147,6 +172,39 @@ const UserProfile: React.FC = () => {
     }
   }, [formData.category]);
 
+  // ✅ Auto-detect lat/lng when location fields change (like Google Maps)
+  useEffect(() => {
+    const detectLocation = async () => {
+      // Only geocode if all location fields are filled
+      if (formData.area && formData.city && formData.state && formData.pincode) {
+        setIsGeocodingLoading(true);
+
+        const coords = await forwardGeocode(
+          formData.area,
+          formData.city,
+          formData.state,
+          formData.pincode
+        );
+
+        if (coords) {
+          setFormData(prev => ({
+            ...prev,
+            latitude: coords.latitude,
+            longitude: coords.longitude
+          }));
+          console.log("✅ Coordinates detected:", coords);
+        }
+
+        setIsGeocodingLoading(false);
+      }
+    };
+
+    // Debounce the geocoding to avoid too many requests (wait 1.5 seconds after user stops typing)
+    const timeoutId = setTimeout(detectLocation, 1500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.area, formData.city, formData.state, formData.pincode]);
+
   const handleUseCurrentLocation = async () => {
     if (!navigator.geolocation) {
       alert("Geolocation not supported");
@@ -176,22 +234,6 @@ const UserProfile: React.FC = () => {
       () => alert("Location permission denied")
     );
   };
-
-  // ✅ Auto-get location on mount
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormData((prev) => ({
-          ...prev,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        }));
-      },
-      (err) => console.error("Location error:", err)
-    );
-  }, []);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -261,7 +303,7 @@ const UserProfile: React.FC = () => {
     }
 
     if (!formData.latitude || !formData.longitude) {
-      alert("Location is required. Please enable location access.");
+      alert("Location coordinates not detected. Please check your address or use current location.");
       return false;
     }
 
@@ -305,10 +347,7 @@ const UserProfile: React.FC = () => {
       console.log("API Response:", response);
 
       if (response.success || response.data?._id) {
-        // ✅ Show success message
         alert("Job created successfully!");
-
-        // ✅ Navigate to listed jobs page (not to a specific job)
         navigate("/listed-jobs");
       } else {
         alert(response.message || "Job created but couldn't redirect");
@@ -379,7 +418,7 @@ const UserProfile: React.FC = () => {
             </select>
           </div>
 
-          {/* SUBCATEGORY - ✅ Now filtered based on category */}
+          {/* SUBCATEGORY */}
           <div>
             <label className="block text-sm font-medium mb-1">
               Subcategory
@@ -502,13 +541,33 @@ const UserProfile: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          {/* LOCATION STATUS & USE CURRENT LOCATION BUTTON */}
+          <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border">
+            <div className="text-xs">
+              {isGeocodingLoading ? (
+                <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Detecting location...
+                </span>
+              ) : formData.latitude && formData.longitude ? (
+                <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                  📍 {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                </span>
+              ) : (
+                <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
+                  📍 Location not detected
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleUseCurrentLocation}
               className="flex items-center gap-2 text-blue-600 text-sm font-medium hover:underline"
             >
-              <img src={locationIcon} className="w-4 h-4" />
+              <img src={locationIcon} className="w-4 h-4" alt="location" />
               Use Current Location
             </button>
           </div>

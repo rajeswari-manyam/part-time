@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAccount } from "../../context/AccountContext";
 import {
     Heart,
@@ -34,75 +35,97 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     user,
     profilePic: initialProfilePic,
 }) => {
+    const navigate = useNavigate();
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
     const [userName, setUserName] = useState(user.name || "User");
     const [profilePic, setProfilePic] = useState<string | null>(initialProfilePic || null);
     const [isLoadingName, setIsLoadingName] = useState(false);
     const { accountType, setAccountType } = useAccount();
 
-    // ✅ Fetch user name and profile picture dynamically on mount
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                // Try to get from localStorage first
-                const cachedName = localStorage.getItem("userName");
-                if (cachedName && cachedName !== "User") {
-                    setUserName(cachedName);
-                }
-
-                // Get userId from multiple sources
-                const userId =
-                    user.id ||
-                    user._id ||
-                    localStorage.getItem("userId");
-
-                if (!userId) {
-                    console.log("No userId available");
-                    return;
-                }
-
-                setIsLoadingName(true);
-                console.log("📡 Fetching user profile for:", userId);
-
-                const response = await getUserById(userId);
-                console.log("📥 User profile response:", response);
-
-                if (response.success && response.data) {
-                    // Update name
-                    if (response.data.name) {
-                        const fetchedName = response.data.name;
-                        setUserName(fetchedName);
-                        localStorage.setItem("userName", fetchedName);
-                        console.log("✅ Updated user name:", fetchedName);
-                    }
-
-                    // Update profile picture
-                    if (response.data.profilePic) {
-                        const picUrl = response.data.profilePic.startsWith('http')
-                            ? response.data.profilePic
-                            : `${API_BASE_URL}${response.data.profilePic}`;
-                        setProfilePic(picUrl);
-                        console.log("✅ Updated profile pic:", picUrl);
-                    }
-                }
-            } catch (error) {
-                console.error("❌ Error fetching user profile:", error);
-            } finally {
-                setIsLoadingName(false);
+    // ✅ Fetch user profile data
+    const fetchUserProfile = async () => {
+        try {
+            const cachedName = localStorage.getItem("userName");
+            if (cachedName && cachedName !== "User") {
+                setUserName(cachedName);
             }
-        };
 
+            const userId =
+                user.id ||
+                user._id ||
+                localStorage.getItem("userId");
+
+            if (!userId) {
+                console.log("No userId available");
+                return;
+            }
+
+            setIsLoadingName(true);
+            console.log("📡 [Sidebar] Fetching user profile for:", userId);
+
+            const response = await getUserById(userId);
+            console.log("📥 [Sidebar] User profile response:", response);
+
+            if (response.success && response.data) {
+                // Update name
+                if (response.data.name) {
+                    const fetchedName = response.data.name;
+                    setUserName(fetchedName);
+                    localStorage.setItem("userName", fetchedName);
+                    console.log("✅ [Sidebar] Updated user name:", fetchedName);
+                }
+
+                // Update profile picture
+                if (response.data.profilePic) {
+                    const picUrl = response.data.profilePic.startsWith('http')
+                        ? response.data.profilePic
+                        : `${API_BASE_URL}${response.data.profilePic}`;
+                    setProfilePic(picUrl);
+                    console.log("✅ [Sidebar] Updated profile pic:", picUrl);
+                } else {
+                    // No profile pic in database, use initial letter
+                    setProfilePic(null);
+                    console.log("ℹ️ [Sidebar] No profile pic, using initial letter");
+                }
+            }
+        } catch (error) {
+            console.error("❌ [Sidebar] Error fetching user profile:", error);
+        } finally {
+            setIsLoadingName(false);
+        }
+    };
+
+    // ✅ Fetch profile on mount
+    useEffect(() => {
         fetchUserProfile();
     }, [user.id, user._id]);
 
-    // ✅ Update profile pic when prop changes
+    // ✅ Listen for storage events (when profile is updated)
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent | Event) => {
+            console.log("🔄 [Sidebar] Storage event detected, refreshing profile...");
+            fetchUserProfile();
+        };
+
+        // Listen for storage events from other tabs/windows
+        window.addEventListener("storage", handleStorageChange);
+
+        // Listen for custom storage events from same tab
+        window.addEventListener("profileUpdated", fetchUserProfile);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            window.removeEventListener("profileUpdated", fetchUserProfile);
+        };
+    }, [user.id, user._id]);
+
+    // ✅ Update when prop changes
     useEffect(() => {
         if (initialProfilePic) {
             setProfilePic(initialProfilePic);
         }
     }, [initialProfilePic]);
 
-    // ✅ Get initial from name
     const getInitial = (name: string) => {
         if (!name || name === "User") return "U";
         return name.charAt(0).toUpperCase();
@@ -113,6 +136,39 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     const switchAccount = (type: AccountType) => {
         setAccountType(type);
         onNavigate("/home");
+    };
+
+    const handleLogout = () => {
+        console.log("🚪 === LOGOUT PROCESS START ===");
+
+        try {
+            setShowLogoutPopup(false);
+
+            console.log("🗑️ Clearing localStorage...");
+            localStorage.removeItem("userId");
+            localStorage.removeItem("userPhone");
+            localStorage.removeItem("userName");
+            localStorage.removeItem("token");
+            localStorage.removeItem("userData");
+            localStorage.removeItem("isFirstTimeUser");
+
+            console.log("✅ localStorage cleared");
+
+            if (onLogout) {
+                onLogout();
+            }
+
+            console.log("🏠 Navigating to home screen...");
+
+            setTimeout(() => {
+                navigate("/", { replace: true });
+                console.log("✅ Navigation complete");
+            }, 100);
+
+        } catch (error) {
+            console.error("❌ Logout error:", error);
+            navigate("/", { replace: true });
+        }
     };
 
     return (
@@ -142,7 +198,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         </button>
                     </div>
 
-                    {/* Profile Avatar - Show picture or initial */}
+                    {/* ✅ Profile Avatar - Dynamic update */}
                     <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white">
                         {profilePic ? (
                             <img
@@ -150,7 +206,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                                 alt={userName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                    console.error("Failed to load profile image in sidebar");
+                                    console.error("❌ [Sidebar] Failed to load profile image");
                                     setProfilePic(null);
                                 }}
                             />
@@ -213,15 +269,15 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             <MenuItem
                                 icon={<Bookmark />}
                                 label="Free Listing"
-                                onClick={() => onNavigate("/free-listing")}
+                                onClick={() => onNavigate("/user-profile")}
                             />
                         </>
                     ) : (
                         <>
                             <MenuItem
                                 icon={<Bell />}
-                                label="Worker Skills"
-                                onClick={() => onNavigate("/worker-skills")}
+                                label="Worker Profile"
+                                onClick={() => onNavigate("/worker-profile")}
                             />
                         </>
                     )}
@@ -239,16 +295,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         label="Saved"
                         onClick={() => onNavigate("/saved")}
                     />
+                    {/* ✅ FIXED: Both Guest and Worker navigate to same My Profile screen */}
                     <MenuItem
                         icon={<User />}
                         label="My Profile"
-                        onClick={() =>
-                            onNavigate(
-                                accountType === "user"
-                                    ? "/profile/edit"
-                                    : "/my-profile"
-                            )
-                        }
+                        onClick={() => onNavigate("/my-profile")}
                     />
 
                     <MenuItem icon={<Globe />} label="Change Language" />
@@ -295,7 +346,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         onClick={() => setShowLogoutPopup(false)}
                     />
 
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden">
+                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in">
                         <div className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] px-6 py-8 text-center">
                             <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                                 <LogOut className="w-10 h-10 text-white" />
@@ -312,14 +363,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
                             <div className="space-y-3">
                                 <button
-                                    onClick={onLogout}
+                                    onClick={handleLogout}
                                     className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold hover:brightness-110 transition-all"
                                 >
                                     Yes, Logout
                                 </button>
                                 <button
                                     onClick={() => setShowLogoutPopup(false)}
-                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>

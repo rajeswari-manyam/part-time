@@ -14,13 +14,13 @@ import VoiceInputField from "../components/WorkerProfile/VoiceInputField";
 import CategorySelector from "../components/WorkerProfile/CategorySelector";
 import ServiceChargesSection from "../components/WorkerProfile/ServiceCharges";
 import LocationSection from "../components/WorkerProfile/LocationSection";
-import AvailabilitySection from "../components/WorkerProfile/AvailabilitySection";
+
 import WorkImagesUpload from "../components/WorkerProfile/WorkImagesUpload";
 import { VoiceRecognitionResult } from "../components/Auth/OtpVerification/types";
 
 // Import API functions
 import {
-    createOrUpdateWorkerProfile,
+    createWorker,
     CreateWorkerPayload
 } from "../services/api.service";
 
@@ -52,6 +52,7 @@ const WorkerProfileScreen: React.FC = () => {
     const [email, setEmail] = useState("");
     const [bio, setBio] = useState("");
     const [skills, setSkills] = useState("");
+    const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
 
     // Location State
     const [address, setAddress] = useState("");
@@ -97,6 +98,91 @@ const WorkerProfileScreen: React.FC = () => {
     const availableSubcategories = selectedCategory
         ? subcategories.find((sub) => sub.categoryId === selectedCategory)?.items || []
         : [];
+    // Convert typed address into lat/lng automatically
+    const forwardGeocode = async (
+        area: string,
+        city: string,
+        state: string,
+        pincode: string
+    ): Promise<{ latitude: number; longitude: number } | null> => {
+        try {
+            const query = `${area}, ${city}, ${state}, ${pincode}, India`;
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+                    query
+                )}&limit=1`
+            );
+            const data = await res.json();
+            if (data && data.length > 0) {
+                return {
+                    latitude: parseFloat(data[0].lat),
+                    longitude: parseFloat(data[0].lon),
+                };
+            }
+            return null;
+        } catch (err) {
+            console.error("Forward geocoding error:", err);
+            return null;
+        }
+    };
+
+    const handleUseCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation not supported");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                setIsGeocodingLoading(true);
+
+                try {
+                    // Reverse geocode using OpenStreetMap / Nominatim
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+                    );
+                    const data = await res.json();
+
+                    setAddress(data.address?.suburb || data.address?.neighbourhood || "");
+                    setCity(
+                        data.address?.city ||
+                        data.address?.town ||
+                        data.address?.village ||
+                        ""
+                    );
+                    setState(data.address?.state || "");
+                    setPincode(data.address?.postcode || "");
+                    setLatitude(latitude);
+                    setLongitude(longitude);
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to fetch location details");
+                } finally {
+                    setIsGeocodingLoading(false);
+                }
+            },
+            () => alert("Location permission denied")
+        );
+    };
+    useEffect(() => {
+        const detectLatLng = async () => {
+            if (address && city && state && pincode) {
+                setIsGeocodingLoading(true);
+
+                const coords = await forwardGeocode(address, city, state, pincode);
+                if (coords) {
+                    setLatitude(coords.latitude);
+                    setLongitude(coords.longitude);
+                }
+
+                setIsGeocodingLoading(false);
+            }
+        };
+
+        const timer = setTimeout(detectLatLng, 1500); // debounce 1.5s
+        return () => clearTimeout(timer);
+    }, [address, city, state, pincode]);
 
     useEffect(() => {
         setIsVoiceSupported(voiceService.isSpeechRecognitionSupported());
@@ -239,95 +325,67 @@ const WorkerProfileScreen: React.FC = () => {
         const category = categories.find(cat => cat.id === categoryId);
         return category?.name || "";
     };
-    // This is the CORRECTED way to call createOrUpdateWorkerProfile
-    // Replace in your WorkerProfile.tsx or wherever you're submitting the worker form
-    // Replace the handleSubmit and handleFormSubmit functions in your WorkerProfile.tsx
-    // with this CORRECTED version that uses your actual state variables:
 
     const handleSubmit = async () => {
         try {
-            // ✅ Get userId from localStorage (MongoDB _id)
             const userId = localStorage.getItem("userId");
 
-            if (!userId) {
-                alert("User ID not found. Please log in again.");
-                navigate("/login");
-                return;
-            }
-
-            // Validate it's a proper MongoDB ObjectId
-            if (!/^[a-f\d]{24}$/i.test(userId)) {
-                console.error("❌ Invalid userId format:", userId);
-                alert("Invalid user session. Please log in again.");
+            if (!userId || !/^[a-f\d]{24}$/i.test(userId)) {
+                alert("Session expired. Please login again.");
                 localStorage.clear();
                 navigate("/login");
                 return;
             }
 
-            console.log("✅ Using userId:", userId);
-
-            // Validate required fields
-            if (!fullName.trim()) {
-                alert("Please enter your full name");
-                return;
-            }
-
-            if (selectedCategory === "") {
-                alert("Please select a category");
-                return;
-            }
-
-            if (!selectedSubcategory) {
-                alert("Please select a subcategory");
-                return;
-            }
-
-            if (!chargeAmount.trim()) {
-                alert("Please enter service charges");
+            if (!fullName || !selectedCategory || !selectedSubcategory || !chargeAmount) {
+                alert("Please fill all required fields");
                 return;
             }
 
             setIsSubmitting(true);
             setSubmitError(null);
 
-            // ✅ Build payload using your actual state variables
             const payload: CreateWorkerPayload = {
+                userId, // ✅ CORRECT
                 name: fullName.trim(),
-                email: email.trim() || undefined,
+                email: email || undefined,
                 category: getCategoryName(selectedCategory),
                 subCategories: selectedSubcategory,
-                skills: skills.trim() || undefined,
-                bio: bio.trim() || undefined,
+                skills: skills || undefined,
+                bio: bio || undefined,
                 serviceCharge: Number(chargeAmount),
                 chargeType: getChargeTypeForAPI(),
-                latitude: latitude,
-                longitude: longitude,
-                workerid: userId, // ✅ CORRECT: Use actual userId, not phone
-                images: workImageFiles.length > 0 ? workImageFiles : undefined,
+
+                area: address,        // ✅ REQUIRED
+                city,
+                state,
+                pincode,
+
+                latitude,
+                longitude,
+
+                images: workImageFiles.length ? workImageFiles : undefined,
                 profilePic: profilePhotoFile || undefined,
             };
 
-            console.log("📤 Submitting worker profile:", payload);
+            console.log("📤 Creating worker:", payload);
 
-            // ✅ Call API with userId as the route parameter
-            const response = await createOrUpdateWorkerProfile(userId, payload);
+            const response = await createWorker(payload);
 
             if (response.success) {
-                console.log("✅ Worker profile created/updated:", response.data);
-                alert("Worker profile saved successfully!");
-
-                // Navigate to dashboard or next step
+                alert("Worker profile created successfully 🎉");
                 navigate("/worker-dashboard");
             } else {
-                setSubmitError(response.message || "Failed to save worker profile");
+                setSubmitError(response.message || "Failed to create worker profile");
             }
         } catch (error: any) {
-            console.error("❌ Error saving worker profile:", error);
-            setSubmitError(error.message || "Failed to save worker profile");
+            console.error(error);
+            setSubmitError(error.message || "Something went wrong");
         } finally {
             setIsSubmitting(false);
         }
     };
+
     const isFormValid =
         fullName.trim() !== "" &&
         selectedCategory !== "" &&
@@ -349,11 +407,6 @@ const WorkerProfileScreen: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Profile Photo */}
-                    <ProfilePhotoUpload
-                        profilePhoto={profilePhoto}
-                        onPhotoUpload={handlePhotoUpload}
-                    />
 
                     {/* Voice Fill All Button */}
                     <Button
@@ -451,32 +504,29 @@ const WorkerProfileScreen: React.FC = () => {
                         onImagesUpload={handleWorkImagesUpload}
                         onRemoveImage={removeWorkImage}
                     />
-
-                    {/* Location */}
                     <LocationSection
                         address={address}
                         city={city}
                         state={state}
                         pincode={pincode}
+                        latitude={latitude}
+                        longitude={longitude}
+                        isGeocodingLoading={isGeocodingLoading}
+
                         onAddressChange={setAddress}
                         onCityChange={setCity}
                         onStateChange={setState}
                         onPincodeChange={setPincode}
+
                         onAddressVoice={() => startListening("location")}
                         onCityVoice={() => startListening("city")}
+                        onUseCurrentLocation={handleUseCurrentLocation}
+
                         isAddressListening={isListening === "location"}
                         isCityListening={isListening === "city"}
                     />
 
-                    {/* Availability */}
-                    <AvailabilitySection
-                        availableFrom={availableFrom}
-                        availableTo={availableTo}
-                        workingDays={workingDays}
-                        onAvailableFromChange={setAvailableFrom}
-                        onAvailableToChange={setAvailableTo}
-                        onToggleWorkingDay={toggleWorkingDay}
-                    />
+
 
                     {/* Submit Button */}
                     <Button
@@ -489,11 +539,6 @@ const WorkerProfileScreen: React.FC = () => {
                         {isSubmitting ? "Creating Profile..." : "Save & Continue"}
                     </Button>
 
-                    {!isFormValid && !isSubmitting && (
-                        <p className="text-center text-sm text-red-500 mt-3">
-                            Please fill all required fields (*)
-                        </p>
-                    )}
                 </div>
             </div>
         </div>

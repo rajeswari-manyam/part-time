@@ -396,16 +396,8 @@ export default function LocationSelector({
 
     /* ----------------------------- RENDER ----------------------------- */
     return (
-        <div className="w-full max-w-2xl mx-auto p-4 space-y-4">
-            {/* Title */}
-            <div className="text-center mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-                    Select Your Location
-                </h2>
-                <p className="text-gray-600 text-sm md:text-base">
-                    Choose where you want to find nearby jobs
-                </p>
-            </div>
+        <div className="w-full max-w-2xl mx-auto space-y-2">
+     
 
             {/* Location Input */}
             <div className="bg-white rounded-xl md:rounded-2xl border-2 border-blue-400 shadow-lg overflow-hidden">
@@ -466,27 +458,7 @@ export default function LocationSelector({
                 </div>
             )}
 
-            {/* Success Message */}
-            {isSaved && (
-                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0">
-                            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-semibold text-green-800">Location Saved!</p>
-                            <p className="text-xs text-green-600 mt-1">
-                                Finding jobs near {city}...
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
+         
             {/* Action Buttons */}
             {showButtons && !isSaved && (
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -528,14 +500,7 @@ export default function LocationSelector({
                 </div>
             )}
 
-            {/* Help Text */}
-            {!isSaved && !address && (
-                <div className="text-center">
-                    <p className="text-xs md:text-sm text-gray-500">
-                        💡 Type your city, area, or address, or use your current location
-                    </p>
-                </div>
-            )}
+    
         </div>
     );
 }
