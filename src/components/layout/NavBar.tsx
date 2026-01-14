@@ -6,7 +6,7 @@ import {
   User,
   Bell,
   Home,
-  Bookmark
+  Calendar
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -168,12 +168,12 @@ const Navbar: React.FC = () => {
                 {accountType === "user" ? (
                   <>
                     <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Bookmark} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                    <NavItem icon={Calendar} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
                   </>
                 ) : (
                   <>
                     <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Bell} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+                    <NavItem icon={Calendar} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
                   </>
                 )}
               </div>
@@ -266,12 +266,12 @@ const Navbar: React.FC = () => {
             {accountType === "user" ? (
               <>
                 <MobileNavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Bookmark} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                <MobileNavItem icon={Calendar} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
               </>
             ) : (
               <>
                 <MobileNavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Bell} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+                <MobileNavItem icon={Calendar} label="my-bookings" onClick={() => handleNavClick("/my-bookings")} />
               </>
             )}
             <MobileNavItem icon={Bell} label="Notification" onClick={() => handleNavClick("/notification")} />

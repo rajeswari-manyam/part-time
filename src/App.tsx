@@ -50,6 +50,8 @@ import BookNow from "./pages/BookNow";
 import RaiseTicketUI from "./pages/RiseTicket";
 import ViewTicketsUI from "./pages/ViewTicket";
 import ReferAndEarnScreen from "./pages/Refer&earn";
+import AboutUs from "./pages/AboutUs";
+import MyBookings from "./pages/MyBookings";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -103,7 +105,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
                     <Route path="/booknow/:jobId" element={<BookNow />} />
                       <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
-
+                      <Route path="/about-us" element={<AboutUs/>}/>
                     <Route path="/raise-ticket" element={<RaiseTicketUI />} />
                     {/* Nearby Places (for place subcategories) */}
                     <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
@@ -120,6 +122,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
                     <Route path="/my-profile" element={<MyProfile />} />
                      <Route path="/view-tickets" element={<ViewTicketsUI />} />
+                     <Route path="/my-bookings" element={<MyBookings />} />
 
                     <Route
                         path="/listed-jobs"

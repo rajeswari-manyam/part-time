@@ -397,7 +397,7 @@ export default function LocationSelector({
     /* ----------------------------- RENDER ----------------------------- */
     return (
         <div className="w-full max-w-2xl mx-auto space-y-2">
-     
+
 
             {/* Location Input */}
             <div className="bg-white rounded-xl md:rounded-2xl border-2 border-blue-400 shadow-lg overflow-hidden">
@@ -458,7 +458,7 @@ export default function LocationSelector({
                 </div>
             )}
 
-         
+
             {/* Action Buttons */}
             {showButtons && !isSaved && (
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -500,7 +500,7 @@ export default function LocationSelector({
                 </div>
             )}
 
-    
+
         </div>
     );
 }

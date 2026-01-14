@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAccount } from "../../context/AccountContext";
 import {
     Heart,
     Bookmark,
@@ -13,8 +11,10 @@ import {
     LogOut,
     X,
     Briefcase,
+    Gift,
+    Info,
+    Ticket,
 } from "lucide-react";
-import { getUserById, API_BASE_URL } from "../../services/api.service";
 
 type AccountType = "user" | "worker";
 
@@ -35,96 +35,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     user,
     profilePic: initialProfilePic,
 }) => {
-    const navigate = useNavigate();
     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
     const [userName, setUserName] = useState(user.name || "User");
     const [profilePic, setProfilePic] = useState<string | null>(initialProfilePic || null);
-    const [isLoadingName, setIsLoadingName] = useState(false);
-    const { accountType, setAccountType } = useAccount();
-
-    // ✅ Fetch user profile data
-    const fetchUserProfile = async () => {
-        try {
-            const cachedName = localStorage.getItem("userName");
-            if (cachedName && cachedName !== "User") {
-                setUserName(cachedName);
-            }
-
-            const userId =
-                user.id ||
-                user._id ||
-                localStorage.getItem("userId");
-
-            if (!userId) {
-                console.log("No userId available");
-                return;
-            }
-
-            setIsLoadingName(true);
-            console.log("📡 [Sidebar] Fetching user profile for:", userId);
-
-            const response = await getUserById(userId);
-            console.log("📥 [Sidebar] User profile response:", response);
-
-            if (response.success && response.data) {
-                // Update name
-                if (response.data.name) {
-                    const fetchedName = response.data.name;
-                    setUserName(fetchedName);
-                    localStorage.setItem("userName", fetchedName);
-                    console.log("✅ [Sidebar] Updated user name:", fetchedName);
-                }
-
-                // Update profile picture
-                if (response.data.profilePic) {
-                    const picUrl = response.data.profilePic.startsWith('http')
-                        ? response.data.profilePic
-                        : `${API_BASE_URL}${response.data.profilePic}`;
-                    setProfilePic(picUrl);
-                    console.log("✅ [Sidebar] Updated profile pic:", picUrl);
-                } else {
-                    // No profile pic in database, use initial letter
-                    setProfilePic(null);
-                    console.log("ℹ️ [Sidebar] No profile pic, using initial letter");
-                }
-            }
-        } catch (error) {
-            console.error("❌ [Sidebar] Error fetching user profile:", error);
-        } finally {
-            setIsLoadingName(false);
-        }
-    };
-
-    // ✅ Fetch profile on mount
-    useEffect(() => {
-        fetchUserProfile();
-    }, [user.id, user._id]);
-
-    // ✅ Listen for storage events (when profile is updated)
-    useEffect(() => {
-        const handleStorageChange = (e: StorageEvent | Event) => {
-            console.log("🔄 [Sidebar] Storage event detected, refreshing profile...");
-            fetchUserProfile();
-        };
-
-        // Listen for storage events from other tabs/windows
-        window.addEventListener("storage", handleStorageChange);
-
-        // Listen for custom storage events from same tab
-        window.addEventListener("profileUpdated", fetchUserProfile);
-
-        return () => {
-            window.removeEventListener("storage", handleStorageChange);
-            window.removeEventListener("profileUpdated", fetchUserProfile);
-        };
-    }, [user.id, user._id]);
-
-    // ✅ Update when prop changes
-    useEffect(() => {
-        if (initialProfilePic) {
-            setProfilePic(initialProfilePic);
-        }
-    }, [initialProfilePic]);
+    const [accountType, setAccountType] = useState<AccountType>("user");
 
     const getInitial = (name: string) => {
         if (!name || name === "User") return "U";
@@ -133,82 +47,37 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
     const initial = getInitial(userName);
 
-    const switchAccount = (type: AccountType) => {
-        setAccountType(type);
-        onNavigate("/home");
-    };
-
     const handleLogout = () => {
-        console.log("🚪 === LOGOUT PROCESS START ===");
-
-        try {
-            setShowLogoutPopup(false);
-
-            console.log("🗑️ Clearing localStorage...");
-            localStorage.removeItem("userId");
-            localStorage.removeItem("userPhone");
-            localStorage.removeItem("userName");
-            localStorage.removeItem("token");
-            localStorage.removeItem("userData");
-            localStorage.removeItem("isFirstTimeUser");
-
-            console.log("✅ localStorage cleared");
-
-            if (onLogout) {
-                onLogout();
-            }
-
-            console.log("🏠 Navigating to home screen...");
-
-            setTimeout(() => {
-                navigate("/", { replace: true });
-                console.log("✅ Navigation complete");
-            }, 100);
-
-        } catch (error) {
-            console.error("❌ Logout error:", error);
-            navigate("/", { replace: true });
+        setShowLogoutPopup(false);
+        if (onLogout) {
+            onLogout();
         }
     };
 
     return (
         <>
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col bg-white">
                 {/* ================= HEADER ================= */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <div className="flex-1">
                         <h2 className="text-lg font-semibold text-gray-900">
-                            {isLoadingName ? (
-                                <span className="animate-pulse">Loading...</span>
-                            ) : (
-                                userName
-                            )}
+                            {userName}
                         </h2>
                         <button
-                            onClick={() =>
-                                onNavigate(
-                                    accountType === "user"
-                                        ? "/profile"
-                                        : "/worker-profile"
-                                )
-                            }
+                            onClick={() => onNavigate("/profile")}
                             className="text-sm text-blue-600 hover:underline"
                         >
                             Click to view profile
                         </button>
                     </div>
 
-                    {/* ✅ Profile Avatar - Dynamic update */}
+                    {/* Profile Avatar */}
                     <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white">
                         {profilePic ? (
                             <img
                                 src={profilePic}
                                 alt={userName}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    console.error("❌ [Sidebar] Failed to load profile image");
-                                    setProfilePic(null);
-                                }}
                             />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold text-lg">
@@ -218,92 +87,64 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     </div>
                 </div>
 
+                {/* ================= PROFILE SECTION ================= */}
+                <div className="p-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-2 px-3">Profile</p>
 
-
-                {/* ================= MENU (ACCOUNT-SPECIFIC) ================= */}
-                <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
-                    {accountType === "user" ? (
-                        <>
-                            <MenuItem
-                                icon={<Bookmark />}
-                                label="Free Listing"
-                                onClick={() => onNavigate("/user-profile")}
-                            />
-                        </>
-                    ) : (
-                        <>
-                            <MenuItem
-                                icon={<Bell />}
-                                label="Worker Profile"
-                                onClick={() => onNavigate("/worker-profile")}
-                            />
-                        </>
-                    )}
-
-                    <div className="my-3 border-t" />
-
-                    {/* COMMON MENU ITEMS */}
                     <MenuItem
-                        icon={<Heart />}
-                        label="Favourite"
-                        onClick={() => onNavigate("/favorites")}
-                    />
-                    <MenuItem
-                        icon={<Bookmark />}
-                        label="Saved"
-                        onClick={() => onNavigate("/saved")}
-                    />
-                    {/* ✅ FIXED: Both Guest and Worker navigate to same My Profile screen */}
-                    <MenuItem
-                        icon={<User />}
+                        icon={<User className="text-blue-500" />}
                         label="My Profile"
                         onClick={() => onNavigate("/my-profile")}
                     />
 
-                    <MenuItem icon={<Globe />} label="Change Language" />
                     <MenuItem
-                        icon={<Bell />}
-                        label="Notifications"
-                        onClick={() => onNavigate("/notification/:id")}
+                        icon={<Globe className="text-blue-500" />}
+                        label="Change Language"
+                        onClick={() => { }}
                     />
 
-                    <div className="my-3 border-t" />
+                    <MenuItem
+                        icon={<Gift className="text-orange-500" />}
+                        label="Refer & Earn"
+                        onClick={() => onNavigate("/refer-and-earn")}
+                    />
+                </div>
+
+                {/* ================= SUPPORT & SETTINGS SECTION ================= */}
+                <div className="p-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-2 px-3">Support & Settings</p>
 
                     <MenuItem
-                        icon={<Shield />}
-                        label="Policy"
+                        icon={<Shield className="text-yellow-500" />}
+                        label="Privacy Policy"
                         onClick={() => onNavigate("/policy")}
                     />
+
                     <MenuItem
-                        icon={<Shield />}
+                        icon={<Info className="text-gray-500" />}
+                        label="About Us"
+                        onClick={() => onNavigate("/about-us")}
+                    />
+
+                    <MenuItem
+                        icon={<Ticket className="text-yellow-500" />}
                         label="Raise Ticket"
-                        onClick={() => onNavigate("/raise-ticket")}  // Changed from /raise-ticket to /view-tickets
+                        onClick={() => onNavigate("/raise-ticket")}
                     />
+
                     <MenuItem
-                        icon={<Shield />}
-                        label="Refer & Earn"
-                        onClick={() => onNavigate("/refer-and-earn")}  // Changed from /raise-ticket to /view-tickets
-                    />
-                    <MenuItem
-                        icon={<MessageSquare />}
-                        label="Feedback"
-                        onClick={() => onNavigate("/feedback/:id")}
-                    />
-                    <MenuItem
-                        icon={<HelpCircle />}
+                        icon={<HelpCircle className="text-red-400" />}
                         label="Help"
                         onClick={() => onNavigate("/help")}
                     />
 
-                    <div className="my-3 border-t" />
-
                     <MenuItem
-                        icon={<LogOut />}
+                        icon={<LogOut className="text-red-500" />}
                         label="Logout"
                         danger
                         onClick={() => setShowLogoutPopup(true)}
                     />
-                </nav>
+                </div>
             </div>
 
             {/* ================= LOGOUT POPUP ================= */}
@@ -338,7 +179,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                                 </button>
                                 <button
                                     onClick={() => setShowLogoutPopup(false)}
-                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                    className="w-full py-3 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -375,13 +216,14 @@ const MenuItem: React.FC<MenuItemProps> = ({
 }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${danger
+        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition ${danger
             ? "text-red-600 hover:bg-red-50"
             : "text-gray-700 hover:bg-gray-100"
             }`}
     >
-        <span className="w-5 h-5">{icon}</span>
-        <span>{label}</span>
+        <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
+        <span className="flex-1 text-left">{label}</span>
+        <span className="text-gray-400">›</span>
     </button>
 );
 
