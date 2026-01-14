@@ -47,6 +47,9 @@ import ListedJobs from "./pages/Listedjobs";
 import LocationSelector from "./components/LocationSelector";
 import MyProfile from "./pages/MyProfile";
 import BookNow from "./pages/BookNow";
+import RaiseTicketUI from "./pages/RiseTicket";
+import ViewTicketsUI from "./pages/ViewTicket";
+import ReferAndEarnScreen from "./pages/Refer&earn";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -98,10 +101,10 @@ const AppRoutes: React.FC = () => {
                     {/* Matched Workers (for worker subcategories) */}
                     <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
-                  <Route path="/booknow/:jobId" element={<BookNow />} />
+                    <Route path="/booknow/:jobId" element={<BookNow />} />
+                      <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
 
-
-
+                    <Route path="/raise-ticket" element={<RaiseTicketUI />} />
                     {/* Nearby Places (for place subcategories) */}
                     <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
                     <Route path="/nearby-places" element={<NearbyPlaces />} />
@@ -116,7 +119,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
                     <Route path="/my-profile" element={<MyProfile />} />
-
+                     <Route path="/view-tickets" element={<ViewTicketsUI />} />
 
                     <Route
                         path="/listed-jobs"
@@ -168,6 +171,14 @@ const AppRoutes: React.FC = () => {
                         element={
                             <ProtectedRoute>
                                 <Policy />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/raise-ticket"
+                        element={
+                            <ProtectedRoute>
+                                <RaiseTicketUI/>
                             </ProtectedRoute>
                         }
                     />

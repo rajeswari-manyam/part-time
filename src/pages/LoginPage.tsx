@@ -44,14 +44,14 @@ const LoginPage: React.FC = () => {
             {/* 🔥 OTP Popup - Conditionally rendered */}
             {showOTPPopup && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <OTPVerification
-                        phoneNumber={phoneNumber}
-                        onVerify={handleVerify}
-                        onResend={handleResend}
-                        onBack={closeOTPPopup}        // Close on back
-                        onClose={closeOTPPopup}       // 🔥 Close on success
-                        onContinue={closeOTPPopup}    // 🔥 Close on continue
-                    />
+                  <OTPVerification
+  phoneNumber={phoneNumber}
+  onResend={handleResend}
+  onBack={closeOTPPopup}
+  onClose={closeOTPPopup}
+  onContinue={closeOTPPopup}
+/>
+
                 </div>
             )}
         </div>

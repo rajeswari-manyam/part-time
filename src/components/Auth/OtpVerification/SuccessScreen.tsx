@@ -8,79 +8,99 @@ interface SuccessScreenProps {
 
 const SuccessScreen: React.FC<SuccessScreenProps> = ({ onContinue }) => {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8 text-center">
-                {/* Success Icon with Animation */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Blurred Background Overlay */}
+            <div
+                className="absolute inset-0 bg-black/30"
+                style={{
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)'
+                }}
+            />
+
+            {/* White Content Card */}
+            <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-scale-in">
+                {/* Success Checkmark Animation */}
                 <div className="flex justify-center mb-6">
                     <div className="relative">
-                        <div className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center animate-scale-in">
+                        {/* Pulse Ring */}
+                        <div className="absolute inset-0 bg-green-500 rounded-full opacity-20 animate-ping"
+                            style={{ animationDuration: '1.5s' }} />
+
+                        {/* Success Circle */}
+                        <div className="relative bg-gradient-to-br from-green-400 to-green-600 w-24 h-24 rounded-full flex items-center justify-center shadow-lg">
                             <svg
-                                width="64"
-                                height="64"
-                                viewBox="0 0 24 24"
+                                className="w-12 h-12 text-white animate-checkmark"
                                 fill="none"
-                                stroke="white"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
                                 strokeWidth="3"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                className="animate-check"
                             >
-                                <polyline points="20 6 9 17 4 12" />
+                                <path d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                {/* Success Message */}
-                <h2 className={`text-gray-900 font-bold mb-2 ${typography.heading.h3}`}>
-                    Welcome to ServiceHub!
-                </h2>
-                <p className={`text-green-600 font-semibold mb-8 ${typography.body.base}`}>
-                    Verification Successful
-                </p>
+                {/* Success Text */}
+                <div className="text-center space-y-3 mb-8">
+                    <h2 className={`text-gray-900 font-bold ${typography.heading.h3}`}>
+                        Verification Successful!
+                    </h2>
+                    <p className={`text-gray-600 ${typography.body.base}`}>
+                        Your account has been verified successfully
+                    </p>
+                </div>
 
                 {/* Continue Button */}
                 <Button
+                    type="button"
                     onClick={onContinue}
-                    variant="primary"
+                    variant="gradient-blue"
                     size="lg"
                     fullWidth
-                    className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:brightness-110"
+                    className="shadow-md"
                 >
-                    Continue →
+                    Continue to ServiceHub
                 </Button>
 
+                {/* Styling */}
                 <style>{`
-                    @keyframes scale-in {
+                    @keyframes checkmark {
                         0% {
-                            transform: scale(0);
+                            stroke-dasharray: 0 50;
                             opacity: 0;
+                            transform: scale(0.8);
                         }
                         50% {
-                            transform: scale(1.1);
-                        }
-                        100% {
-                            transform: scale(1);
                             opacity: 1;
                         }
+                        100% {
+                            stroke-dasharray: 50 0;
+                            opacity: 1;
+                            transform: scale(1);
+                        }
                     }
-                    
-                    @keyframes check {
+
+                    @keyframes scale-in {
                         0% {
-                            stroke-dasharray: 0, 100;
+                            opacity: 0;
+                            transform: scale(0.9);
                         }
                         100% {
-                            stroke-dasharray: 100, 0;
+                            opacity: 1;
+                            transform: scale(1);
                         }
                     }
-                    
-                    .animate-scale-in {
-                        animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+                    .animate-checkmark {
+                        animation: checkmark 0.6s ease-in-out forwards;
                     }
-                    
-                    .animate-check {
-                        stroke-dasharray: 100;
-                        animation: check 0.6s 0.3s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+
+                    .animate-scale-in {
+                        animation: scale-in 0.3s ease-out forwards;
                     }
                 `}</style>
             </div>

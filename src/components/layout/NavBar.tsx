@@ -21,7 +21,7 @@ import { getUserById, API_BASE_URL } from "../../services/api.service";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
-  const { accountType } = useAccount();
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,8 +35,18 @@ const Navbar: React.FC = () => {
   );
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const { accountType, setAccountType } = useAccount();
 
-  // ✅ Fetch user profile picture on mount and when authenticated
+  const handleSwitchAccount = (type: "user" | "worker") => {
+    if (type === accountType) return;
+
+    setAccountType(type);
+    setIsMobileMenuOpen(false);
+    setShowProfileSidebar(false);
+    navigate("/home", { replace: true });
+  };
+
+  // Fetch user profile picture on mount and when authenticated
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!isAuthenticated) return;
@@ -53,7 +63,6 @@ const Navbar: React.FC = () => {
           setUserName(name);
           localStorage.setItem("userName", name);
 
-          // ✅ Set profile picture if available
           if (response.data.profilePic) {
             const picUrl = response.data.profilePic.startsWith('http')
               ? response.data.profilePic
@@ -74,13 +83,12 @@ const Navbar: React.FC = () => {
     fetchUserProfile();
   }, [isAuthenticated]);
 
-  // ✅ Listen for profile updates from localStorage
+  // Listen for profile updates from localStorage
   useEffect(() => {
     const syncUserData = () => {
       const name = localStorage.getItem("userName") || "User";
       setUserName(name);
 
-      // Re-fetch profile to get updated picture
       const userId = localStorage.getItem("userId");
       if (userId && isAuthenticated) {
         getUserById(userId).then(response => {
@@ -98,7 +106,6 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("storage", syncUserData);
   }, [isAuthenticated]);
 
-  /* ---------------- Navigation ---------------- */
   const handleNavClick = (path: string) => {
     if (!isAuthenticated) {
       setShowWelcomeModal(true);
@@ -179,6 +186,36 @@ const Navbar: React.FC = () => {
                 <Bell className="w-5 h-5" />
               </button>
 
+              {/* Desktop Account Toggle */}
+              {isAuthenticated && (
+                <div className="hidden lg:flex items-center">
+                  <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
+                    <div
+                      className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
+                        bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                        rounded-full transition-transform duration-300
+                        ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
+                    />
+
+                    <button
+                      onClick={() => handleSwitchAccount("user")}
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-[#1F3B64]"
+                        }`}
+                    >
+                      Customer
+                    </button>
+
+                    <button
+                      onClick={() => handleSwitchAccount("worker")}
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"
+                        }`}
+                    >
+                      Worker
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Auth / Profile */}
               {!isAuthenticated ? (
                 <Button
@@ -200,7 +237,6 @@ const Navbar: React.FC = () => {
                       alt={userName}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Fallback to initial if image fails to load
                         console.error("Failed to load profile image");
                         setProfilePic(null);
                       }}
@@ -229,16 +265,46 @@ const Navbar: React.FC = () => {
           <div className="lg:hidden bg-white border-t shadow-md">
             {accountType === "user" ? (
               <>
-                <MobileNavItem label="Home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                <MobileNavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem icon={Bookmark} label="Jobs" onClick={() => handleNavClick("/listed-jobs")} />
               </>
             ) : (
               <>
-                <MobileNavItem label="Home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+                <MobileNavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem icon={Bell} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
               </>
             )}
-            <MobileNavItem label="Notification" onClick={() => handleNavClick("/notification")} />
+            <MobileNavItem icon={Bell} label="Notification" onClick={() => handleNavClick("/notification")} />
+
+            {/* Mobile Account Toggle */}
+            {isAuthenticated && (
+              <div className="px-4 py-3 border-t">
+                <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-full">
+                  <div
+                    className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
+                      bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                      rounded-full transition-transform duration-300
+                      ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
+                  />
+
+                  <button
+                    onClick={() => handleSwitchAccount("user")}
+                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-[#1F3B64]"
+                      }`}
+                  >
+                    Customer
+                  </button>
+
+                  <button
+                    onClick={() => handleSwitchAccount("worker")}
+                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"
+                      }`}
+                  >
+                    Worker
+                  </button>
+                </div>
+              </div>
+            )}
 
             {!isAuthenticated ? (
               <button
@@ -284,25 +350,22 @@ const Navbar: React.FC = () => {
         <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center">
           <OTPVerification
             phoneNumber={phoneNumber}
-            onVerify={() => { }}
-            onResend={() => { }}
             onBack={() => setShowOTPModal(false)}
             onClose={handleLoginSuccess}
             onContinue={handleLoginSuccess}
+            onResend={() => { }}
           />
         </div>
       )}
 
-      {/* ================= PROFILE SIDEBAR (RIGHT SLIDE) ================= */}
+      {/* ================= PROFILE SIDEBAR ================= */}
       {showProfileSidebar && (
         <div className="fixed inset-0 z-[9999] flex justify-end">
-          {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/50"
             onClick={() => setShowProfileSidebar(false)}
           />
 
-          {/* Sidebar Panel */}
           <div className="relative w-80 h-full bg-white shadow-xl transform transition-transform duration-300 translate-x-0">
             <ProfileSidebar
               user={{ name: userName }}
@@ -331,17 +394,18 @@ const NavItem = ({ icon: Icon, label, onClick }: any) => (
     onClick={onClick}
     className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
   >
-    <Icon className="w-4 h-4" />
+    <Icon className="w-5 h-5" />
     <span className="text-sm font-medium">{label}</span>
   </button>
 );
 
-const MobileNavItem = ({ label, onClick }: any) => (
+const MobileNavItem = ({ icon: Icon, label, onClick }: any) => (
   <button
     onClick={onClick}
-    className="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors"
+    className="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors flex items-center gap-3"
   >
-    {label}
+    {Icon && <Icon className="w-5 h-5" />}
+    <span>{label}</span>
   </button>
 );
 

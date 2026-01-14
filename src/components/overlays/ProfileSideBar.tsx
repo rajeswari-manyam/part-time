@@ -218,49 +218,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     </div>
                 </div>
 
-                {/* ================= SWITCH ACCOUNT ================= */}
-                <div className="px-4 py-4 border-b">
-                    <div className="flex items-center justify-between bg-white border rounded-xl px-4 py-3">
-                        <div className="flex items-center gap-3 text-[#1F3B64] font-semibold">
-                            <Briefcase className="w-5 h-5" />
-                            <span>Switch Account</span>
-                        </div>
 
-                        <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
-                            <div
-                                className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
-                                bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
-                                rounded-full transition-transform duration-300
-                                ${accountType === "user"
-                                        ? "translate-x-0"
-                                        : "translate-x-full"
-                                    }`}
-                            />
-
-                            <button
-                                onClick={() => switchAccount("user")}
-                                className={`relative z-10 w-1/2 text-xs font-semibold
-                                ${accountType === "user"
-                                        ? "text-white"
-                                        : "text-[#1F3B64]"
-                                    }`}
-                            >
-                                Guest
-                            </button>
-
-                            <button
-                                onClick={() => switchAccount("worker")}
-                                className={`relative z-10 w-1/2 text-xs font-semibold
-                                ${accountType === "worker"
-                                        ? "text-white"
-                                        : "text-[#1F3B64]"
-                                    }`}
-                            >
-                                Worker
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
                 {/* ================= MENU (ACCOUNT-SPECIFIC) ================= */}
                 <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
@@ -315,6 +273,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         icon={<Shield />}
                         label="Policy"
                         onClick={() => onNavigate("/policy")}
+                    />
+                    <MenuItem
+                        icon={<Shield />}
+                        label="Raise Ticket"
+                        onClick={() => onNavigate("/raise-ticket")}  // Changed from /raise-ticket to /view-tickets
+                    />
+                    <MenuItem
+                        icon={<Shield />}
+                        label="Refer & Earn"
+                        onClick={() => onNavigate("/refer-and-earn")}  // Changed from /raise-ticket to /view-tickets
                     />
                     <MenuItem
                         icon={<MessageSquare />}

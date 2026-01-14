@@ -59,6 +59,50 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const navigate = useNavigate();
     const { login } = useAuth();
 
+
+    // ------------------- AUTO-VERIFY OTP -------------------
+    useEffect(() => {
+        const otpString = otp.join("");
+        if (otpString.length === 6 && !isVerifying) {
+            handleVerifyOTP(otpString);
+        }
+    }, [otp]);
+
+
+// ✅ WEBSITE OTP AUTO-FILL (SINGLE, CORRECT IMPLEMENTATION)
+useEffect(() => {
+    const abortController = new AbortController();
+
+    if (!("OTPCredential" in window)) {
+        console.log("❌ Web OTP API not supported");
+        return;
+    }
+
+    navigator.credentials.get({
+        otp: { transport: ["sms"] },
+        signal: abortController.signal,
+    } as any)
+        .then((credential: any) => {
+            if (credential?.code) {
+                console.log("📩 OTP auto-filled:", credential.code);
+
+                const otpDigits = credential.code
+                    .replace(/\D/g, "")
+                    .slice(0, 6)
+                    .split("");
+
+                setOtp(otpDigits);
+            }
+        })
+        .catch((err) => {
+            if (err.name !== "AbortError") {
+                console.log("OTP auto-fill error:", err.message);
+            }
+        });
+
+    return () => abortController.abort();
+}, []);
+
     useEffect(() => {
         if (timer > 0 && !showSuccess && !showFirstTimeModal) {
             const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
@@ -66,28 +110,23 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         }
     }, [timer, showSuccess, showFirstTimeModal]);
 
-    // ✅ Validate if string is a valid MongoDB ObjectId
     const isValidMongoId = (id: string): boolean => {
         const mongoIdRegex = /^[a-f\d]{24}$/i;
         return mongoIdRegex.test(id);
     };
 
-    // ✅ NEW: Check if this phone number has logged in before
     const hasLoggedInBefore = (phone: string): boolean => {
         const loggedInPhones = localStorage.getItem("loggedInPhones");
         if (!loggedInPhones) return false;
 
         try {
             const phones = JSON.parse(loggedInPhones);
-            const hasLoggedIn = phones.includes(phone);
-            console.log(`📱 Phone ${phone} has logged in before:`, hasLoggedIn);
-            return hasLoggedIn;
+            return phones.includes(phone);
         } catch {
             return false;
         }
     };
 
-    // ✅ NEW: Mark this phone number as logged in
     const markPhoneAsLoggedIn = (phone: string) => {
         const loggedInPhones = localStorage.getItem("loggedInPhones");
         let phones: string[] = [];
@@ -101,15 +140,10 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         if (!phones.includes(phone)) {
             phones.push(phone);
             localStorage.setItem("loggedInPhones", JSON.stringify(phones));
-            console.log(`✅ Marked phone ${phone} as logged in before`);
         }
     };
 
-    // ✅ Extract and validate userId
     const extractUserId = (response: OTPVerifyResponse): string => {
-        console.log("🔍 === EXTRACTING USER ID ===");
-        console.log("Full API Response:", JSON.stringify(response, null, 2));
-
         const possibleUserIds = [
             { source: "response.userId", value: response.userId },
             { source: "response.user?.id", value: response.user?.id },
@@ -121,156 +155,79 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             { source: "response.data?._id", value: response.data?._id },
         ];
 
-        console.log("🔍 Checking all possible userId locations:");
-        for (const { source, value } of possibleUserIds) {
-            console.log(`  - ${source}: ${value || "undefined"}`);
-
+        for (const { value } of possibleUserIds) {
             if (value && typeof value === 'string') {
-                if (value === phoneNumber) {
-                    console.warn(`  ⚠️ ${source} contains phone number, skipping...`);
-                    continue;
-                }
-
-                if (isValidMongoId(value)) {
-                    console.log(`  ✅ Found valid MongoDB ObjectId: ${value}`);
-                    return value;
-                }
-
-                if (value.length > 10) {
-                    console.log(`  ⚠️ Found ID but not valid MongoDB format: ${value}`);
-                    return value;
-                }
+                if (value === phoneNumber) continue;
+                if (isValidMongoId(value)) return value;
+                if (value.length > 10) return value;
             }
         }
 
-        console.error("❌ === NO VALID USER ID FOUND ===");
-        console.error("Response structure:", response);
         return "";
     };
 
-    // ✅ Verify OTP and decide flow
     const handleVerifyOTP = async (otpString: string) => {
-        if (!otpString || otpString.length !== 6) {
-            console.log("Invalid OTP length:", otpString.length);
+        if (!otpString || otpString.length !== 6 || isVerifying) {
             return;
         }
 
         try {
             setIsVerifying(true);
-            console.log("🔐 === OTP VERIFICATION START ===");
-            console.log("Phone:", phoneNumber);
-            console.log("OTP:", otpString);
+            console.log("🔐 Verifying OTP:", otpString);
 
-            // ✅ ACTUAL API CALL
             const response: OTPVerifyResponse = await verifyOtp({
                 phone: phoneNumber,
                 otp: otpString,
             });
 
-            console.log("📥 === OTP VERIFICATION RESPONSE ===");
-            console.log(JSON.stringify(response, null, 2));
-
             if (response.success) {
-                console.log("✅ OTP verified successfully!");
+                console.log("✅ OTP verified!");
 
-                // Extract userId
                 const extractedUserId = extractUserId(response);
 
-                if (!extractedUserId) {
-                    console.error("❌ CRITICAL ERROR: No userId found!");
-                    alert("Authentication error: Could not retrieve user ID. Please contact support.");
+                if (!extractedUserId || extractedUserId === phoneNumber) {
+                    alert("Authentication error. Please try again.");
+                    setIsVerifying(false);
                     return;
                 }
-
-                if (extractedUserId === phoneNumber) {
-                    console.error("❌ CRITICAL ERROR: UserId is same as phone number!");
-                    alert("Authentication error: Invalid user data received. Please try again or contact support.");
-                    return;
-                }
-
-                if (!isValidMongoId(extractedUserId)) {
-                    console.warn("⚠️ WARNING: UserId doesn't match MongoDB ObjectId format:", extractedUserId);
-                }
-
-                console.log("✅ === USER ID VALIDATED ===");
-                console.log("UserId:", extractedUserId);
-                console.log("Length:", extractedUserId.length);
-                console.log("Is MongoDB format:", isValidMongoId(extractedUserId));
 
                 setUserId(extractedUserId);
-
-                // Clear and store new data
-                localStorage.removeItem("userId");
-                localStorage.removeItem("userData");
                 localStorage.setItem("userId", extractedUserId);
                 localStorage.setItem("userPhone", phoneNumber);
 
-                console.log("💾 === STORED IN LOCALSTORAGE ===");
-                console.log("userId:", extractedUserId);
-                console.log("userPhone:", phoneNumber);
-
                 const token = response.token || response.user?.token || response.data?.token;
-                if (token) {
-                    localStorage.setItem("token", token);
-                    console.log("✅ Token saved");
-                }
+                if (token) localStorage.setItem("token", token);
 
-                // Verify storage
-                const storedUserId = localStorage.getItem("userId");
-                const storedPhone = localStorage.getItem("userPhone");
-                console.log("🔍 === VERIFICATION: WHAT'S IN LOCALSTORAGE ===");
-                console.log("Stored userId:", storedUserId);
-                console.log("Stored phone:", storedPhone);
-                console.log("Match check - userId !== phone:", storedUserId !== storedPhone);
-
-                if (storedUserId === storedPhone) {
-                    console.error("❌ STORAGE ERROR: userId and phone are the same!");
-                    alert("Storage error occurred. Please try logging in again.");
-                    return;
-                }
-
-                // ✅ CHECK IF THIS IS A FIRST-TIME LOGIN FOR THIS PHONE NUMBER
                 await checkUserProfileAndProceed(extractedUserId);
 
             } else {
-                console.error("❌ OTP verification failed:", response.message);
+                console.error("❌ OTP verification failed");
                 alert(response.message || "Invalid OTP. Please try again.");
+                setIsVerifying(false);
+                // Clear OTP fields on failure
+                setOtp(["", "", "", "", "", ""]);
+                inputRefs.current[0]?.focus();
             }
         } catch (error: any) {
-            console.error("❌ === OTP VERIFICATION ERROR ===");
-            console.error(error);
+            console.error("❌ OTP verification error:", error);
             alert("Something went wrong. Please try again.");
-        } finally {
             setIsVerifying(false);
+            setOtp(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
         }
     };
 
-    // ✅ UPDATED: Check user profile and decide whether to show modal
     const checkUserProfileAndProceed = async (userId: string) => {
         try {
-            // ✅ CHECK IF THIS PHONE HAS LOGGED IN BEFORE
             const isFirstTimeForThisPhone = !hasLoggedInBefore(phoneNumber);
 
-            console.log("🆕 === FIRST LOGIN CHECK ===");
-            console.log("Phone:", phoneNumber);
-            console.log("Is first time for this phone?", isFirstTimeForThisPhone);
-
             if (isFirstTimeForThisPhone) {
-                // 🎉 FIRST TIME USER - SHOW MODAL
-                console.log("📝 === FIRST TIME USER - SHOWING MODAL ===");
                 setShowFirstTimeModal(true);
             } else {
-                // 👤 RETURNING USER - SKIP MODAL
-                console.log("👤 === RETURNING USER - SKIPPING MODAL ===");
-                console.log("Fetching user profile to proceed...");
-
                 const userResponse = await getUserById(userId);
-                console.log("📥 User data response:", userResponse);
 
                 if (userResponse.success && userResponse.data) {
                     const userData = userResponse.data;
-
-                    // Save existing user data
                     localStorage.setItem("userName", userData.name || "User");
                     localStorage.setItem("isFirstTimeUser", "false");
                     localStorage.setItem("userData", JSON.stringify(userData));
@@ -288,11 +245,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                     };
 
                     login(user);
-                    console.log("🔐 User logged in (returning user)");
                 } else {
-                    // Fallback if API fails
-                    console.log("⚠️ Could not fetch user data, using minimal data");
-
                     const user = {
                         _id: userId,
                         id: userId,
@@ -300,7 +253,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                         name: "User",
                         isVerified: true,
                     };
-
                     localStorage.setItem("isFirstTimeUser", "false");
                     login(user);
                 }
@@ -309,32 +261,18 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             }
         } catch (error) {
             console.error("❌ Error checking user profile:", error);
-            // On error, show modal to be safe
-            console.log("⚠️ Error occurred, showing modal to be safe");
             setShowFirstTimeModal(true);
         }
     };
 
-    // ✅ UPDATED: Handle first-time user completing profile
     const handleFirstTimeComplete = async (userName: string) => {
-        console.log("📝 === NAME SETUP COMPLETE ===");
-        console.log("Name:", userName);
-        console.log("UserId:", userId);
-        console.log("Phone:", phoneNumber);
-
-        // ✅ CRITICAL: MARK THIS PHONE AS HAVING LOGGED IN BEFORE
         markPhoneAsLoggedIn(phoneNumber);
 
-        console.log("✅ Phone marked as logged in:", phoneNumber);
-        console.log("📋 Current logged in phones:", localStorage.getItem("loggedInPhones"));
-
-        // Fetch updated user data
         try {
             const userResponse = await getUserById(userId);
 
             if (userResponse.success && userResponse.data) {
                 const userData = userResponse.data;
-
                 localStorage.setItem("userName", userName);
                 localStorage.setItem("isFirstTimeUser", "false");
                 localStorage.setItem("userData", JSON.stringify(userData));
@@ -352,45 +290,28 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 };
 
                 login(user);
-                console.log("🔐 User logged in with new name");
             } else {
-                // Fallback
                 const user = {
                     _id: userId,
                     id: userId,
                     phone: phoneNumber,
                     name: userName,
                     isVerified: true,
-                    latitude: undefined,
-                    longitude: undefined,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
                 };
-
                 localStorage.setItem("userName", userName);
                 localStorage.setItem("isFirstTimeUser", "false");
-                localStorage.setItem("userData", JSON.stringify(user));
                 login(user);
             }
         } catch (error) {
-            console.error("Error fetching updated user data:", error);
-
-            // Fallback
             const user = {
                 _id: userId,
                 id: userId,
                 phone: phoneNumber,
                 name: userName,
                 isVerified: true,
-                latitude: undefined,
-                longitude: undefined,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
             };
-
             localStorage.setItem("userName", userName);
             localStorage.setItem("isFirstTimeUser", "false");
-            localStorage.setItem("userData", JSON.stringify(user));
             login(user);
         }
 
@@ -407,7 +328,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             const response = await resendOtp(phoneNumber);
 
             if (response.success) {
-                console.log("📨 OTP resent successfully");
                 alert("OTP sent successfully!");
             } else {
                 alert(response.message || "Failed to resend OTP");
@@ -415,7 +335,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
             if (onResend) onResend();
         } catch (error) {
-            console.error("Resend OTP error:", error);
             alert("Failed to resend OTP. Please try again.");
         }
     };
@@ -443,7 +362,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 if (digits.length > 0) {
                     const otpArray = digits.slice(0, 6).split("");
                     const filledOtp = [...otpArray, ...Array(6 - otpArray.length).fill("")];
-
                     setOtp(filledOtp);
 
                     const nextIndex = Math.min(otpArray.length, 5);
@@ -452,7 +370,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                     if (digits.length >= 6 && result.isFinal) {
                         voiceService.stopListening();
                         setIsListening(false);
-                        setTimeout(() => handleVerifyOTP(digits.slice(0, 6)), 400);
                     }
                 }
             },
@@ -465,11 +382,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     };
 
     const handleSuccessContinue = () => {
-        console.log("🎉 Proceeding to role selection");
-
         if (onClose) onClose();
         if (onContinue) onContinue();
-
         navigate("/role-selection", { replace: true });
     };
 

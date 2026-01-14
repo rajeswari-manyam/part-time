@@ -2,7 +2,7 @@ import axios from "axios";
 
 // ✅ UPDATED: Changed to match your actual backend IP
 export const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || "http://192.168.1.13:3000";
+    process.env.REACT_APP_API_BASE_URL || "";
 
 // Axios instance for x-www-form-urlencoded requests
 const API_FORM = axios.create({
@@ -330,22 +330,31 @@ export const getUserJobs = async (userId: string) => {
         console.error("Error fetching user jobs:", error);
         throw error;
     }
-};
+};// Update this interface in your api.service.ts file
+
 export interface Worker {
     _id: string;
+    userId: string;
     name: string;
-    email: string;
-    category: string;
-    chargeType: string;
+    email?: string;
+    category: string | string[];  // Can be string or array
+    subCategories?: string[];
+    skills?: string[];
+    bio?: string;
+    chargeType: "hour" | "day" | "fixed";
     serviceCharge: number;
     latitude: number;
     longitude: number;
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
     isActive: boolean;
-    images: string;
-    profilePic: string;
+    images?: string[];  // Changed from 'string' to 'string[]'
+    profilePic?: string;
     createdAt: string;
     updatedAt: string;
-    __v: number;
+    __v?: number;
 }
 
 export const getWorkerById = async (workerId: string): Promise<{ success: boolean; data: Worker }> => {
@@ -495,70 +504,70 @@ export const getNearbyPlaces = async (
 // ==================== CREATE WORKER ====================
 
 export interface CreateWorkerPayload {
-  userId: string;
-  name: string;
-  email?: string;
-  category: string;
-  subCategories: string;
-  skills?: string;
-  bio?: string;
-  serviceCharge: number;
-  chargeType: "hour" | "day" | "fixed";
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  latitude: number | string;
-  longitude: number | string;
-  images?: File[];
-  profilePic?: File;
+    userId: string;
+    name: string;
+    email?: string;
+    category: string;
+    subCategories: string;
+    skills?: string;
+    bio?: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number | string;
+    longitude: number | string;
+    images?: File[];
+    profilePic?: File;
 }
 
 export const createWorker = async (
-  payload: CreateWorkerPayload
+    payload: CreateWorkerPayload
 ): Promise<{ success: boolean; message: string; data: any }> => {
-  try {
-    const formData = new FormData();
+    try {
+        const formData = new FormData();
 
-    // Required
-    formData.append("userId", payload.userId);
-    formData.append("name", payload.name);
-    formData.append("category", payload.category);
-    formData.append("subCategories", payload.subCategories);
-    formData.append("serviceCharge", String(payload.serviceCharge));
-    formData.append("chargeType", payload.chargeType);
-    formData.append("area", payload.area);
-    formData.append("city", payload.city);
-    formData.append("state", payload.state);
-    formData.append("pincode", payload.pincode);
-    formData.append("latitude", String(payload.latitude));
-    formData.append("longitude", String(payload.longitude));
+        // Required
+        formData.append("userId", payload.userId);
+        formData.append("name", payload.name);
+        formData.append("category", payload.category);
+        formData.append("subCategories", payload.subCategories);
+        formData.append("serviceCharge", String(payload.serviceCharge));
+        formData.append("chargeType", payload.chargeType);
+        formData.append("area", payload.area);
+        formData.append("city", payload.city);
+        formData.append("state", payload.state);
+        formData.append("pincode", payload.pincode);
+        formData.append("latitude", String(payload.latitude));
+        formData.append("longitude", String(payload.longitude));
 
-    // Optional
-    if (payload.email) formData.append("email", payload.email);
-    if (payload.skills) formData.append("skills", payload.skills);
-    if (payload.bio) formData.append("bio", payload.bio);
+        // Optional
+        if (payload.email) formData.append("email", payload.email);
+        if (payload.skills) formData.append("skills", payload.skills);
+        if (payload.bio) formData.append("bio", payload.bio);
 
-    if (payload.profilePic) {
-      formData.append("profilePic", payload.profilePic);
+        if (payload.profilePic) {
+            formData.append("profilePic", payload.profilePic);
+        }
+
+        if (payload.images?.length) {
+            payload.images.forEach((img) => {
+                formData.append("images", img);
+            });
+        }
+
+        const response = await axios.post(
+            `${API_BASE_URL}/createworkers`,
+            formData
+        );
+
+        return response.data;
+    } catch (error: any) {
+        console.error("Create worker error:", error.response?.data || error.message);
+        throw error;
     }
-
-    if (payload.images?.length) {
-      payload.images.forEach((img) => {
-        formData.append("images", img);
-      });
-    }
-
-    const response = await axios.post(
-      `${API_BASE_URL}/createworkers`,
-      formData
-    );
-
-    return response.data;
-  } catch (error: any) {
-    console.error("Create worker error:", error.response?.data || error.message);
-    throw error;
-  }
 };
 
 export const getAllUsers = async (): Promise<{ success: boolean; data: User[] }> => {
@@ -632,20 +641,123 @@ export const createBooking = async (
 };
 
 export const getNearbyJobs = async (
-  latitude: number,
-  longitude: number
+    latitude: number,
+    longitude: number
 ): Promise<{ success: boolean; count: number; jobs: any[] }> => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/getNearbyJobs`,
-      {
-        params: { latitude, longitude },
-      }
-    );
+    try {
+        const response = await axios.get(
+            `${API_BASE_URL}/getNearbyJobs`,
+            {
+                params: { latitude, longitude },
+            }
+        );
 
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching nearby jobs:", error);
-    throw error;
-  }
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching nearby jobs:", error);
+        throw error;
+    }
+};
+// Add these interfaces at the top with your other interfaces
+export interface CreateTicketPayload {
+    raisedById: string;
+    raisedByRole: "User" | "Worker";
+    subject: string;
+    description: string;
+    priority: "LOW" | "MEDIUM" | "HIGH";
+}
+
+export interface TicketResponse {
+    message: string;
+    ticket: {
+        _id: string;
+        raisedById: string;
+        raisedByRole: string;
+        subject: string;
+        description: string;
+        priority: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+        __v: number;
+    };
+}
+
+// Add this function with your other API functions
+export const createTicket = async (
+    payload: CreateTicketPayload
+): Promise<TicketResponse> => {
+    try {
+        const formData = new URLSearchParams();
+        formData.append("raisedById", payload.raisedById);
+        formData.append("raisedByRole", payload.raisedByRole);
+        formData.append("subject", payload.subject);
+        formData.append("description", payload.description);
+        formData.append("priority", payload.priority);
+
+        const response = await fetch(`${API_BASE_URL}/create`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Create Ticket API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Create Ticket response:", data);
+        return data;
+    } catch (error) {
+        console.error("Create ticket error:", error);
+        throw error;
+    }
+};
+// ==================== GET TICKETS BY USER ID ====================
+
+export interface GetTicketsResponse {
+    message: string;
+    tickets: Array<{
+        _id: string;
+        raisedById: string;
+        raisedByRole: string;
+        subject: string;
+        description: string;
+        priority: "LOW" | "MEDIUM" | "HIGH";
+        status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+        createdAt: string;
+        updatedAt: string;
+        __v: number;
+    }>;
+}
+
+export const getTicketsByUserId = async (
+    userId: string,
+    userRole: "User" | "Worker"
+): Promise<GetTicketsResponse> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getTicketById/${userId}?raisedById=${userId}&raisedByRole=${userRole}`,
+            {
+                method: "GET",
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Get Tickets API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Get Tickets response:", data);
+        return data;
+    } catch (error) {
+        console.error("Get tickets error:", error);
+        throw error;
+    }
 };

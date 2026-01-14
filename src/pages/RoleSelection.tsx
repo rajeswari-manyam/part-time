@@ -1,6 +1,8 @@
 // pages/RoleSelection.tsx
 import React, { useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
+import { FaUser, FaUserTie } from "react-icons/fa";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from '../components/ui/Buttons';
@@ -9,7 +11,7 @@ import { VoiceButton } from '../components/voice/Voice';
 import workerIcon from '../assets/icons/user.jpeg';
 import customerIcon from '../assets/icons/Customer.jpeg';
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
-
+import { useAccount } from '../context/AccountContext';
 const ArrowLeft = FaArrowLeft as any;
 
 const WorkerIconComponent = ({ size, ...props }: any) => (
@@ -33,34 +35,28 @@ const CustomerIconComponent = ({ size, ...props }: any) => (
 );
 
 const RoleSelection: React.FC = () => {
-    const [selectedRole, setSelectedRole] = useState<'worker' | 'customer' | null>(null);
+    const [selectedRole, setSelectedRole] = useState<"worker" | "user" | null>(null);
+
+
+    const { setAccountType } = useAccount();
     const navigate = useNavigate();
     const { user } = useAuth(); // ✅ Get user from auth context
 
-    const {
-        isListening,
-        transcript,
-        error,
-        isVoiceSupported,
-        handleVoiceClick,
-        stopListening
-    } = useVoiceRecognition(setSelectedRole);
-
-    const handleRoleSelection = (role: 'worker' | 'customer') => {
-        setSelectedRole(role);
-        stopListening();
-
-        if (role === 'worker') {
-            navigate("/worker-profile");
-        } else {
-            // ✅ Customer flow: Navigate to user profile or job listing
-            // Since we don't have a workerId yet, go to profile/job selection first
-            navigate("/home");
-
-            // Alternative: If you have a jobId or want to show all jobs:
-            // navigate("/all-jobs");
-            // navigate("/service-marketplace");
-        }
+  const {
+    isListening,
+    transcript,
+    error,
+    isVoiceSupported,
+    handleVoiceClick,
+    stopListening
+} = useVoiceRecognition((role: "worker" | "customer") => {
+    const mappedRole: "worker" | "user" = role === "customer" ? "user" : "worker";
+    setSelectedRole(mappedRole);
+});
+    const handleRoleSelection = (role: 'worker' | 'user') => {
+        setAccountType(role);
+        stopListening(); // your voice logic
+        navigate("/home");
     };
 
     const handleContinue = () => {
@@ -109,23 +105,24 @@ const RoleSelection: React.FC = () => {
                     {/* Role Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto">
                         <RoleCard
-                            IconComponent={WorkerIconComponent}
-                            title="I'm a Worker"
-                            description="Offer your services and earn money by connecting with customers"
-                            isSelected={selectedRole === 'worker'}
-                            onClick={() => handleRoleSelection('worker')}
+                            IconComponent={FaUser}
+                            title="Customer"
+                            description="Find and hire skilled professionals for your service needs"
+                            isSelected={selectedRole === "user"}
+                            onClick={() => handleRoleSelection("user")}
                         />
                         <RoleCard
-                            IconComponent={CustomerIconComponent}
-                            title="I'm a Customer"
-                            description="Find and hire skilled professionals for your service needs"
-                            isSelected={selectedRole === 'customer'}
-                            onClick={() => handleRoleSelection('customer')}
+                            IconComponent={FaUserTie}
+                            title="Worker"
+                            description="Offer your services and find jobs nearby"
+                            isSelected={selectedRole === "worker"}
+                            onClick={() => handleRoleSelection("worker")}
                         />
+
                     </div>
 
                     {/* Continue Button - Only for Customer */}
-                    {selectedRole === 'customer' && (
+                    {selectedRole === 'user' && (
                         <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center animate-fade-in">
                             <button
                                 className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"

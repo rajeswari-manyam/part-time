@@ -29,7 +29,7 @@ const WorkersList: React.FC = () => {
     useEffect(() => {
         const fetchWorkers = async () => {
             try {
-                const response = await fetch("http://192.168.1.13:3000/getAllWorkers", {
+                const response = await fetch("http://13.204.29.0:3001/getAllWorkers", {
                     method: "GET",
                     redirect: "follow",
                 });
