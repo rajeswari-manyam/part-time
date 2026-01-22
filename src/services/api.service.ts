@@ -1007,28 +1007,168 @@ export const getWorkerWithSkills = async (
     }
 };
 export interface WorkerListItem {
-  _id: string;
-  name: string;
-  profilePic: string;
-  images: string[];
-  skills: string[];
-  categories: string[];
-  subCategories: string[];
-  serviceCharge: number;
-  chargeType: "hour" | "day" | "fixed";
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  totalSkills: number;
+    _id: string;
+    name: string;
+    profilePic: string;
+    images: string[];
+    skills: string[];
+    categories: string[];
+    subCategories: string[];
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    totalSkills: number;
 }
 
 export const getWorkersWithSkills = async (): Promise<{
-  success: boolean;
-  count: number;
-  workers: WorkerListItem[];
+    success: boolean;
+    count: number;
+    workers: WorkerListItem[];
 }> => {
-  const response = await fetch(`${API_BASE_URL}/getWorkersWithSkills`);
-  if (!response.ok) throw new Error("Failed to fetch workers");
-  return response.json();
+    const response = await fetch(`${API_BASE_URL}/getWorkersWithSkills`);
+    if (!response.ok) throw new Error("Failed to fetch workers");
+    return response.json();
+};
+// Add these functions to your api.service.ts file
+
+// ==================== GET WORKER SKILL BY ID ====================
+export interface WorkerSkillResponse {
+    success: boolean;
+    workerSkill: {
+        _id: string;
+        userId: string;
+        workerId: string;
+        name: string;
+        category: string[];
+        subCategory: string;
+        skill: string;
+        serviceCharge: number;
+        chargeType: "hour" | "day" | "fixed";
+        profilePic: string;
+        images: string[];
+        area: string;
+        city: string;
+        state: string;
+        pincode: string;
+        latitude: number;
+        longitude: number;
+        createdAt: string;
+        updatedAt: string;
+        __v: number;
+    };
+}
+
+export const getWorkerSkillById = async (
+    skillId: string
+): Promise<WorkerSkillResponse> => {
+    try {
+        console.log("🔍 Fetching worker skill by ID:", skillId);
+
+        const response = await fetch(
+            `${API_BASE_URL}/getWorkerSkillById/${skillId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Get Worker Skill By ID API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Worker skill response:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Get worker skill by ID error:", error);
+        throw error;
+    }
+};
+
+// ==================== UPDATE WORKER SKILL ====================
+export interface UpdateWorkerSkillPayload {
+    category?: string | string[];
+    subCategory?: string;
+    skill?: string;
+    serviceCharge?: number;
+    chargeType?: "hour" | "day" | "fixed";
+}
+export const updateWorkerSkill = async (
+    skillId: string,
+    payload: UpdateWorkerSkillPayload
+): Promise<WorkerSkillResponse> => {
+    try {
+        console.log("📝 Updating worker skill:", skillId, payload);
+
+        const formData = new URLSearchParams();
+
+        if (payload.category) {
+            const categoryString = Array.isArray(payload.category)
+                ? payload.category.join(",")
+                : payload.category;
+            formData.append("category", categoryString);
+        }
+
+        if (payload.subCategory) formData.append("subCategory", payload.subCategory);
+        if (payload.skill) formData.append("skill", payload.skill);
+        if (payload.serviceCharge !== undefined)
+            formData.append("serviceCharge", String(payload.serviceCharge));
+        if (payload.chargeType) formData.append("chargeType", payload.chargeType);
+
+        const response = await fetch(
+            `${API_BASE_URL}/updateWorkerSkillById/${skillId}`, // ✅ FIXED
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: formData.toString(),
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Update Worker Skill API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("❌ Update worker skill error:", error);
+        throw error;
+    }
+};
+
+// ==================== DELETE WORKER SKILL ====================
+export const deleteWorkerSkill = async (skillId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        console.log("🗑️ Deleting worker skill:", skillId);
+
+        const response = await fetch(
+            `${API_BASE_URL}/deleteWorkerSkill/${skillId}`,
+            {
+                method: "DELETE",
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Delete Worker Skill API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Worker skill deleted:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Delete worker skill error:", error);
+        throw error;
+    }
 };

@@ -17,6 +17,7 @@ const AddSkillsScreen: React.FC = () => {
   const [chargeType, setChargeType] = useState<"hourly" | "daily" | "fixed">("hourly");
   const [chargeAmount, setChargeAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const categories = CategoriesData.categories;
   const subcategories = SubCategoriesData.subcategories;
@@ -26,15 +27,19 @@ const AddSkillsScreen: React.FC = () => {
     : [];
 
   const handleSubmit = async () => {
+    setError("");
+
     const workerId = localStorage.getItem("workerId") || localStorage.getItem("@worker_id");
 
     if (!workerId) {
+      setError("Worker profile not found. Please create your profile first.");
       alert("Worker profile not found. Please create your profile first.");
       navigate("/worker-profile");
       return;
     }
 
     if (!selectedCategory || !selectedSubcategory || !chargeAmount) {
+      setError("Please fill all required fields");
       alert("Please fill all required fields");
       return;
     }
@@ -54,8 +59,11 @@ const AddSkillsScreen: React.FC = () => {
 
     try {
       const res = await addWorkerSkill(payload);
-      if (!res.success) {
-        alert(res.message);
+
+      if (!res || !res.success) {
+        const errorMsg = res?.message || "Failed to add skill. Please try again.";
+        setError(errorMsg);
+        alert(errorMsg);
         return;
       }
 
@@ -68,19 +76,34 @@ const AddSkillsScreen: React.FC = () => {
       navigate("/home");
     } catch (error: any) {
       console.error("Error adding skill:", error);
-      if (error.message.includes("409")) {
-        alert("This skill is already added for your profile.");
-      } else {
-        alert("Failed to add skill. Please try again.");
+
+      let errorMessage = "Failed to add skill. Please try again.";
+
+      // Check for specific error types
+      if (error.message?.includes("Failed to fetch") || error.message?.includes("ERR_CONNECTION_REFUSED")) {
+        errorMessage = "Unable to connect to server. Please check if the backend is running.";
+      } else if (error.message?.includes("409")) {
+        errorMessage = "This skill is already added for your profile.";
+      } else if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
       }
+
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-3xl shadow">
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-3xl shadow mt-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Skills & Charges</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <CategorySelector
         categories={categories}
@@ -110,6 +133,14 @@ const AddSkillsScreen: React.FC = () => {
       <Button fullWidth onClick={handleSubmit} disabled={loading}>
         {loading ? "Saving..." : "Save Skills & Go to Home"}
       </Button>
+
+      <button
+        onClick={() => navigate("/home")}
+        className="w-full mt-3 px-4 py-2 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50"
+        disabled={loading}
+      >
+        Cancel
+      </button>
     </div>
   );
 };

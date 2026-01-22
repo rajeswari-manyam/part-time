@@ -1,356 +1,295 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Phone, MessageCircle, Briefcase, ArrowLeft, MapPin, Mail, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+    Star,
+    Phone,
+    MessageCircle,
+    Briefcase,
+    ArrowLeft,
+    MapPin,
+    Mail,
+    Calendar,
+    Loader2
+} from 'lucide-react';
+
 import Button from '../components/ui/Buttons';
 import typography, { combineTypography } from '../styles/typography';
-import BudgetIcon from "../assets/icons/Budget.png";
-import { getWorkerById, Worker, API_BASE_URL } from '../services/api.service';
+import { getWorkerSkillById, WorkerSkillResponse } from '../services/api.service';
+
+interface WorkerSkill {
+    _id: string;
+    userId: string;
+    workerId: string;
+    name: string;
+    category: string[];
+    subCategory: string;
+    skill: string;
+    serviceCharge: number;
+    chargeType: 'hour' | 'day' | 'fixed';
+    profilePic: string;
+    images: string[];
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    createdAt: string;
+}
 
 const WorkerDetails: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const [worker, setWorker] = useState<Worker | null>(null);
+
+    const [worker, setWorker] = useState<WorkerSkill | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        if (!id) return;
+        const fetchWorkerDetails = async () => {
+            if (!id) {
+                setError('Worker ID not found');
+                setLoading(false);
+                return;
+            }
 
-        const fetchWorker = async () => {
             try {
-                setLoading(true);
-                const response = await getWorkerById(id);
-                if (response.success) {
-                    console.log("Worker data:", response.data);
-                    setWorker(response.data);
+                const response = await getWorkerSkillById(id);
+                
+                if (response.success && response.workerSkill) {
+                    setWorker(response.workerSkill);
                 } else {
-                    setError("Worker not found");
+                    setError('Failed to load worker details');
                 }
-            } catch (err) {
-                console.error(err);
-                setError("Failed to fetch worker details");
+            } catch (err: any) {
+                console.error('Error fetching worker details:', err);
+                setError(err.message || 'Failed to load worker details');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchWorker();
+        fetchWorkerDetails();
     }, [id]);
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Loading worker details...</p>
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading worker details...</p>
                 </div>
             </div>
         );
     }
 
-    if (error) {
+    if (error || !worker) {
         return (
-            <div className="text-center mt-10">
-                <p className="text-red-500 mb-4">{error}</p>
-                <Button onClick={() => navigate(-1)}>Go Back</Button>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+                <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl">❌</span>
+                    </div>
+                    <h2 className="text-xl font-bold mb-2">Error Loading Worker</h2>
+                    <p className="text-gray-600 mb-6">{error || 'Worker not found'}</p>
+                    <Button onClick={() => navigate(-1)}>
+                        Go Back
+                    </Button>
+                </div>
             </div>
         );
     }
 
-    if (!worker) {
-        return (
-            <div className="text-center mt-10">
-                <p className="text-gray-500 mb-4">Worker not found</p>
-                <Button onClick={() => navigate(-1)}>Go Back</Button>
-            </div>
-        );
-    }
-
-    // Generate initials from name
+    /* ---------------- HELPERS ---------------- */
     const initials = worker.name
         .split(' ')
-        .map((n) => n[0])
+        .map(n => n[0])
         .join('')
         .toUpperCase();
 
-    // Get profile picture URL
-    const profilePicUrl = worker.profilePic
-        ? (worker.profilePic.startsWith('http')
-            ? worker.profilePic
-            : `${API_BASE_URL}${worker.profilePic}`)
-        : null;
-
-    // Format date
     const memberSince = new Date(worker.createdAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long'
     });
 
-    // Handle phone number for call button
-    const getPhoneNumber = () => {
-        // Try to get phone from userId if it's a phone number
-        // Otherwise, use email or show a message
-        if (worker.userId && /^\d+$/.test(worker.userId)) {
-            return worker.userId;
-        }
-        return worker.email || '';
-    };
+    const getPhoneNumber = () => worker.userId ?? '';
 
+    // Get display image
+    const displayImage = worker.profilePic || worker.images?.[0] || null;
+
+    /* ---------------- UI ---------------- */
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
             <div className="max-w-4xl mx-auto">
 
-                {/* Header with Back Button */}
+                {/* Header */}
                 <div className="flex items-center mb-6">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-2 rounded-full hover:bg-white transition-colors"
                     >
-                        <ArrowLeft size={24} className="text-gray-700" />
+                        <ArrowLeft size={24} />
                     </button>
-                    <h1 className={combineTypography(typography.heading.h4, "ml-4 text-gray-800")}>
+                    <h1 className={combineTypography(typography.heading.h4, "ml-4")}>
                         Worker Profile
                     </h1>
                 </div>
 
-                {/* Profile Header */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                    <div className="flex flex-col items-center">
-                        {/* Profile Picture */}
-                        <div className="w-32 h-32 rounded-full overflow-hidden mb-4 shadow-xl border-4 border-blue-100">
-                            {profilePicUrl ? (
-                                <img
-                                    src={profilePicUrl}
-                                    alt={worker.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        const target = e.currentTarget;
-                                        const parent = target.parentElement;
-                                        if (parent) {
-                                            target.style.display = 'none';
-                                            parent.className = 'w-32 h-32 rounded-full overflow-hidden mb-4 shadow-xl border-4 border-blue-100 bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center';
-                                            parent.innerHTML = `<span class="text-white text-4xl font-bold">${initials}</span>`;
-                                        }
-                                    }}
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                                    <span className="text-white text-4xl font-bold">{initials}</span>
-                                </div>
-                            )}
+                {/* Profile */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 text-center mb-6">
+                    {displayImage ? (
+                        <img
+                            src={displayImage}
+                            alt={worker.name}
+                            className="w-32 h-32 mx-auto rounded-full object-cover mb-4 border-4 border-blue-100"
+                        />
+                    ) : (
+                        <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold mb-4">
+                            {initials}
                         </div>
+                    )}
 
-                        {/* Name */}
-                        <h1 className={combineTypography(typography.heading.h3, "text-gray-800 mb-2")}>
-                            {worker.name}
-                        </h1>
+                    <h1 className={combineTypography(typography.heading.h3)}>
+                        {worker.name}
+                    </h1>
 
-                        {/* Status Badge */}
-                        <span className={`px-4 py-1 rounded-full text-sm font-semibold mb-3 ${worker.isActive
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                            }`}>
-                            {worker.isActive ? '✓ Available' : 'Currently Unavailable'}
-                        </span>
+                    <span className="inline-block px-4 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700 mt-2">
+                        ✓ Available
+                    </span>
 
-                        {/* Email */}
-                        {worker.email && (
-                            <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                <Mail className="w-4 h-4" />
-                                <span className={typography.body.base}>{worker.email}</span>
-                            </div>
-                        )}
+                    <div className="flex justify-center items-center gap-2 text-gray-600 mt-3">
+                        <MapPin size={16} />
+                        {worker.area}, {worker.city}, {worker.state} - {worker.pincode}
+                    </div>
 
-                        {/* Location */}
-                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <MapPin className="w-4 h-4" />
-                            <span className={typography.body.base}>
-                                {worker.area}, {worker.city}, {worker.state} - {worker.pincode}
-                            </span>
-                        </div>
-
-                        {/* Member Since */}
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
-                            <Calendar className="w-4 h-4" />
-                            <span>Member since {memberSince}</span>
-                        </div>
+                    <div className="flex justify-center items-center gap-2 text-gray-500 mt-2 text-sm">
+                        <Calendar size={14} /> Member since {memberSince}
                     </div>
                 </div>
 
-                {/* Categories Section */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                    <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-4")}>
+                {/* Categories */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h2 className={combineTypography(typography.heading.h4, "mb-4")}>
                         Service Categories
                     </h2>
                     <div className="flex flex-wrap gap-3">
-                        {Array.isArray(worker.category) ? (
-                            worker.category.map((cat, idx) => (
-                                <span
-                                    key={idx}
-                                    className={combineTypography(
-                                        typography.body.base,
-                                        "px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-medium"
-                                    )}
-                                >
-                                    {cat}
-                                </span>
-                            ))
-                        ) : (
-                            <span className={combineTypography(
-                                typography.body.base,
-                                "px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-medium"
-                            )}>
-                                {worker.category}
+                        {worker.category.map((cat, idx) => (
+                            <span
+                                key={idx}
+                                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-medium"
+                            >
+                                {cat}
                             </span>
-                        )}
+                        ))}
                     </div>
                 </div>
 
-                {/* Sub-Categories Section */}
-                {worker.subCategories && Array.isArray(worker.subCategories) && worker.subCategories.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                        <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-4")}>
-                            Specializations
-                        </h2>
-                        <div className="flex flex-wrap gap-3">
-                            {worker.subCategories.map((sub, idx) => (
-                                <span
-                                    key={idx}
-                                    className={combineTypography(
-                                        typography.body.base,
-                                        "px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-medium"
-                                    )}
-                                >
-                                    {sub}
-                                </span>
-                            ))}
+                {/* Skills & Subcategory */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h2 className={combineTypography(typography.heading.h4, "mb-4")}>
+                        Skills & Specialization
+                    </h2>
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                            <Star size={18} className="text-blue-600 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-gray-900">Subcategory</p>
+                                <p className="text-gray-700">{worker.subCategory}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                            <Briefcase size={18} className="text-green-600 mt-1 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold text-gray-900">Primary Skill</p>
+                                <p className="text-gray-700">{worker.skill}</p>
+                            </div>
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* Bio Section */}
-                {worker.bio && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                        <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-4")}>
-                            About
-                        </h2>
-                        <p className={combineTypography(typography.body.base, "text-gray-600 leading-relaxed")}>
-                            {worker.bio}
-                        </p>
-                    </div>
-                )}
-
-                {/* Skills Section */}
-                {worker.skills && Array.isArray(worker.skills) && worker.skills.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                        <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-4")}>
-                            Skills & Expertise
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {worker.skills.map((skill, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-gray-700">
-                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                    <span className={typography.body.base}>{skill}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Service Rates */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                    <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-6")}>
+                {/* Rates */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h2 className={combineTypography(typography.heading.h4, "mb-4")}>
                         Service Rates
                     </h2>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <img src={BudgetIcon} alt="Budget" className="w-6 h-6" />
-                                <span className={combineTypography(typography.body.base, "font-medium text-gray-700")}>
-                                    Charge Type
-                                </span>
-                            </div>
-                            <span className={combineTypography(typography.body.large, "font-bold text-blue-700 capitalize")}>
-                                {worker.chargeType}
-                            </span>
-                        </div>
 
-                        <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <img src={BudgetIcon} alt="Budget" className="w-6 h-6" />
-                                <span className={combineTypography(typography.body.base, "font-medium text-gray-700")}>
-                                    Service Charge
-                                </span>
-                            </div>
-                            <span className={combineTypography(typography.heading.h4, "font-bold text-green-700")}>
-                                ₹{worker.serviceCharge.toLocaleString()}
-                            </span>
-                        </div>
+                    <div className="flex justify-between items-center p-4 bg-blue-50 rounded-xl mb-3">
+                        <span className="text-gray-700">Charge Type</span>
+                        <strong className="capitalize text-blue-700">
+                            {worker.chargeType === 'hour' ? 'Per Hour' : 
+                             worker.chargeType === 'day' ? 'Per Day' : 'Fixed'}
+                        </strong>
+                    </div>
+
+                    <div className="flex justify-between items-center p-4 bg-green-50 rounded-xl">
+                        <span className="text-gray-700">Service Charge</span>
+                        <strong className="text-green-700 text-xl">₹{worker.serviceCharge}</strong>
                     </div>
                 </div>
 
-                {/* Images Section - Only show if images exist */}
-                {worker.images && Array.isArray(worker.images) && worker.images.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                        <h2 className={combineTypography(typography.heading.h4, "text-gray-800 mb-4")}>
-                            Work Gallery
+                {/* Location Details */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <h2 className={combineTypography(typography.heading.h4, "mb-4")}>
+                        Location Details
+                    </h2>
+                    <div className="space-y-2 text-gray-700">
+                        <p><strong>Area:</strong> {worker.area}</p>
+                        <p><strong>City:</strong> {worker.city}</p>
+                        <p><strong>State:</strong> {worker.state}</p>
+                        <p><strong>Pincode:</strong> {worker.pincode}</p>
+                        <p className="text-sm text-gray-500">
+                            <strong>Coordinates:</strong> {worker.latitude.toFixed(4)}, {worker.longitude.toFixed(4)}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Images Gallery */}
+                {worker.images && worker.images.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                        <h2 className={combineTypography(typography.heading.h4, "mb-4")}>
+                            Portfolio
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {worker.images.map((img, idx) => {
-                                const imageUrl = img.startsWith('http') ? img : `${API_BASE_URL}${img}`;
-                                return (
-                                    <img
-                                        key={idx}
-                                        src={imageUrl}
-                                        alt={`Work ${idx + 1}`}
-                                        className="w-full h-32 object-cover rounded-lg shadow-md hover:shadow-xl transition-shadow"
-                                        onError={(e) => {
-                                            // Hide broken images
-                                            e.currentTarget.style.display = 'none';
-                                        }}
-                                    />
-                                );
-                            })}
+                            {worker.images.map((img, idx) => (
+                                <img
+                                    key={idx}
+                                    src={img}
+                                    alt={`Work ${idx + 1}`}
+                                    className="w-full h-40 object-cover rounded-lg"
+                                />
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        {getPhoneNumber() && (
-                            <Button
-                                size="lg"
-                                className="flex items-center justify-center gap-3 w-full"
-                                onClick={() => {
-                                    const phone = getPhoneNumber();
-                                    if (phone) {
-                                        window.location.href = `tel:${phone}`;
-                                    }
-                                }}
-                            >
-                                <Phone className="w-5 h-5" /> Call Worker
-                            </Button>
-                        )}
+                {/* Actions */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <Button onClick={() => window.location.href = `tel:${getPhoneNumber()}`}>
+                            <Phone size={18} /> Call Worker
+                        </Button>
 
-                        <Button
-                            size="lg"
-                            className="flex items-center justify-center gap-3 w-full"
-                            onClick={() => navigate(`/chat/${worker._id}`)}
-                        >
-                            <MessageCircle className="w-5 h-5" /> Send Message
+                        <Button onClick={() => navigate(`/chat/${worker._id}`)}>
+                            <MessageCircle size={18} /> Send Message
                         </Button>
                     </div>
 
                     <Button
                         variant="success"
-                        size="lg"
-                        className="flex items-center justify-center gap-3 w-full"
+                        className="w-full"
                         onClick={() => navigate(`/send-enquiry/${worker._id}`)}
                     >
-                        <Briefcase className="w-5 h-5" /> Send Job Invitation
+                        <Briefcase size={18} /> Send Job Invitation
                     </Button>
+
+                    <button
+                        onClick={() => navigate(`/edit-skill/${worker._id}`)}
+                        className="w-full mt-3 px-4 py-2 text-blue-600 border border-blue-600 rounded-xl hover:bg-blue-50 transition-colors"
+                    >
+                        Edit This Skill
+                    </button>
                 </div>
+
             </div>
         </div>
     );

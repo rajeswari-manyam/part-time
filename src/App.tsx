@@ -55,6 +55,8 @@ import MyBookings from "./pages/MyBookings";
 import AddSkillsScreen from "./pages/AddSkills";
 import WorkerList from "./pages/WorkerList";  
 import CreateWorkerProfile from "./pages/WorkerProfile"; 
+import EditSkillScreen from "./pages/EditWorkerSkill";
+import WorkerDetails from "./pages/WorkerDetails";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -128,7 +130,8 @@ const AppRoutes: React.FC = () => {
                      <Route path="/my-bookings" element={<MyBookings />} />
                      <Route path="/worker-list/:id" element={<WorkerList />} /> \
                      <Route path="/worker-profile" element={<CreateWorkerProfile />} />
-
+                    <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
+<Route path="/worker-details/:id" element={<WorkerDetails />} />
                     <Route
                         path="/listed-jobs"
                         element={
