@@ -52,6 +52,9 @@ import ViewTicketsUI from "./pages/ViewTicket";
 import ReferAndEarnScreen from "./pages/Refer&earn";
 import AboutUs from "./pages/AboutUs";
 import MyBookings from "./pages/MyBookings";
+import AddSkillsScreen from "./pages/AddSkills";
+import WorkerList from "./pages/WorkerList";  
+import CreateWorkerProfile from "./pages/WorkerProfile"; 
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -110,7 +113,7 @@ const AppRoutes: React.FC = () => {
                     {/* Nearby Places (for place subcategories) */}
                     <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
                     <Route path="/nearby-places" element={<NearbyPlaces />} />
-
+                    <Route path="/add-skills" element={<AddSkillsScreen />} />
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/chat/:id" element={<ChatScreen />} />
                     <Route path="/call/:id" element={<CallingScreen />} />
@@ -123,6 +126,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/my-profile" element={<MyProfile />} />
                      <Route path="/view-tickets" element={<ViewTicketsUI />} />
                      <Route path="/my-bookings" element={<MyBookings />} />
+                     <Route path="/worker-list/:id" element={<WorkerList />} /> \
+                     <Route path="/worker-profile" element={<CreateWorkerProfile />} />
 
                     <Route
                         path="/listed-jobs"

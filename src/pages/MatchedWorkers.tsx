@@ -423,7 +423,7 @@ const MatchedWorkers: React.FC = () => {
                 });
 
                 // Build URL without encoding spaces in subcategory (API expects "Home Wiring,Industrial Wiring")
-                const url = `http://13.204.29.0:3001/getNearbyWorkers?category=${categoryName}&subcategory=${selectedSubcategory}`;
+                const url = `http://192.168.1.11:3001/getNearbyWorkers?category=${categoryName}&subcategory=${selectedSubcategory}`;
 
                 console.log("Fetching workers with URL:", url);
 

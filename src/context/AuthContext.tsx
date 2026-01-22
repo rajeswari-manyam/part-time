@@ -17,6 +17,7 @@ interface User {
   longitude?: string;
   isVerified: boolean;
   role?: 'user' | 'worker'; // Add this line
+    workerId?: string; // ✅ ADD THIS
 }
 /* =======================
    Context Interface

@@ -143,6 +143,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         label="Logout"
                         danger
                         onClick={() => setShowLogoutPopup(true)}
+                        
                     />
                 </div>
             </div>

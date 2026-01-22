@@ -503,73 +503,6 @@ export const getNearbyPlaces = async (
 // Add these interfaces and functions to your api.service.ts file
 // ==================== CREATE WORKER ====================
 
-export interface CreateWorkerPayload {
-    userId: string;
-    name: string;
-    email?: string;
-    category: string;
-    subCategories: string;
-    skills?: string;
-    bio?: string;
-    serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
-    area: string;
-    city: string;
-    state: string;
-    pincode: string;
-    latitude: number | string;
-    longitude: number | string;
-    images?: File[];
-    profilePic?: File;
-}
-
-export const createWorker = async (
-    payload: CreateWorkerPayload
-): Promise<{ success: boolean; message: string; data: any }> => {
-    try {
-        const formData = new FormData();
-
-        // Required
-        formData.append("userId", payload.userId);
-        formData.append("name", payload.name);
-        formData.append("category", payload.category);
-        formData.append("subCategories", payload.subCategories);
-        formData.append("serviceCharge", String(payload.serviceCharge));
-        formData.append("chargeType", payload.chargeType);
-        formData.append("area", payload.area);
-        formData.append("city", payload.city);
-        formData.append("state", payload.state);
-        formData.append("pincode", payload.pincode);
-        formData.append("latitude", String(payload.latitude));
-        formData.append("longitude", String(payload.longitude));
-
-        // Optional
-        if (payload.email) formData.append("email", payload.email);
-        if (payload.skills) formData.append("skills", payload.skills);
-        if (payload.bio) formData.append("bio", payload.bio);
-
-        if (payload.profilePic) {
-            formData.append("profilePic", payload.profilePic);
-        }
-
-        if (payload.images?.length) {
-            payload.images.forEach((img) => {
-                formData.append("images", img);
-            });
-        }
-
-        const response = await axios.post(
-            `${API_BASE_URL}/createworkers`,
-            formData
-        );
-
-        return response.data;
-    } catch (error: any) {
-        console.error("Create worker error:", error.response?.data || error.message);
-        throw error;
-    }
-};
-
 export const getAllUsers = async (): Promise<{ success: boolean; data: User[] }> => {
     try {
         console.log("Fetching all users...");
@@ -760,4 +693,342 @@ export const getTicketsByUserId = async (
         console.error("Get tickets error:", error);
         throw error;
     }
+};
+// Add these new interfaces and functions to your api.service.ts
+
+// ==================== CREATE WORKER (STEP 1) ====================
+export interface CreateWorkerBasePayload {
+    userId: string;
+    name: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number | string;
+    longitude: number | string;
+}
+
+export interface CreateWorkerBaseResponse {
+    success: boolean;
+    message: string;
+    worker: {
+        _id: string;
+        userId: string;
+        name: string;
+        area: string;
+        city: string;
+        state: string;
+        pincode: string;
+        latitude: number;
+        longitude: number;
+        category: string[];
+        subCategories: string[];
+        skills: string[];
+        serviceCharge: number;
+        chargeType: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+    };
+}
+
+export const createWorkerBase = async (
+    payload: CreateWorkerBasePayload
+): Promise<CreateWorkerBaseResponse> => {
+    try {
+        const formData = new URLSearchParams();
+        formData.append("userId", payload.userId);
+        formData.append("name", payload.name);
+        formData.append("area", payload.area);
+        formData.append("city", payload.city);
+        formData.append("state", payload.state);
+        formData.append("pincode", payload.pincode);
+        formData.append("latitude", String(payload.latitude));
+        formData.append("longitude", String(payload.longitude));
+
+        const response = await fetch(`${API_BASE_URL}/createworkers`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Create Worker Base API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Create Worker Base response:", data);
+        return data;
+    } catch (error) {
+        console.error("Create worker base error:", error);
+        throw error;
+    }
+};
+
+// ==================== ADD WORKER SKILL (STEP 2) ====================
+export interface AddWorkerSkillPayload {
+    workerId: string;
+    category: string | string[]; // Can be single or comma-separated
+    subCategory: string;
+    skill: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+}
+
+export interface AddWorkerSkillResponse {
+    success: boolean;
+    message: string;
+    skill: {
+        _id: string;
+        userId: string;
+        workerId: string;
+        name: string;
+        category: string[];
+        subCategory: string;
+        skill: string;
+        serviceCharge: number;
+        chargeType: string;
+        area: string;
+        city: string;
+        state: string;
+        pincode: string;
+        latitude: number;
+        longitude: number;
+        createdAt: string;
+        updatedAt: string;
+    };
+}
+
+export const addWorkerSkill = async (
+    payload: AddWorkerSkillPayload
+): Promise<AddWorkerSkillResponse> => {
+    try {
+        const formData = new URLSearchParams();
+        formData.append("workerId", payload.workerId);
+
+        // Handle category - convert array to comma-separated string if needed
+        const categoryString = Array.isArray(payload.category)
+            ? payload.category.join(",")
+            : payload.category;
+        formData.append("category", categoryString);
+
+        formData.append("subCategory", payload.subCategory);
+        formData.append("skill", payload.skill);
+        formData.append("serviceCharge", String(payload.serviceCharge));
+        formData.append("chargeType", payload.chargeType);
+
+        const response = await fetch(`${API_BASE_URL}/addworkerSkill`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Add Worker Skill API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Add Worker Skill response:", data);
+        return data;
+    } catch (error) {
+        console.error("Add worker skill error:", error);
+        throw error;
+    }
+};
+
+// ==================== COMBINED WORKER CREATION (BOTH STEPS) ====================
+export interface CreateWorkerCompletePayload {
+    userId: string;
+    name: string;
+    email?: string;
+    category: string | string[];
+    subCategory: string;
+    skills: string;
+    bio?: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number | string;
+    longitude: number | string;
+    images?: File[];
+    profilePic?: File;
+}
+
+export const createWorkerComplete = async (
+    payload: CreateWorkerCompletePayload
+): Promise<{
+    success: boolean;
+    message: string;
+    baseWorker: CreateWorkerBaseResponse;
+    skillWorker: AddWorkerSkillResponse;
+}> => {
+    try {
+        console.log("📝 Step 1: Creating base worker profile...");
+
+        // Step 1: Create base worker
+        const baseWorkerResponse = await createWorkerBase({
+            userId: payload.userId,
+            name: payload.name,
+            area: payload.area,
+            city: payload.city,
+            state: payload.state,
+            pincode: payload.pincode,
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+        });
+
+        if (!baseWorkerResponse.success) {
+            throw new Error(baseWorkerResponse.message || "Failed to create base worker");
+        }
+
+        const workerId = baseWorkerResponse.worker._id;
+        console.log("✅ Base worker created with ID:", workerId);
+
+        console.log("📝 Step 2: Adding worker skills...");
+
+        // Step 2: Add skills to worker
+        const skillResponse = await addWorkerSkill({
+            workerId,
+            category: payload.category,
+            subCategory: payload.subCategory,
+            skill: payload.skills,
+            serviceCharge: payload.serviceCharge,
+            chargeType: payload.chargeType,
+        });
+
+        if (!skillResponse.success) {
+            throw new Error(skillResponse.message || "Failed to add worker skills");
+        }
+
+        console.log("✅ Worker skills added successfully");
+
+        return {
+            success: true,
+            message: "Worker profile created successfully with skills",
+            baseWorker: baseWorkerResponse,
+            skillWorker: skillResponse,
+        };
+    } catch (error: any) {
+        console.error("❌ Create worker complete error:", error);
+        throw error;
+    }
+};
+// Add this to your api.service.ts file
+
+// ==================== GET WORKER WITH SKILLS ====================
+
+export interface WorkerSkillDetail {
+    _id: string;
+    userId: string;
+    workerId: string;
+    name: string;
+    category: string[];
+    subCategory: string;
+    skill: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    profilePic: string;
+    images: string[];
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+export interface WorkerWithSkillsResponse {
+    success: boolean;
+    source: "Worker" | "WorkerSkill";
+    worker: {
+        _id: string;
+        userId: string;
+        name: string;
+        profilePic: string;
+        images: string[];
+        area: string;
+        city: string;
+        state: string;
+        pincode: string;
+        latitude: number;
+        longitude: number;
+        serviceCharge: number;
+        chargeType: "hour" | "day" | "fixed";
+        skills: string[];
+        categories: string[][];
+        subCategories: string[];
+    };
+    totalSkills: number;
+    workerSkills: WorkerSkillDetail[];
+}
+
+export const getWorkerWithSkills = async (
+    workerId: string
+): Promise<WorkerWithSkillsResponse> => {
+    try {
+        console.log("🔍 Fetching worker with skills for ID:", workerId);
+
+        const response = await fetch(
+            `${API_BASE_URL}/getWorkerWithSkills?workerId=${workerId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Get Worker With Skills API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Worker with skills response:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Get worker with skills error:", error);
+        throw error;
+    }
+};
+export interface WorkerListItem {
+  _id: string;
+  name: string;
+  profilePic: string;
+  images: string[];
+  skills: string[];
+  categories: string[];
+  subCategories: string[];
+  serviceCharge: number;
+  chargeType: "hour" | "day" | "fixed";
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  totalSkills: number;
+}
+
+export const getWorkersWithSkills = async (): Promise<{
+  success: boolean;
+  count: number;
+  workers: WorkerListItem[];
+}> => {
+  const response = await fetch(`${API_BASE_URL}/getWorkersWithSkills`);
+  if (!response.ok) throw new Error("Failed to fetch workers");
+  return response.json();
 };

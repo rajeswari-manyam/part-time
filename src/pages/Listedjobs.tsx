@@ -286,7 +286,7 @@ import { useNavigate } from "react-router-dom";
 import { getUserJobs, deleteJob } from "../services/api.service";
 import { typography } from "../styles/typography";
 
-const IMAGE_BASE_URL = "http://13.204.29.0:3001";
+const IMAGE_BASE_URL = "http://192.168.1.11:3001";
 
 interface Job {
     _id: string;
