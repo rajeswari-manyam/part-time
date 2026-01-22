@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
@@ -17,6 +16,7 @@ const AddSkillsScreen: React.FC = () => {
 
   const [chargeType, setChargeType] = useState<"hourly" | "daily" | "fixed">("hourly");
   const [chargeAmount, setChargeAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const categories = CategoriesData.categories;
   const subcategories = SubCategoriesData.subcategories;
@@ -26,11 +26,16 @@ const AddSkillsScreen: React.FC = () => {
     : [];
 
   const handleSubmit = async () => {
-    const workerId = localStorage.getItem("workerId");
-    if (!workerId) return navigate("/create-worker");
+    const workerId = localStorage.getItem("workerId") || localStorage.getItem("@worker_id");
+
+    if (!workerId) {
+      alert("Worker profile not found. Please create your profile first.");
+      navigate("/worker-profile");
+      return;
+    }
 
     if (!selectedCategory || !selectedSubcategory || !chargeAmount) {
-      alert("Fill all required fields");
+      alert("Please fill all required fields");
       return;
     }
 
@@ -45,12 +50,22 @@ const AddSkillsScreen: React.FC = () => {
       chargeType: chargeType === "hourly" ? "hour" : chargeType === "daily" ? "day" : "fixed",
     };
 
+    setLoading(true);
+
     try {
       const res = await addWorkerSkill(payload);
-      if (!res.success) return alert(res.message);
+      if (!res.success) {
+        alert(res.message);
+        return;
+      }
 
       localStorage.setItem("workerSkillId", res.skill._id);
-      navigate("/worker-dashboard");
+
+      // Show success message
+      alert("Skill added successfully!");
+
+      // Navigate to home page to show the worker's skills
+      navigate("/home");
     } catch (error: any) {
       console.error("Error adding skill:", error);
       if (error.message.includes("409")) {
@@ -58,12 +73,14 @@ const AddSkillsScreen: React.FC = () => {
       } else {
         alert("Failed to add skill. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-3xl shadow">
-      <h2>Add Skills & Charges</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Skills & Charges</h2>
 
       <CategorySelector
         categories={categories}
@@ -73,13 +90,13 @@ const AddSkillsScreen: React.FC = () => {
         onCategoryChange={e => setSelectedCategory(Number(e.target.value))}
         onSubcategoryChange={setSelectedSubcategory}
       />
+
       <input
-        className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-        placeholder="Skills"
+        className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary mt-4"
+        placeholder="Skills (e.g., Residential Cleaning, Commercial Cleaning)"
         value={skills}
         onChange={(e) => setSkills(e.target.value)}
       />
-
 
       <ServiceChargesSection
         chargeType={chargeType}
@@ -90,7 +107,9 @@ const AddSkillsScreen: React.FC = () => {
         isListening={false}
       />
 
-      <Button fullWidth onClick={handleSubmit}>Save Skills</Button>
+      <Button fullWidth onClick={handleSubmit} disabled={loading}>
+        {loading ? "Saving..." : "Save Skills & Go to Home"}
+      </Button>
     </div>
   );
 };

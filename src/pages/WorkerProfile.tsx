@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
@@ -25,6 +24,7 @@ const WorkerProfile: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const fetchLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -58,12 +58,11 @@ const WorkerProfile: React.FC = () => {
     }
   };
 
-
   const handleSubmit = async () => {
     try {
       const userId = localStorage.getItem("userId");
       if (!userId) {
-        navigate("/login");
+        navigate("/loginPage");
         return;
       }
 
@@ -89,7 +88,11 @@ const WorkerProfile: React.FC = () => {
       const res = await createWorkerBase(payload);
       if (!res.success) throw new Error(res.message);
 
+      // Store workerId in both formats for compatibility
       localStorage.setItem("workerId", res.worker._id);
+      localStorage.setItem("@worker_id", res.worker._id);
+
+      // Navigate to add skills
       navigate("/add-skills");
     } catch (e: any) {
       setError(e.message);
@@ -130,7 +133,6 @@ const WorkerProfile: React.FC = () => {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-
         <LocationSection
           address={address}
           city={city}
@@ -144,11 +146,10 @@ const WorkerProfile: React.FC = () => {
           onPincodeChange={setPincode}
           onAddressVoice={() => { }}
           onCityVoice={() => { }}
-          onUseCurrentLocation={fetchLocation} // <-- now auto fills
+          onUseCurrentLocation={fetchLocation}
           isAddressListening={false}
           isCityListening={false}
         />
-
 
         <Button fullWidth onClick={handleSubmit} disabled={loading}>
           {loading ? "Saving..." : "Continue to Add Skills"}
