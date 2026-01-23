@@ -73,7 +73,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 console.log("⚠️ No location available, updating name only");
             }
 
-            const response = await fetch(`http://192.168.1.11:3001/updateUserById/${userId}`, {
+            const response = await fetch(`http://13.204.29.0:3001/updateUserById/${userId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",

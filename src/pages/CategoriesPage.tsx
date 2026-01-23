@@ -1,3 +1,5 @@
+// src/pages/CategoryPage.tsx
+
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import subcategoryData from "../data/subcategories.json";
@@ -5,6 +7,7 @@ import categoryData from "../data/categories.json";
 import {
     PLACE_SUBCATEGORIES,
     WORKER_SUBCATEGORIES,
+    AUTOMOTIVE_SUBCATEGORIES,
 } from "../utils/SubCategories";
 
 const CategoryPage: React.FC = () => {
@@ -26,14 +29,23 @@ const CategoryPage: React.FC = () => {
 
     const handleClick = (name: string) => {
         const slug = name.toLowerCase().trim();
+        const slugWithDash = slug.replace(/\s+/g, "-");
 
-        if (PLACE_SUBCATEGORIES.includes(slug)) {
-            navigate(`/nearby-places/${slug.replace(/\s+/g, "-")}`);
-        } else if (WORKER_SUBCATEGORIES.includes(slug)) {
-            navigate(`/matched-workers/${slug.replace(/\s+/g, "-")}`);
-        } else {
-            // default fallback → workers
-            navigate(`/matched-workers/${slug.replace(/\s+/g, "-")}`);
+        // Check if this is an automotive subcategory
+        if (AUTOMOTIVE_SUBCATEGORIES.includes(slug)) {
+            navigate(`/automotive/${slugWithDash}`);
+        }
+        // Check if this is a place subcategory
+        else if (PLACE_SUBCATEGORIES.includes(slug)) {
+            navigate(`/nearby-places/${slugWithDash}`);
+        }
+        // Check if this is a worker subcategory
+        else if (WORKER_SUBCATEGORIES.includes(slug)) {
+            navigate(`/matched-workers/${slugWithDash}`);
+        }
+        // Default fallback → workers
+        else {
+            navigate(`/matched-workers/${slugWithDash}`);
         }
     };
 

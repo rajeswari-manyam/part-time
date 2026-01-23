@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Heart,
     Bookmark,
@@ -39,20 +40,23 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     const [userName, setUserName] = useState(user.name || "User");
     const [profilePic, setProfilePic] = useState<string | null>(initialProfilePic || null);
     const [accountType, setAccountType] = useState<AccountType>("user");
-
+    const navigate = useNavigate();
     const getInitial = (name: string) => {
         if (!name || name === "User") return "U";
         return name.charAt(0).toUpperCase();
     };
 
     const initial = getInitial(userName);
+const handleLogout = () => {
+    setShowLogoutPopup(false);
 
-    const handleLogout = () => {
-        setShowLogoutPopup(false);
-        if (onLogout) {
-            onLogout();
-        }
-    };
+    if (onLogout) {
+        onLogout(); // clear auth / token / context
+    }
+
+    navigate("/"); // navigate to homepage
+};
+
 
     return (
         <>

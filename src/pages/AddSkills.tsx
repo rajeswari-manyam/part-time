@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import Button from "../components/ui/Buttons";
 import CategorySelector from "../components/WorkerProfile/CategorySelector";
 import ServiceChargesSection from "../components/WorkerProfile/ServiceCharges";
@@ -96,51 +97,97 @@ const AddSkillsScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-3xl shadow mt-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Skills & Charges</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-4 md:py-8 px-4 md:px-6">
+      <div className="max-w-xl mx-auto">
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-          {error}
+        {/* Header with Back Button */}
+        <div className="flex items-center mb-4 md:mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-white transition-colors"
+            disabled={loading}
+          >
+            <ArrowLeft size={20} className="md:w-6 md:h-6" />
+          </button>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 ml-3 md:ml-4">
+            Add Skills & Charges
+          </h2>
         </div>
-      )}
 
-      <CategorySelector
-        categories={categories}
-        subcategories={availableSubcategories}
-        selectedCategory={selectedCategory}
-        selectedSubcategory={selectedSubcategory}
-        onCategoryChange={e => setSelectedCategory(Number(e.target.value))}
-        onSubcategoryChange={setSelectedSubcategory}
-      />
+        {/* Main Form Container */}
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-4 md:p-6">
 
-      <input
-        className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary mt-4"
-        placeholder="Skills (e.g., Residential Cleaning, Commercial Cleaning)"
-        value={skills}
-        onChange={(e) => setSkills(e.target.value)}
-      />
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm md:text-base">
+              {error}
+            </div>
+          )}
 
-      <ServiceChargesSection
-        chargeType={chargeType}
-        chargeAmount={chargeAmount}
-        onChargeTypeChange={setChargeType}
-        onChargeAmountChange={setChargeAmount}
-        onVoiceClick={() => { }}
-        isListening={false}
-      />
+          {/* Category Selector */}
+          <CategorySelector
+            categories={categories}
+            subcategories={availableSubcategories}
+            selectedCategory={selectedCategory}
+            selectedSubcategory={selectedSubcategory}
+            onCategoryChange={e => setSelectedCategory(Number(e.target.value))}
+            onSubcategoryChange={setSelectedSubcategory}
+          />
 
-      <Button fullWidth onClick={handleSubmit} disabled={loading}>
-        {loading ? "Saving..." : "Save Skills & Go to Home"}
-      </Button>
+          {/* Skills Input with Label */}
+          <div className="mt-4 md:mt-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 md:mb-2">
+              Skills Description
+            </label>
+            <input
+              className="w-full px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base disabled:bg-gray-50 disabled:cursor-not-allowed"
+              placeholder="e.g., Residential Cleaning, Commercial Cleaning"
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+              disabled={loading}
+            />
+          </div>
 
-      <button
-        onClick={() => navigate("/home")}
-        className="w-full mt-3 px-4 py-2 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50"
-        disabled={loading}
-      >
-        Cancel
-      </button>
+          {/* Service Charges Section with proper spacing */}
+          <div className="mt-4 md:mt-5">
+            <ServiceChargesSection
+              chargeType={chargeType}
+              chargeAmount={chargeAmount}
+              onChargeTypeChange={setChargeType}
+              onChargeAmountChange={setChargeAmount}
+              onVoiceClick={() => { }}
+              isListening={false}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3 mt-6 md:mt-8">
+            {/* Submit Button */}
+            <Button fullWidth onClick={handleSubmit} disabled={loading}>
+              <span className="text-sm md:text-base">
+                {loading ? "Saving..." : "Save Skills & Go to Home"}
+              </span>
+            </Button>
+
+            {/* Cancel Button */}
+            <button
+              onClick={() => navigate("/home")}
+              className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+          </div>
+
+          {/* Helper Text */}
+          <p className="text-xs md:text-sm text-gray-500 text-center mt-4">
+            Fill in all fields to add your skill. You can add multiple skills from the home page.
+          </p>
+        </div>
+
+        {/* Mobile Bottom Spacing */}
+        <div className="h-4 md:h-0"></div>
+      </div>
     </div>
   );
 };

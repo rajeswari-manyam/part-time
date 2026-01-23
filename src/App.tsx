@@ -1,5 +1,4 @@
 import React from "react";
-
 import {
     BrowserRouter as Router,
     Routes,
@@ -53,10 +52,17 @@ import ReferAndEarnScreen from "./pages/Refer&earn";
 import AboutUs from "./pages/AboutUs";
 import MyBookings from "./pages/MyBookings";
 import AddSkillsScreen from "./pages/AddSkills";
-import WorkerList from "./pages/WorkerList";  
-import CreateWorkerProfile from "./pages/WorkerProfile"; 
+import WorkerList from "./pages/WorkerList";
+import CreateWorkerProfile from "./pages/WorkerProfile";
 import EditSkillScreen from "./pages/EditWorkerSkill";
 import WorkerDetails from "./pages/WorkerDetails";
+import AddAutomotive from "./pages/AddAutomotive";
+import AutomotiveDetails from "./pages/AutomotiveDetails";
+import AutomotiveEdit from "./pages/AutomotiveEdit";
+// Import Automotive Components
+import AutomotiveList from "./pages/AutomotiveList";
+import AutomotiveForm from "./pages/AutomotiveForm";
+
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -104,34 +110,54 @@ const AppRoutes: React.FC = () => {
                     <Route path="/jobs/:jobId" element={<JobDetails />} />
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
-                    {/* ================= NEW ROUTES ================= */}
-                    {/* Matched Workers (for worker subcategories) */}
+
+                    {/* ================= AUTOMOTIVE ROUTES ================= */}
+                    <Route path="/automotive-list" element={<AutomotiveList />} />
+                    <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+                    {/* <Route path="/add-automotive" element={<AddAutomotive />} />
+                    <Route path="/edit-automotive/:id" element={<AutomotiveEdit />} /> */}
+                    <Route path="/add-automotive-form" element={<AutomotiveForm />} />
+                    <Route
+                        path="/automotive/details/:id"
+                        element={<AutomotiveDetails />}
+                    />
+
+                    {/* ================= WORKER ROUTES ================= */}
                     <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
                     <Route path="/matched-workers" element={<MatchedWorkers />} />
-                    <Route path="/booknow/:jobId" element={<BookNow />} />
-                      <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
-                      <Route path="/about-us" element={<AboutUs/>}/>
-                    <Route path="/raise-ticket" element={<RaiseTicketUI />} />
-                    {/* Nearby Places (for place subcategories) */}
+                    <Route path="/worker-profile/:id" element={<WorkerProfile />} />
+                    <Route path="/worker-list/:id" element={<WorkerList />} />
+                    <Route path="/worker-profile" element={<CreateWorkerProfile />} />
+                    <Route path="/worker-details/:id" element={<WorkerDetails />} />
+                    <Route path="/add-skills" element={<AddSkillsScreen />} />
+                    <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
+
+                    {/* ================= PLACE ROUTES ================= */}
                     <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
                     <Route path="/nearby-places" element={<NearbyPlaces />} />
-                    <Route path="/add-skills" element={<AddSkillsScreen />} />
-                    <Route path="/worker-profile/:id" element={<WorkerProfile />} />
+
+                    {/* ================= BOOKING & INTERACTION ROUTES ================= */}
+                    <Route path="/booknow/:jobId" element={<BookNow />} />
                     <Route path="/chat/:id" element={<ChatScreen />} />
                     <Route path="/call/:id" element={<CallingScreen />} />
                     <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
                     <Route path="/feedback/:id" element={<FeedbackForm />} />
                     <Route path="/thank-you/:id" element={<ThankYouScreen />} />
                     <Route path="/notification/:id" element={<NotificationScreen />} />
+
+                    {/* ================= JOB ROUTES ================= */}
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
+
+                    {/* ================= USER PROFILE & SETTINGS ================= */}
                     <Route path="/my-profile" element={<MyProfile />} />
-                     <Route path="/view-tickets" element={<ViewTicketsUI />} />
-                     <Route path="/my-bookings" element={<MyBookings />} />
-                     <Route path="/worker-list/:id" element={<WorkerList />} /> \
-                     <Route path="/worker-profile" element={<CreateWorkerProfile />} />
-                    <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
-<Route path="/worker-details/:id" element={<WorkerDetails />} />
+                    <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
+                    <Route path="/about-us" element={<AboutUs />} />
+                    <Route path="/raise-ticket" element={<RaiseTicketUI />} />
+                    <Route path="/view-tickets" element={<ViewTicketsUI />} />
+                    <Route path="/my-bookings" element={<MyBookings />} />
+
+                    {/* ================= PROTECTED ROUTES ================= */}
                     <Route
                         path="/listed-jobs"
                         element={
@@ -182,14 +208,6 @@ const AppRoutes: React.FC = () => {
                         element={
                             <ProtectedRoute>
                                 <Policy />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/raise-ticket"
-                        element={
-                            <ProtectedRoute>
-                                <RaiseTicketUI/>
                             </ProtectedRoute>
                         }
                     />

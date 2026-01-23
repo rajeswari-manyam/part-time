@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import LocationSection from "../components/WorkerProfile/LocationSection";
@@ -102,58 +103,130 @@ const WorkerProfile: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-3xl shadow">
-      <h2 className={typography.heading.h3}>Create Worker Profile</h2>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-4 md:py-8 px-4 md:px-6">
+      <div className="max-w-xl mx-auto">
 
-      {error && <p className="text-red-600">{error}</p>}
+        {/* Header with Back Button */}
+        <div className="flex items-center mb-4 md:mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-white transition-colors"
+            disabled={loading}
+          >
+            <ArrowLeft size={20} className="md:w-6 md:h-6" />
+          </button>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 ml-3 md:ml-4">
+            Create Worker Profile
+          </h2>
+        </div>
 
-      <ProfilePhotoUpload
-        profilePhoto={profilePhoto}
-        onPhotoUpload={e => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          setProfilePhotoFile(file);
-          const r = new FileReader();
-          r.onload = () => setProfilePhoto(r.result as string);
-          r.readAsDataURL(file);
-        }}
-      />
-      <div className="space-y-3">
-        <input
-          className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="Full Name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
+        {/* Main Form Container */}
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-4 md:p-6">
 
-        <input
-          className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm md:text-base">
+              {error}
+            </div>
+          )}
 
-        <LocationSection
-          address={address}
-          city={city}
-          state={state}
-          pincode={pincode}
-          latitude={latitude}
-          longitude={longitude}
-          onAddressChange={setAddress}
-          onCityChange={setCity}
-          onStateChange={setState}
-          onPincodeChange={setPincode}
-          onAddressVoice={() => { }}
-          onCityVoice={() => { }}
-          onUseCurrentLocation={fetchLocation}
-          isAddressListening={false}
-          isCityListening={false}
-        />
+          {/* Profile Photo Upload */}
+          <ProfilePhotoUpload
+            profilePhoto={profilePhoto}
+            onPhotoUpload={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setProfilePhotoFile(file);
+              const r = new FileReader();
+              r.onload = () => setProfilePhoto(r.result as string);
+              r.readAsDataURL(file);
+            }}
+          />
 
-        <Button fullWidth onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Continue to Add Skills"}
-        </Button>
+          {/* Form Fields */}
+          <div className="space-y-3 md:space-y-4">
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 md:mb-2">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 md:mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base disabled:bg-gray-50 disabled:cursor-not-allowed"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            {/* Location Section */}
+            <LocationSection
+              address={address}
+              city={city}
+              state={state}
+              pincode={pincode}
+              latitude={latitude}
+              longitude={longitude}
+              onAddressChange={setAddress}
+              onCityChange={setCity}
+              onStateChange={setState}
+              onPincodeChange={setPincode}
+              onAddressVoice={() => { }}
+              onCityVoice={() => { }}
+              onUseCurrentLocation={fetchLocation}
+              isAddressListening={false}
+              isCityListening={false}
+            />
+
+            {/* Submit Button */}
+            <div className="pt-2 md:pt-4">
+              <Button fullWidth onClick={handleSubmit} disabled={loading}>
+                <span className="text-sm md:text-base">
+                  {loading ? "Saving..." : "Continue to Add Skills"}
+                </span>
+              </Button>
+            </div>
+
+            {/* Cancel Button */}
+            <button
+              onClick={() => navigate("/home")}
+              className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+          </div>
+
+          {/* Helper Text */}
+          <div className="mt-4 md:mt-6 p-3 md:p-4 bg-blue-50 rounded-lg">
+            <p className="text-xs md:text-sm text-blue-800">
+              <span className="font-semibold">💡 Tip:</span> Complete your profile to start receiving job requests from customers in your area.
+            </p>
+          </div>
+
+          {/* Required Fields Note */}
+          <p className="text-xs md:text-sm text-gray-500 text-center mt-4">
+            <span className="text-red-500">*</span> Required fields
+          </p>
+        </div>
+
+        {/* Mobile Bottom Spacing */}
+        <div className="h-4 md:h-0"></div>
       </div>
     </div>
   );

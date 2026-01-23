@@ -86,7 +86,7 @@ const JobCard: React.FC<{
         {job.images && job.images.length > 0 ? (
           <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 relative overflow-hidden">
             <img
-              src={`${process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.11:3001'}${job.images[0]}`}
+              src={`${process.env.REACT_APP_API_BASE_URL || 'http://13.204.29.0:3001'}${job.images[0]}`}
               alt={job.category}
               className="w-full h-full object-cover"
               onError={(e) => {
