@@ -1,125 +1,155 @@
 // src/components/categories/Categories.tsx
 import { Category } from '../../types/category.types';
 
+// Import Icons
+import AgricultureIcon from "../../assets/icons/Agriculture.png";
+import AutomotiveIcon from "../../assets/icons/Automotive.png";
+import BeautyIcon from "../../assets/icons/Beauty.png";
+import BusinessIcon from "../../assets/icons/Business.png";
+import CorporativeIcon from "../../assets/icons/Corporative.png";
+import CourierIcon from "../../assets/icons/Courier.png";
+import CreativeIcon from "../../assets/icons/Creative.png";
+import DailyWagesIcon from "../../assets/icons/DailyWages.png";
+import EducationIcon from "../../assets/icons/Education.png";
+import EventsIcon from "../../assets/icons/Events.png";
+// import HomeIcon from "../../assets/icons/Home.png"; // Used for Home Repair
+import HospitalsIcon from "../../assets/icons/Hospitals.png";
+import IndustrialIcon from "../../assets/icons/Industrial.png";
+import PetIcon from "../../assets/icons/Pet.png";
+import PlumberIcon from "../../assets/icons/Plumber.png";
+import RealEstateIcon from "../../assets/icons/RealEstate.png";
+import RestaurantsIcon from "../../assets/icons/Restarents.png";
+import ShoppingIcon from "../../assets/icons/Shopping.png";
+import SportsIcon from "../../assets/icons/Sports.png";
+import TechIcon from "../../assets/icons/Tech.png";
+import TravelIcon from "../../assets/icons/Travel.png";
+import WeddingIcon from "../../assets/icons/Wedding.png";
+
 export const categories: Category[] = [
     {
         id: "1",
         name: "Restaurants & Food",
-        icon: "🍽️",
+        icon: RestaurantsIcon,
         link: "/restaurants",
     },
     {
         id: "2",
         name: "Hospitals & Healthcare",
-        icon: "🏥",
+        icon: HospitalsIcon,
         link: "/hospitals",
     },
     {
         id: "3",
         name: "Plumbers & Home Repair",
-        icon: "🔧",
+        icon: PlumberIcon,
         link: "/plumbers",
     },
     {
         id: "4",
         name: "Hotels & Travel",
-        icon: "🏨",
+        icon: TravelIcon,
         link: "/hotels",
     },
     {
         id: "5",
         name: "Beauty & Wellness",
-        icon: "💅",
+        icon: BeautyIcon,
         link: "/beauty",
     },
     {
         id: "6",
         name: "Real Estate",
-        icon: "🏢",
+        icon: RealEstateIcon,
         link: "/real-estate",
     },
     {
         id: "7",
         name: "Shopping & Retail",
-        icon: "🛍️",
+        icon: ShoppingIcon,
         link: "/shopping",
     },
     {
         id: "8",
         name: "Education & Training",
-        icon: "🎓",
+        icon: EducationIcon,
         link: "/education",
     },
     {
         id: "9",
         name: "Automotive",
-        icon: "🚗",
+        icon: AutomotiveIcon,
         link: "/automotive",
     },
     {
         id: "10",
         name: "Business Services",
-        icon: "💼",
+        icon: BusinessIcon,
         link: "/business",
     },
     {
         id: "11",
         name: "Tech & Digital",
-        icon: "💻",
+        icon: TechIcon,
         link: "/tech",
     },
     {
         id: "12",
         name: "Pet Services",
-        icon: "🐾",
+        icon: PetIcon,
         link: "/pets",
     },
     {
         id: "13",
         name: "Events & Entertainment",
-        icon: "🎉",
+        icon: EventsIcon,
         link: "/events",
     },
     {
         id: "14",
         name: "Industrial Services",
-        icon: "🏭",
+        icon: IndustrialIcon,
         link: "/industrial",
     },
     {
         id: "15",
         name: "Courier & Logistics",
-        icon: "📦",
+        icon: CourierIcon,
         link: "/courier",
     },
     {
         id: "16",
         name: "Daily Wage Labour",
-        icon: "👷",
+        icon: DailyWagesIcon,
         link: "/labour",
     },
     {
         id: "17",
         name: "Agriculture & Farming",
-        icon: "🌾",
+        icon: AgricultureIcon,
         link: "/agriculture",
     },
     {
         id: "18",
         name: "Corporate Services",
-        icon: "🏛️",
+        icon: CorporativeIcon,
         link: "/corporate",
     },
     {
         id: "19",
         name: "Creative & Art",
-        icon: "🎨",
+        icon: CreativeIcon,
         link: "/creative",
     },
     {
         id: "20",
         name: "Wedding Services",
-        icon: "💒",
+        icon: WeddingIcon,
         link: "/wedding",
+    },
+    {
+        id: "21",
+        name: "Sports & Activities",
+        icon: SportsIcon,
+        link: "/sports",
     },
 ];

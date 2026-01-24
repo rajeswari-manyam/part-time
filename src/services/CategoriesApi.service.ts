@@ -20,8 +20,11 @@ export interface AutomotiveService {
     longitude: number;
     priceRange: string;
     description: string;
-    status: boolean;
+    status: string;
     images: string[];
+    categoryId?: string;
+    subcategoryId?: string;
+    additionalInfo?: string;
     createdAt: string;
     updatedAt: string;
     __v: number;

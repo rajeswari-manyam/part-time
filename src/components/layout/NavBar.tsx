@@ -173,7 +173,7 @@ const Navbar: React.FC = () => {
                 ) : (
                   <>
                     <NavItem icon={Home} label="Home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Calendar} label="My Bookings" onClick={() => handleNavClick("/my-bookings")} />
+                    <NavItem icon={Calendar} label="My Services" onClick={() => handleNavClick("/my-bookings")} />
                   </>
                 )}
               </div>

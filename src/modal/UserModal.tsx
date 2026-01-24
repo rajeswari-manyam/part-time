@@ -126,7 +126,7 @@ const UserModal: React.FC<UserModalProps> = ({
                         <span className="text-4xl">😊</span>
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                        Welcome to JustDial!
+                        Welcome to ServiceHub!
                     </h2>
                     <p className="text-white/90 text-sm">
                         You are a first-time user

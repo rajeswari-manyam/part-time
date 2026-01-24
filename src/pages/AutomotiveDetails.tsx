@@ -74,42 +74,42 @@ const AutomotiveDetails: React.FC = () => {
                     <p className={typography.body.small}>
                         <strong>Business:</strong> {data.businessType}
                     </p>
-<p className={typography.body.small}>
-    <strong>Availability:</strong> {data.availability}
-</p>
+                    <p className={typography.body.small}>
+                        <strong>Availability:</strong> {data.availability}
+                    </p>
 
-{/* Services Offered */}
-<div>
-    <h3 className={combineTypography(typography.heading.h6, "mt-3 mb-2")}>
-        Services Offered
-    </h3>
+                    {/* Services Offered */}
+                    <div>
+                        <h3 className={combineTypography(typography.heading.h6, "mt-3 mb-2")}>
+                            Services Offered
+                        </h3>
 
-    <div className="flex flex-wrap gap-2">
-        {data.services.map((service, index) => (
-            <span
-                key={index}
-                className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium transition-colors hover:bg-blue-100 hover:text-blue-700 cursor-pointer"
-            >
-                {service}
-            </span>
-        ))}
-    </div>
-</div>
+                        <div className="flex flex-wrap gap-2">
+                            {data.services.map((service, index) => (
+                                <span
+                                    key={index}
+                                    className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium transition-colors hover:bg-blue-100 hover:text-blue-700 cursor-pointer"
+                                >
+                                    {service}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
 
-<div className="flex items-center gap-2 text-gray-600 mt-3">
-    <MapPin size={16} />
-    <span>
-        {data.area}, {data.city}, {data.state} - {data.pincode}
-    </span>
-</div>
+                    <div className="flex items-center gap-2 text-gray-600 mt-3">
+                        <MapPin size={16} />
+                        <span>
+                            {data.area}, {data.city}, {data.state} - {data.pincode}
+                        </span>
+                    </div>
 
                 </div>
             </div>
 
 
 
-              </div>
-    
+        </div>
+
     );
 };
 
