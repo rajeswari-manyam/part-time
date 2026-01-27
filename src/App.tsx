@@ -62,7 +62,12 @@ import AutomotiveEdit from "./pages/AutomotiveEdit";
 // Import Automotive Components
 import AutomotiveList from "./pages/AutomotiveList";
 import AutomotiveForm from "./pages/AutomotiveForm";
-
+import WorkerRedirectHandler from "./Routs/WorkerRender";
+import AddSkills from "./pages/AddSkills";
+import WorkerDashboard from "./pages/WorkerDashboard";
+import NearbyCafes from "./pages/NearByCafes";
+import FoodService from "./pages/FoodService";
+import FoodServiceForm from "./pages/FoodServiceForm";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -86,7 +91,7 @@ const ListedJobsWrapper: React.FC = () => {
 
 /* ---------------- Layout ---------------- */
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-secondary">
         <Navbar />
         <main>{children}</main>
     </div>
@@ -156,6 +161,34 @@ const AppRoutes: React.FC = () => {
                     <Route path="/raise-ticket" element={<RaiseTicketUI />} />
                     <Route path="/view-tickets" element={<ViewTicketsUI />} />
                     <Route path="/my-bookings" element={<MyBookings />} />
+                    <Route path="/" element={<HomePage />} />
+                   // In your router
+                    {/* ================= FOOD SERVICE ROUTES ================= */}
+                    <Route path="/food-services/:subcategory" element={<FoodService />} />
+                    <Route path="/food-services/all" element={<FoodService />} />
+                    <Route path="/add-food-service-form" element={<FoodServiceForm />} />
+                    <Route path="/add-food-service-form/:id" element={<FoodServiceForm />} />
+
+                    <Route path="/food-services/:subcategory" element={<FoodService />} />
+
+
+                    <Route
+                        path="/add-skills"
+                        element={
+                            <WorkerRedirectHandler>
+                                <AddSkills />
+                            </WorkerRedirectHandler>
+                        }
+                    />
+
+                    <Route
+                        path="/worker-dashboard"
+                        element={
+                            <WorkerRedirectHandler>
+                                <WorkerDashboard />
+                            </WorkerRedirectHandler>
+                        }
+                    />
 
                     {/* ================= PROTECTED ROUTES ================= */}
                     <Route

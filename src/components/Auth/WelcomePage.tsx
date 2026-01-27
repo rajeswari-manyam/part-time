@@ -139,7 +139,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                     className={`cursor-pointer rounded-full py-3 px-6 transition-all
                                         ${isListening
                                             ? "bg-red-500 animate-pulse"
-                                            : "bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]"
+                                            : "bg-primary"
                                         }`}
                                 >
                                     <p className="text-white flex items-center justify-center gap-2 text-sm">
@@ -161,7 +161,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                 <div className="space-y-4 pt-2">
                                     <button
                                         onClick={() => setView("signup")}
-                                        className="w-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                                        className="w-full bg-primary
                                             text-white py-3 rounded-xl font-semibold"
                                     >
                                         Get Started
@@ -169,8 +169,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
 
                                     <button
                                         onClick={() => setView("login")}
-                                        className="w-full border-2 border-blue-600 text-blue-600
-                                            py-3 rounded-xl font-semibold hover:bg-blue-50"
+                                        className="w-full border-2 border-primary text-primary
+                                            py-3 rounded-xl font-semibold hover:bg-secondary"
                                     >
                                         Already have an account?
                                     </button>

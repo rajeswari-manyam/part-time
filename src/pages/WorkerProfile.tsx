@@ -93,10 +93,14 @@ const WorkerProfile: React.FC = () => {
       localStorage.setItem("workerId", res.worker._id);
       localStorage.setItem("@worker_id", res.worker._id);
 
+      // Show success message
+      alert("Profile created successfully!");
+
       // Navigate to add skills
       navigate("/add-skills");
     } catch (e: any) {
       setError(e.message);
+      alert(`Error: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -109,7 +113,7 @@ const WorkerProfile: React.FC = () => {
         {/* Header with Back Button */}
         <div className="flex items-center mb-4 md:mb-6">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
             className="p-2 rounded-full hover:bg-white transition-colors"
             disabled={loading}
           >
@@ -204,7 +208,7 @@ const WorkerProfile: React.FC = () => {
 
             {/* Cancel Button */}
             <button
-              onClick={() => navigate("/home")}
+              onClick={() => navigate("/")}
               className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
               disabled={loading}
             >

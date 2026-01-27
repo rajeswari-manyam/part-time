@@ -148,12 +148,12 @@ const Navbar: React.FC = () => {
               onClick={() => navigate("/")}
               className="flex items-center space-x-2 cursor-pointer"
             >
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl">⚡</span>
               </div>
               <h1 className={combineTypography(
                 typography.logo.title,
-                "text-blue-800 hidden sm:block"
+                "text-primary hidden sm:block"
               )}>
                 ServiceHub
               </h1>
@@ -181,9 +181,15 @@ const Navbar: React.FC = () => {
               {/* Notification */}
               <button
                 onClick={() => handleNavClick("/notification")}
-                className="text-gray-700 hover:text-blue-600 transition-colors"
+                className="relative text-gray-700 hover:text-primary transition-colors p-1"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-6 h-6" />
+                {/* Badge */}
+                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
+                  <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
+                    3
+                  </span>
+                </div>
               </button>
 
               {/* Desktop Account Toggle */}
@@ -192,14 +198,14 @@ const Navbar: React.FC = () => {
                   <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36">
                     <div
                       className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
-                        bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                        bg-primary
                         rounded-full transition-transform duration-300
                         ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
                     />
 
                     <button
                       onClick={() => handleSwitchAccount("user")}
-                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-[#1F3B64]"
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-primary"
                         }`}
                     >
                       Customer
@@ -207,7 +213,7 @@ const Navbar: React.FC = () => {
 
                     <button
                       onClick={() => handleSwitchAccount("worker")}
-                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-primary"
                         }`}
                     >
                       Worker
@@ -229,7 +235,7 @@ const Navbar: React.FC = () => {
               ) : (
                 <button
                   onClick={handleProfileClick}
-                  className="hidden lg:block w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all shadow-md hover:shadow-lg"
+                  className="hidden lg:block w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-primary transition-all shadow-md hover:shadow-lg"
                 >
                   {profilePic ? (
                     <img
@@ -242,7 +248,7 @@ const Navbar: React.FC = () => {
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold">
+                    <div className="w-full h-full bg-primary flex items-center justify-center text-white font-bold">
                       {userName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -282,14 +288,14 @@ const Navbar: React.FC = () => {
                 <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-full">
                   <div
                     className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
-                      bg-gradient-to-r from-[#0B0E92] to-[#69A6F0]
+                      bg-primary
                       rounded-full transition-transform duration-300
                       ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
                   />
 
                   <button
                     onClick={() => handleSwitchAccount("user")}
-                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-[#1F3B64]"
+                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-primary"
                       }`}
                   >
                     Customer
@@ -297,7 +303,7 @@ const Navbar: React.FC = () => {
 
                   <button
                     onClick={() => handleSwitchAccount("worker")}
-                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-[#1F3B64]"
+                    className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "worker" ? "text-white" : "text-primary"
                       }`}
                   >
                     Worker
@@ -312,7 +318,7 @@ const Navbar: React.FC = () => {
                   setShowWelcomeModal(true);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full text-left px-4 py-3 text-blue-600 font-medium hover:bg-gray-100"
+                className="w-full text-left px-4 py-3 text-primary font-medium hover:bg-secondary"
               >
                 Login
               </button>
@@ -328,7 +334,7 @@ const Navbar: React.FC = () => {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] flex items-center justify-center text-white font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
                     {userName.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -392,7 +398,7 @@ const Navbar: React.FC = () => {
 const NavItem = ({ icon: Icon, label, onClick }: any) => (
   <button
     onClick={onClick}
-    className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 transition-colors"
+    className="flex items-center space-x-1 text-gray-700 hover:text-primary transition-colors"
   >
     <Icon className="w-5 h-5" />
     <span className="text-sm font-medium">{label}</span>

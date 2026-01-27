@@ -1,3 +1,6 @@
+
+
+
 // src/utils/SubCategories.ts
 
 export const PLACE_SUBCATEGORIES = [
@@ -336,3 +339,17 @@ export const AMENITY_MAP: Record<string, string[]> = {
   // fallback
   default: ["amenity=restaurant"],
 };
+
+// ✅ Food subcategories (must match lowercase exactly)
+export const FOOD_SUBCATEGORIES = [
+  "restaurants",
+  "cafes",
+  "bakeries",
+  "street food",
+  "juice & smoothie shops",
+  "sweet shops",
+  "ice cream parlours",
+  "food delivery",
+  "mess / tiffin services",
+  "catering services",
+];

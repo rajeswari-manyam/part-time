@@ -40,18 +40,18 @@ const SearchContainer: React.FC = () => {
 
     return (
         <>
-            <div className="w-full bg-gradient-to-b from-blue-50/50 to-white py-4 md:py-8 px-3 md:px-6">
+            <div className="w-full bg-secondary py-4 md:py-8 px-3 md:px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col lg:flex-row gap-3 md:gap-6 items-stretch lg:items-start">
 
                         {/* Location Selector */}
                         <div className="w-full lg:w-72 flex-shrink-0">
-                           <LocationSelector/>
+                            <LocationSelector />
                         </div>
 
                         {/* Search Bar + Buttons */}
                         <div className="flex-1 space-y-3 md:space-y-4">
-                            <div className="bg-white rounded-xl md:rounded-2xl border-2 border-blue-400 shadow-lg overflow-hidden">
+                            <div className="bg-white rounded-xl md:rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden focus-within:border-primary transition-colors">
                                 <div className="flex items-center">
                                     <div className="hidden sm:block pl-3 md:pl-5">
                                         <img
@@ -73,7 +73,7 @@ const SearchContainer: React.FC = () => {
                                     {/* Voice Button */}
                                     <button
                                         onClick={handleVoiceClick}
-                                        className="p-2 md:p-4 hover:bg-gray-50 transition rounded-full"
+                                        className="p-2 md:p-4 hover:bg-secondary transition rounded-full"
                                         title="Voice search"
                                     >
                                         <img
@@ -87,7 +87,7 @@ const SearchContainer: React.FC = () => {
                                     <button
                                         onClick={onSearchClick}
                                         disabled={state.isSearching}
-                                        className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:from-[#090B7A] hover:to-[#5A95E0] px-4 md:px-10 py-3 md:py-4 transition-all duration-300 flex items-center gap-1 md:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-primary hover:brightness-110 px-4 md:px-10 py-3 md:py-4 transition-all duration-300 flex items-center gap-1 md:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {state.isSearching ? (
                                             <>
