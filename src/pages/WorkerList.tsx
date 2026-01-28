@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getWorkerWithSkills, deleteWorkerSkill } from "../services/api.service";
 import { MoreVertical, Eye, Edit, Trash2 } from "lucide-react";
-
+import { typography, combineTypography } from "../styles/typography";
+import Button from "../components/ui/Buttons";
 interface WorkerSkill {
     _id: string;
     category: string[];
@@ -78,24 +79,25 @@ const WorkerList: React.FC = () => {
                 <div className="max-w-xl mx-auto bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-xl p-8 text-center border border-blue-100">
                     <div className="text-5xl mb-4">👷‍♂️</div>
 
-                    <h2 className="text-2xl font-bold mb-3 text-gray-800">
+                    <h2 className={combineTypography(typography.heading.h3, "mb-3 text-gray-800")}>
                         Complete Your Worker Profile
                     </h2>
 
-                    <p className="text-gray-600 mb-6">
+                    <p className={combineTypography(typography.body.base, "text-gray-600 mb-6")}>
                         Set up your professional profile to start receiving job requests and showcase your skills to customers.
                     </p>
 
-                    <button
+                    <Button
                         onClick={() => navigate("/worker-profile")}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg"
+                        variant="primary"
+                        size="lg"
                     >
                         Create Worker Profile
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Empty state message for skills */}
-                <div className="text-center mt-8 text-gray-500 text-sm">
+                <div className={combineTypography(typography.body.base, "text-center mt-8 text-gray-500 text-sm")}>
                     Complete your profile to add skills and start working
                 </div>
             </div>
@@ -106,29 +108,32 @@ const WorkerList: React.FC = () => {
     return (
         <div className="my-6">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">My Skills</h2>
-                <button
+                <h2 className={combineTypography(typography.heading.h3, "text-gray-800")}>My Skills</h2>
+                <Button
                     onClick={() => navigate("/add-skills")}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
+                    variant="primary"
+                    size="sm"
+                    className="font-semibold"
                 >
                     + Add Skill
-                </button>
+                </Button>
             </div>
 
             {skills.length === 0 ? (
                 /* NO SKILLS YET */
                 <div className="bg-white rounded-2xl shadow-lg p-8 text-center border">
                     <div className="text-4xl mb-4">📝</div>
-                    <h3 className="text-xl font-bold mb-2">No Skills Added Yet</h3>
-                    <p className="text-gray-600 mb-6">
+                    <h3 className={combineTypography(typography.heading.h5, "mb-2")}>No Skills Added Yet</h3>
+                    <p className={combineTypography(typography.body.base, "text-gray-600 mb-6")}>
                         Add your first skill to start receiving job requests
                     </p>
-                    <button
+                    <Button
                         onClick={() => navigate("/add-skills")}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition font-semibold"
+                        variant="primary"
+                        size="lg"
                     >
                         Add Your First Skill
-                    </button>
+                    </Button>
                 </div>
             ) : (
                 /* SKILLS GRID */
@@ -201,14 +206,15 @@ const WorkerList: React.FC = () => {
                                 </span>
                             </p>
 
-                            <button
+                            <Button
                                 onClick={() =>
                                     navigate(`/worker-details/${skill._id}`)
                                 }
-                                className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition font-semibold"
+                                variant="primary"
+                                size="lg"
                             >
                                 View Details
-                            </button>
+                            </Button>
                         </div>
                     ))}
 
@@ -218,8 +224,8 @@ const WorkerList: React.FC = () => {
                         className="border-2 border-dashed border-blue-400 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 hover:border-blue-600 transition p-6 min-h-[200px]"
                     >
                         <div className="text-4xl mb-2">➕</div>
-                        <p className="font-bold text-blue-600">Add New Skill</p>
-                        <p className="text-sm text-gray-500 mt-1">Expand your services</p>
+                        <p className={combineTypography(typography.heading.h5, "font-bold text-blue-600")}>Add New Skill</p>
+                        <p className={combineTypography(typography.body.base, "text-sm text-gray-500 mt-1")}>Expand your services</p>
                     </div>
                 </div>
             )}

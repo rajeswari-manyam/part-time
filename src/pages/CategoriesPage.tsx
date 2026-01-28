@@ -9,11 +9,11 @@ import {
     WORKER_SUBCATEGORIES,
     AUTOMOTIVE_SUBCATEGORIES,
     FOOD_SUBCATEGORIES,
+    HOSPITAL_SUBCATEGORIES,
+    HOTEL_SUBCATEGORIES,
+    BEAUTY_SUBCATEGORIES,
 } from "../utils/SubCategories";
-
-
-const HOVER_BG = "#F0F0F0";
-const ACTIVE_TAB = "#1A5F9E";
+import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
 const CategoryPage: React.FC = () => {
     const { id } = useParams();
@@ -75,24 +75,48 @@ const CategoryPage: React.FC = () => {
         const slug = name.toLowerCase().trim();
         const slugWithDash = slug.replace(/\s+/g, "-");
 
+        console.log("🔍 Clicked:", name);
+        console.log("🔍 Slug:", slug);
+        console.log("🔍 Slug with dash:", slugWithDash);
+
         // Check if this is an automotive subcategory
         if (AUTOMOTIVE_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to automotive");
             navigate(`/automotive/${slugWithDash}`);
         }
+        // Check if this is a food subcategory
         else if (FOOD_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to food services");
             navigate(`/food-services/${slugWithDash}`);
         }
-
+        // Check if this is a hospital subcategory
+        else if (HOSPITAL_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to hospital services");
+            navigate(`/hospital-services/${slugWithDash}`);
+        }
+        // ✅ Check if this is a hotel/travel subcategory
+        else if (HOTEL_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to hotel services");
+            navigate(`/hotel-services/${slugWithDash}`);
+        }
+        // ✅ Check if this is a beauty subcategory (MUST come before PLACE_SUBCATEGORIES)
+        else if (BEAUTY_SUBCATEGORIES.includes(slug) || BEAUTY_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to beauty services");
+            navigate(`/beauty-services/${slugWithDash}`);
+        }
         // Check if this is a place subcategory
         else if (PLACE_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to nearby places");
             navigate(`/nearby-places/${slugWithDash}`);
         }
         // Check if this is a worker subcategory
         else if (WORKER_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to matched workers");
             navigate(`/matched-workers/${slugWithDash}`);
         }
         // Default fallback → workers
         else {
+            console.log("⚠️ No match found, defaulting to workers");
             navigate(`/matched-workers/${slugWithDash}`);
         }
     };

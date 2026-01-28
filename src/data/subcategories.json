@@ -89,7 +89,7 @@
                     "icon": "👩‍⚕️"
                 },
                 {
-                    "name": "Pet Hospitals / Pet Clinics",
+                    "name": "Vet Hospitals / Pet Clinics",
                     "icon": "🐕"
                 },
                 {
@@ -155,92 +155,20 @@
                 }
             ]
         },
-        {
-            "categoryId": 4,
-            "items": [
-                {
-                    "name": "Hotels",
-                    "icon": "🏨"
-                },
-                {
-                    "name": "Resorts",
-                    "icon": "🏖️"
-                },
-                {
-                    "name": "Lodges",
-                    "icon": "🛏️"
-                },
-                {
-                    "name": "Guest Houses",
-                    "icon": "🏡"
-                },
-                {
-                    "name": "Travel Agencies",
-                    "icon": "✈️"
-                },
-                {
-                    "name": "Tour Packages",
-                    "icon": "🗺️"
-                },
-                {
-                    "name": "Taxi Services",
-                    "icon": "🚖"
-                },
-                {
-                    "name": "Bike/Car Rentals",
-                    "icon": "🚗"
-                },
-                {
-                    "name": "Bus Ticket Booking",
-                    "icon": "🚌"
-                },
-                {
-                    "name": "Train Ticket Booking",
-                    "icon": "🚆"
-                }
-            ]
-        },
-        {
-            "categoryId": 5,
-            "items": [
-                {
-                    "name": "Beauty Parlours",
-                    "icon": "💄"
-                },
-                {
-                    "name": "Salons",
-                    "icon": "💇"
-                },
-                {
-                    "name": "Spa & Massage Centres",
-                    "icon": "💆"
-                },
-                {
-                    "name": "Makeup Artists",
-                    "icon": "💅"
-                },
-                {
-                    "name": "Mehendi Artists",
-                    "icon": "🎨"
-                },
-                {
-                    "name": "Fitness Centres / Gyms",
-                    "icon": "💪"
-                },
-                {
-                    "name": "Yoga Centres",
-                    "icon": "🧘‍♀️"
-                },
-                {
-                    "name": "Skin Clinics",
-                    "icon": "✨"
-                },
-                {
-                    "name": "Tattoo Studios",
-                    "icon": "🖊️"
-                }
-            ]
-        },
+       {
+  "categoryId": 5,
+  "items": [
+    { "name": "Beauty Parlours", "icon": "💄" },
+    { "name": "Salons", "icon": "💇" },
+    { "name": "Spa & Massage Centres", "icon": "💆" },
+    { "name": "Makeup Artists", "icon": "💅" },
+    { "name": "Mehendi Artists", "icon": "🎨" },
+    { "name": "Fitness Centres / Gyms", "icon": "💪" },
+    { "name": "Yoga Centres", "icon": "🧘‍♀️" },
+    { "name": "Skin Clinics", "icon": "✨" },
+    { "name": "Tattoo Studios", "icon": "🖊️" }
+  ]
+},
         {
             "categoryId": 6,
             "items": [
@@ -267,24 +195,14 @@
                 {
                     "name": "Construction Contractors",
                     "icon": "👷"
-                },
-                {
-                    "name": "Home Cleaning Services",
-                    "icon": "🧽"
-                },
-                {
-                    "name": "Pest Control",
-                    "icon": "🐜"
                 }
+              
             ]
         },
         {
             "categoryId": 7,
             "items": [
-                {
-                    "name": "Grocery Stores",
-                    "icon": "🛒"
-                },
+               
                 {
                     "name": "Supermarkets",
                     "icon": "🏪"
@@ -309,18 +227,12 @@
                     "name": "Furniture Stores",
                     "icon": "🛋️"
                 },
-                {
-                    "name": "Furniture Repair Services",
-                    "icon": "🔨"
-                },
+             
                 {
                     "name": "Jewellery Stores",
                     "icon": "💎"
                 },
-                {
-                    "name": "Jewellery Showrooms",
-                    "icon": "💍"
-                },
+             
                 {
                     "name": "Stationery Shops",
                     "icon": "✏️"
@@ -332,11 +244,8 @@
                 {
                     "name": "Optical Shops",
                     "icon": "👓"
-                },
-                {
-                    "name": "Hobbies",
-                    "icon": "🎲"
                 }
+             
             ]
         },
         {

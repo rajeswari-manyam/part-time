@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import categoryData from "../data/categories.json";
 import { fontSize, fontWeight } from "../styles/typography";
@@ -62,24 +62,22 @@ const iconMap: Record<number, string> = {
     22: WeddingIcon,
 };
 
-const ACTIVE_COLOR = "#1A5F9E";
+const BORDER_COLOR = "#1A5F9E"; // Blue border for all boxes
+const ICON_BG_COLOR = "#1A5F9E"; // Filled blue circle for icons
+const TEXT_COLOR = "#1A5F9E"; // Text color
 
 const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
     const navigate = useNavigate();
     const categories: Category[] = categoryData.categories;
 
-    const [activeCategoryId, setActiveCategoryId] = useState<number | null>(1);
-
     const handleCategoryClick = (id: number) => {
         if (onCategoryClick && !onCategoryClick()) return;
-        setActiveCategoryId(id);
         navigate(`/category/${id}`);
     };
 
     return (
         <div className="w-full py-12 bg-white">
             <div className="max-w-7xl mx-auto px-6">
-
                 {/* Header */}
                 <div className="mb-10 text-center">
                     <h2 className={`${fontSize["3xl"]} ${fontWeight.bold}`}>
@@ -92,61 +90,42 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
 
                 {/* Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {categories.map((category) => {
-                        const isActive = activeCategoryId === category.id;
-
-                        return (
-                            <button
-                                key={category.id}
-                                onClick={() => handleCategoryClick(category.id)}
-                                className={`
-                  group rounded-3xl p-6
-                  border transition-all duration-300 ease-out
-                  hover:-translate-y-1 hover:shadow-xl cursor-pointer
-                  ${isActive ? "border-[#1A5F9E]" : "border-gray-200"}
-                `}
-                                style={{ minHeight: "160px" }}
-                            >
-                                <div className="flex flex-col items-center justify-center h-full space-y-4">
-
-                                    {/* Icon Circle */}
-                                    <div
-                                        className={`
-                      w-20 h-20 rounded-full
-                      flex items-center justify-center
-                      border-2 transition-all duration-300
-                      ${isActive
-                                                ? "bg-[#1A5F9E] border-[#1A5F9E]"
-                                                : "border-[#1A5F9E] bg-transparent group-hover:bg-[#1A5F9E]"
-                                            }
-                    `}
-                                    >
-                                        <img
-                                            src={iconMap[category.id]}
-                                            alt={category.name}
-                                            className={`
-                        w-10 h-10 transition-all duration-300
-                        ${isActive ? "" : "group-hover:brightness-0 group-hover:invert"}
-                      `}
-                                            style={{
-                                                filter: isActive ? "brightness(0) invert(1)" : undefined
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* Text */}
-                                    <p
-                                        className={`
-                      text-sm text-center font-semibold transition-colors
-                      ${isActive ? "text-[#1A5F9E]" : "text-gray-800"}
-                    `}
-                                    >
-                                        {category.name}
-                                    </p>
+                    {categories.map((category) => (
+                        <button
+                            key={category.id}
+                            onClick={() => handleCategoryClick(category.id)}
+                            className={`
+                group rounded-3xl p-6
+                border border-[${BORDER_COLOR}]
+                transition-all duration-300 ease-out
+                hover:-translate-y-1 hover:shadow-xl cursor-pointer
+              `}
+                            style={{ minHeight: "160px" }}
+                        >
+                            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                                {/* Icon Circle */}
+                                <div
+                                    className="w-20 h-20 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: ICON_BG_COLOR, border: `2px solid ${BORDER_COLOR}` }}
+                                >
+                                    <img
+                                        src={iconMap[category.id]}
+                                        alt={category.name}
+                                        className="w-10 h-10"
+                                        style={{ filter: "brightness(0) invert(1)" }}
+                                    />
                                 </div>
-                            </button>
-                        );
-                    })}
+
+                                {/* Text */}
+                                <p
+                                    className="text-sm text-center font-semibold"
+                                    style={{ color: TEXT_COLOR }}
+                                >
+                                    {category.name}
+                                </p>
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

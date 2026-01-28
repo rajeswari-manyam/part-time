@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * NearbyHotelsCard.tsx - Detailed Hotel Card Component
+ * ============================================================================
+ * 
+ * Displays detailed hotel information with:
+ * - Large image carousel
+ * - Full description
+ * - Amenities offered
+ * - Action buttons (Directions, Call)
+ * - Special badges (Verified, Top Search, Trending, Top Rated)
+ * 
+ * @component NearbyHotelsCard
+ * @version 1.0.0 - React Web Version with REAL JUSTDIAL DATA
+ */
+
 import React, { useState, useCallback } from "react";
 import {
     ChevronLeft,
@@ -8,13 +24,14 @@ import {
     Star,
     Clock,
     CheckCircle,
-    Heart,
-    MessageCircle,
+    Bed,
+    DollarSign,
+    Footprints,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
 
-export interface NursingService {
+export interface Hotel {
     place_id: string;
     name: string;
     vicinity: string;
@@ -27,10 +44,11 @@ export interface NursingService {
     business_status: string;
     opening_hours: { open_now: boolean };
     price_level: number;
-    types: string[];
-    distance: number;
+    distance_text: string;
     special_tags?: string[];
-    customer_review?: string;
+    amenities?: string[];
+    nearby_landmark?: string;
+    price_per_night?: string;
 }
 
 export interface JobType {
@@ -45,171 +63,146 @@ export interface JobType {
 
 /* ================= CONSTANTS - EXACT FROM REACT NATIVE ================= */
 
-// Phone numbers map for nursing services
+// Phone numbers map for hotels
 const PHONE_NUMBERS_MAP: { [key: string]: string } = {
-    nursing_1: "07383516825",
-    nursing_2: "08401345295",
-    nursing_3: "07041590314",
-    nursing_4: "07411809617",
-    nursing_5: "09876543210",
+    hotel_1: "08735953260", // Hotel Jays Inn
+    hotel_2: "09008535976", // Hotel Svs Luxury Rooms
+    hotel_3: "07942695174", // Hotel Swagath
+    hotel_4: "07942685838", // Lemonridge Hotels Idpl Balanagar
 };
 
-// Export dummy nursing data - EXACT FROM REACT NATIVE
-export const DUMMY_NURSING_SERVICES: NursingService[] = [
+// Export dummy hotel data - REAL JUSTDIAL DATA
+export const DUMMY_HOTELS: Hotel[] = [
     {
-        place_id: "nursing_1",
-        name: "JYOTHI PATIENT CARE CENTRE & HOME NURSING SERVICE",
-        vicinity: "Opp Staro Hotel Enikepadu, Vijayawada",
-        rating: 4.7,
-        user_ratings_total: 248,
-        photos: [{ photo_reference: "nursing_photo_1" }],
+        place_id: "hotel_1",
+        name: "Hotel Jays Inn",
+        vicinity: "Quthubullapur Village IDPL, Hyderabad",
+        rating: 4.4,
+        user_ratings_total: 52,
+        photos: [{ photo_reference: "hotel_photo_1" }],
         geometry: {
-            location: { lat: 16.5062, lng: 80.648 },
+            location: { lat: 17.52, lng: 78.435 },
         },
         business_status: "OPERATIONAL",
         opening_hours: { open_now: true },
         price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["Top Search", "Trust", "Verified", "Great customer service"],
-        customer_review: '"Great customer service" 42 Suggestions',
-        distance: 1.4,
+        distance_text: "1 km",
+        special_tags: ["Verified", "Top Search"],
+        amenities: ["Parking Available"],
     },
     {
-        place_id: "nursing_2",
-        name: "Prasanna Old Age Home & Home Nursing Care Service",
-        vicinity: "Christurajpuram Road Moghalraja Puram, Vijayawada",
+        place_id: "hotel_2",
+        name: "Hotel Svs Luxury Rooms",
+        vicinity: "VRK Silks Building Suchitra Cross Road, Hyderabad",
+        rating: 3.4,
+        user_ratings_total: 189,
+        photos: [{ photo_reference: "hotel_photo_2" }],
+        geometry: {
+            location: { lat: 17.53, lng: 78.44 },
+        },
+        business_status: "OPERATIONAL",
+        opening_hours: { open_now: true },
+        price_level: 2,
+        distance_text: "2.2 km",
+        special_tags: ["Responsive"],
+        amenities: ["Parking Available", "WiFi", "AC"],
+        nearby_landmark: "4 minutes walk to Dr Aravinds Ent & Eye Hospital",
+    },
+    {
+        place_id: "hotel_3",
+        name: "Hotel Swagath",
+        vicinity: "Kompally Road Jeedimetla, Hyderabad",
+        rating: 4.1,
+        user_ratings_total: 144,
+        photos: [{ photo_reference: "hotel_photo_3" }],
+        geometry: {
+            location: { lat: 17.525, lng: 78.438 },
+        },
+        business_status: "OPERATIONAL",
+        opening_hours: { open_now: true },
+        price_level: 2,
+        distance_text: "2 km",
+        special_tags: ["Trending"],
+        amenities: ["Hotels"],
+        nearby_landmark: "Less than 2 minutes walk to Dr Aravinds Ent & Eye Hospital",
+    },
+    {
+        place_id: "hotel_4",
+        name: "Lemonridge Hotels Idpl Balanagar",
+        vicinity: "Ganesh Nagar-Bala Nagar, Hyderabad",
         rating: 4.5,
-        user_ratings_total: 340,
-        photos: [{ photo_reference: "nursing_photo_2" }],
+        user_ratings_total: 113,
+        photos: [{ photo_reference: "hotel_photo_4" }],
         geometry: {
-            location: { lat: 16.507, lng: 80.6485 },
+            location: { lat: 17.515, lng: 78.432 },
         },
         business_status: "OPERATIONAL",
         opening_hours: { open_now: true },
-        price_level: 2,
-        types: ["nursing_service", "health", "home_care", "old_age_home"],
-        special_tags: ["Popular", "Trust", "Verified", "Great customer service"],
-        customer_review: '"Great customer service" 26 Suggestions',
-        distance: 2.2,
-    },
-    {
-        place_id: "nursing_3",
-        name: "AMMA NANNA HOME NURSING CARE SERVICES",
-        vicinity: "Gundu Kottaya ST Naidupet, Vijayawada",
-        rating: 4.0,
-        user_ratings_total: 42,
-        photos: [{ photo_reference: "nursing_photo_3" }],
-        geometry: {
-            location: { lat: 16.508, lng: 80.649 },
-        },
-        business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
-        price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["Responsive", "Trust", "Verified", "Easy booking"],
-        customer_review: '"Easy booking" 15 Suggestions',
-        distance: 1.7,
-    },
-    {
-        place_id: "nursing_4",
-        name: "Dokka Sitamma Old Age Home & Nursing Services",
-        vicinity: "Brts Road Satyanarayanapuram, Vijayawada",
-        rating: 3.5,
-        user_ratings_total: 79,
-        photos: [{ photo_reference: "nursing_photo_4" }],
-        geometry: {
-            location: { lat: 16.509, lng: 80.65 },
-        },
-        business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
-        price_level: 2,
-        types: ["nursing_service", "health", "home_care", "old_age_home"],
-        special_tags: ["Nursing services", "Home care", "Old Age Home"],
-        distance: 2.8,
-    },
-    {
-        place_id: "nursing_5",
-        name: "Care Plus Home Nursing Services",
-        vicinity: "Gandhi Nagar Vijayawada, Vijayawada",
-        rating: 4.3,
-        user_ratings_total: 156,
-        photos: [{ photo_reference: "nursing_photo_5" }],
-        geometry: {
-            location: { lat: 16.5075, lng: 80.6495 },
-        },
-        business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
-        price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["24/7 Service", "Professional Staff", "Verified", "Responsive"],
-        distance: 1.9,
+        price_level: 3,
+        distance_text: "870 mts",
+        price_per_night: "₹2,407",
+        special_tags: ["Top Rated"],
+        amenities: ["WiFi", "AC", "Restaurant", "Room Service"],
     },
 ];
 
-// Nursing service images
-const NURSING_IMAGES_MAP: { [key: string]: string[] } = {
-    nursing_1: [
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+// Hotel images
+const HOTEL_IMAGES_MAP: { [key: string]: string[] } = {
+    hotel_1: [
+        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800", // Hotel room
+        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800", // Hotel lobby
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800", // Hotel exterior
     ],
-    nursing_2: [
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
+    hotel_2: [
+        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800", // Luxury room
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800", // Hotel bedroom
+        "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800", // Modern hotel
     ],
-    nursing_3: [
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+    hotel_3: [
+        "https://images.unsplash.com/photo-1596701062351-8c2c14d1fdd0?w=800", // Hotel building
+        "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800", // Hotel reception
+        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800", // Hotel suite
     ],
-    nursing_4: [
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-    ],
-    nursing_5: [
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+    hotel_4: [
+        "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800", // Premium hotel
+        "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800", // Restaurant
+        "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800", // Hotel amenities
     ],
 };
 
-// Nursing service descriptions
-const NURSING_DESCRIPTIONS_MAP: { [key: string]: string } = {
-    nursing_1:
-        "Top rated nursing service with 4.7★ rating and 248 reviews. Verified and Trusted. Great customer service with 42 suggestions. Professional home nursing and patient care services available.",
-    nursing_2:
-        "Popular nursing and old age home service with 4.5★ rating and 340 reviews. Verified and Trusted. Great customer service with 26 suggestions. Specialized in elderly care and home nursing.",
-    nursing_3:
-        "Responsive nursing service with 4.0★ rating and 42 reviews. Verified and Trusted. Easy booking with 15 suggestions. Dedicated home nursing care services available.",
-    nursing_4:
-        "Nursing and old age home service with 3.5★ rating and 79 reviews. Comprehensive nursing services for elderly and patients. Professional care facility available.",
-    nursing_5:
-        "Professional nursing service with 4.3★ rating and 156 reviews. 24/7 Service available. Verified and Responsive. Professional staff for all nursing care needs.",
+// Hotel descriptions
+const HOTEL_DESCRIPTIONS_MAP: { [key: string]: string } = {
+    hotel_1:
+        "Top-rated budget hotel with 4.4★ rating and 52 reviews. Verified and Top Search establishment. Located just 1 km away with parking available. Perfect for comfortable stays.",
+    hotel_2:
+        "Responsive luxury rooms with 3.4★ rating and 189 reviews. Located 2.2 km away near Dr Aravinds Hospital. Features parking, WiFi, and AC facilities for a comfortable stay.",
+    hotel_3:
+        "Trending hotel with 4.1★ rating and 144 reviews. Conveniently located 2 km away, less than 2 minutes walk to Dr Aravinds Hospital. Great value for money.",
+    hotel_4:
+        "Top Rated premium hotel with 4.5★ rating and 113 reviews. Starting at ₹2,407 per night. Located just 870 mts away with modern amenities including WiFi, AC, Restaurant, and Room Service.",
 };
 
-// Nursing services offered
-const NURSING_SERVICES = [
-    "Home Nursing Services",
-    "Patient Care Taker Services",
-    "ICU Care",
-    "Post-Surgery Care",
-    "Elderly Care",
-    "Medical Assistance",
-    "Physiotherapy",
-    "24/7 Availability",
+// Hotel amenities
+const HOTEL_AMENITIES = [
+    "WiFi",
+    "AC",
+    "Parking",
+    "Restaurant",
+    "Room Service",
+    "TV",
+    "24/7 Reception",
+    "Hot Water",
 ];
 
 /* ================= COMPONENT ================= */
 
-interface NearbyNursingServiceCardProps {
+interface NearbyHotelsCardProps {
     job?: JobType;
     onViewDetails: (job: JobType) => void;
 }
 
-// Single Nursing Service Card Component
-const SingleNursingServiceCard: React.FC<{
+// Single Hotel Card Component
+const SingleHotelCard: React.FC<{
     job: JobType;
     onViewDetails: (job: JobType) => void;
 }> = ({ job, onViewDetails }) => {
@@ -219,8 +212,8 @@ const SingleNursingServiceCard: React.FC<{
     // Get all available photos from job data - Using useCallback like React Native
     const getPhotos = useCallback(() => {
         if (!job) return [];
-        const jobId = job.id || "nursing_1";
-        return NURSING_IMAGES_MAP[jobId] || NURSING_IMAGES_MAP["nursing_1"];
+        const jobId = job.id || "hotel_1";
+        return HOTEL_IMAGES_MAP[jobId] || HOTEL_IMAGES_MAP["hotel_1"];
     }, [job]);
 
     const photos = getPhotos();
@@ -249,10 +242,10 @@ const SingleNursingServiceCard: React.FC<{
         [hasPhotos, currentImageIndex, photos.length]
     );
 
-    // Get nursing service name from job data - Using useCallback like React Native
+    // Get hotel name from job data - Using useCallback like React Native
     const getName = useCallback((): string => {
-        if (!job) return "Nursing Service";
-        return job.title || "Nursing Service";
+        if (!job) return "Hotel";
+        return job.title || "Hotel";
     }, [job]);
 
     // Get location string from job data - Using useCallback like React Native
@@ -264,10 +257,18 @@ const SingleNursingServiceCard: React.FC<{
     // Get distance string from job data - Using useCallback like React Native
     const getDistance = useCallback((): string => {
         if (!job) return "";
+        const jobData = job.jobData as any;
+
+        // Check for distance_text first (like "1 km", "870 mts")
+        if (jobData?.distance_text) {
+            return jobData.distance_text;
+        }
+
+        // Otherwise use job.distance
         if (job.distance !== undefined && job.distance !== null) {
             const distanceNum = Number(job.distance);
             if (!isNaN(distanceNum)) {
-                return `${distanceNum.toFixed(1)} km away`;
+                return `${distanceNum.toFixed(1)} km`;
             }
         }
         return "";
@@ -275,12 +276,12 @@ const SingleNursingServiceCard: React.FC<{
 
     // Get description - Using useCallback like React Native
     const getDescription = useCallback((): string => {
-        if (!job) return "Professional nursing services";
-        const jobId = job.id || "nursing_1";
+        if (!job) return "Quality hotel accommodation";
+        const jobId = job.id || "hotel_1";
         return (
-            NURSING_DESCRIPTIONS_MAP[jobId] ||
+            HOTEL_DESCRIPTIONS_MAP[jobId] ||
             job.description ||
-            "Professional nursing services"
+            "Quality hotel accommodation"
         );
     }, [job]);
 
@@ -308,7 +309,7 @@ const SingleNursingServiceCard: React.FC<{
             return null;
         }
 
-        return isOpen ? "Available Now" : "Currently Unavailable";
+        return isOpen ? "Open 24 Hours" : "Closed";
     }, [job]);
 
     // Get special tags from job data - Using useCallback like React Native
@@ -318,14 +319,28 @@ const SingleNursingServiceCard: React.FC<{
         return jobData?.special_tags || [];
     }, [job]);
 
-    // Get customer review from job data - Using useCallback like React Native
-    const getCustomerReview = useCallback((): string | null => {
-        if (!job) return null;
+    // Get amenities from job data - Using useCallback like React Native
+    const getAmenities = useCallback((): string[] => {
+        if (!job) return [];
         const jobData = job.jobData as any;
-        return jobData?.customer_review || null;
+        return jobData?.amenities || HOTEL_AMENITIES.slice(0, 4);
     }, [job]);
 
-    // Get phone number for the nursing service - Using useCallback like React Native
+    // Get nearby landmark - Using useCallback like React Native
+    const getNearbyLandmark = useCallback((): string | null => {
+        if (!job) return null;
+        const jobData = job.jobData as any;
+        return jobData?.nearby_landmark || null;
+    }, [job]);
+
+    // Get price per night - Using useCallback like React Native
+    const getPricePerNight = useCallback((): string | null => {
+        if (!job) return null;
+        const jobData = job.jobData as any;
+        return jobData?.price_per_night || null;
+    }, [job]);
+
+    // Get phone number for the hotel - Using useCallback like React Native
     const getPhoneNumber = useCallback((): string | null => {
         if (!job) return null;
         const jobId = job.id || "";
@@ -380,10 +395,7 @@ const SingleNursingServiceCard: React.FC<{
 
     // Handle image loading error - Using useCallback like React Native
     const handleImageError = useCallback(() => {
-        console.warn(
-            "⚠️ Failed to load image for nursing service:",
-            job?.id || "unknown"
-        );
+        console.warn("⚠️ Failed to load image for hotel:", job?.id || "unknown");
         setImageError(true);
     }, [job]);
 
@@ -394,10 +406,11 @@ const SingleNursingServiceCard: React.FC<{
     const distance = getDistance();
     const description = getDescription();
     const specialTags = getSpecialTags();
-    const customerReview = getCustomerReview();
-    const visibleServices = NURSING_SERVICES.slice(0, 4);
-    const moreServices =
-        NURSING_SERVICES.length > 4 ? NURSING_SERVICES.length - 4 : 0;
+    const amenities = getAmenities();
+    const nearbyLandmark = getNearbyLandmark();
+    const pricePerNight = getPricePerNight();
+    const visibleAmenities = amenities.slice(0, 4);
+    const moreAmenities = amenities.length > 4 ? amenities.length - 4 : 0;
     const hasPhoneNumber = getPhoneNumber() !== null;
 
     // Early return if job is not provided (after all hooks)
@@ -408,8 +421,16 @@ const SingleNursingServiceCard: React.FC<{
     return (
         <div
             onClick={() => onViewDetails(job)}
-            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-[0.99] mb-4"
+            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-[0.99] mb-4 relative"
         >
+            {/* Price Badge (Top Right Corner) */}
+            {pricePerNight && (
+                <div className="absolute top-3 right-3 bg-blue-600 text-white flex flex-col items-center px-2.5 py-1.5 rounded-lg z-10 shadow-lg">
+                    <span className="text-[13px] font-bold">{pricePerNight}</span>
+                    <span className="text-[9px] font-medium opacity-90">per night</span>
+                </div>
+            )}
+
             {/* Image Carousel */}
             <div className="relative h-48 bg-gray-100">
                 {currentPhoto && !imageError ? (
@@ -451,14 +472,14 @@ const SingleNursingServiceCard: React.FC<{
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full bg-gray-200">
-                        <Heart size={48} className="text-gray-400" />
+                        <Bed size={48} className="text-gray-400" />
                     </div>
                 )}
             </div>
 
             {/* Content */}
             <div className="p-3.5">
-                {/* Nursing Service Name */}
+                {/* Hotel Name */}
                 <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 leading-snug line-clamp-2">
                     {getName()}
                 </h3>
@@ -471,29 +492,52 @@ const SingleNursingServiceCard: React.FC<{
 
                 {/* Distance */}
                 {distance && (
-                    <p className="text-xs font-semibold text-purple-600 mb-2">{distance}</p>
+                    <p className="text-xs font-semibold text-indigo-600 mb-2">{distance}</p>
                 )}
 
                 {/* Special Tags */}
                 {specialTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
-                        {specialTags.slice(0, 4).map((tag, index) => (
-                            <span
-                                key={index}
-                                className="inline-flex items-center bg-yellow-100 text-yellow-800 text-[10px] font-semibold px-2 py-1 rounded"
-                            >
-                                {tag}
-                            </span>
-                        ))}
+                        {specialTags.map((tag, index) => {
+                            let bgClass = "bg-blue-100";
+                            let textClass = "text-blue-800";
+
+                            if (tag === "Verified") {
+                                bgClass = "bg-green-100";
+                                textClass = "text-green-800";
+                            } else if (tag === "Top Search") {
+                                bgClass = "bg-amber-100";
+                                textClass = "text-amber-800";
+                            } else if (tag === "Trending") {
+                                bgClass = "bg-red-100";
+                                textClass = "text-red-800";
+                            } else if (tag === "Top Rated") {
+                                bgClass = "bg-amber-100";
+                                textClass = "text-amber-800";
+                            }
+
+                            return (
+                                <span
+                                    key={index}
+                                    className={`inline-flex items-center ${bgClass} ${textClass} text-[10px] font-semibold px-2 py-1 rounded gap-1`}
+                                >
+                                    {tag === "Verified" && "✓"}
+                                    {tag === "Top Search" && "🔍"}
+                                    {tag === "Trending" && "📈"}
+                                    {tag === "Top Rated" && "⭐"}
+                                    {tag}
+                                </span>
+                            );
+                        })}
                     </div>
                 )}
 
-                {/* Customer Review */}
-                {customerReview && (
-                    <div className="flex items-center gap-1 mb-2">
-                        <MessageCircle size={12} className="text-green-600 flex-shrink-0" />
-                        <span className="text-xs text-green-600 font-medium line-clamp-1">
-                            {customerReview}
+                {/* Nearby Landmark */}
+                {nearbyLandmark && (
+                    <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 bg-indigo-50 rounded-md">
+                        <Footprints size={12} className="text-indigo-600 flex-shrink-0" />
+                        <span className="text-[11px] text-indigo-700 font-medium">
+                            {nearbyLandmark}
                         </span>
                     </div>
                 )}
@@ -504,9 +548,9 @@ const SingleNursingServiceCard: React.FC<{
                 </p>
 
                 {/* Category Badge */}
-                <div className="inline-flex items-center gap-1 bg-purple-100 text-purple-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
-                    <Heart size={12} />
-                    <span>Nursing Service</span>
+                <div className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
+                    <Bed size={12} />
+                    <span>Hotel</span>
                 </div>
 
                 {/* Rating and Status Row */}
@@ -527,10 +571,11 @@ const SingleNursingServiceCard: React.FC<{
 
                     {openingStatus && (
                         <div
-                            className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes("Available")
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                                }`}
+                            className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${
+                                openingStatus.includes("Open")
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                            }`}
                         >
                             <Clock size={11} />
                             <span>{openingStatus}</span>
@@ -538,24 +583,24 @@ const SingleNursingServiceCard: React.FC<{
                     )}
                 </div>
 
-                {/* Services */}
+                {/* Amenities */}
                 <div className="mb-3">
                     <p className="text-[10px] font-bold text-gray-500 tracking-wide mb-1.5">
-                        SERVICES:
+                        AMENITIES:
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                        {visibleServices.map((service, index) => (
+                        {visibleAmenities.map((amenity, index) => (
                             <span
                                 key={index}
-                                className="inline-flex items-center gap-1 bg-purple-100 text-purple-600 text-[11px] font-medium px-2 py-1 rounded"
+                                className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-600 text-[11px] font-medium px-2 py-1 rounded"
                             >
                                 <CheckCircle size={11} />
-                                <span>{service}</span>
+                                <span>{amenity}</span>
                             </span>
                         ))}
-                        {moreServices > 0 && (
+                        {moreAmenities > 0 && (
                             <span className="inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded">
-                                +{moreServices} more
+                                +{moreAmenities} more
                             </span>
                         )}
                     </div>
@@ -574,10 +619,11 @@ const SingleNursingServiceCard: React.FC<{
                     <button
                         onClick={handleCall}
                         disabled={!hasPhoneNumber}
-                        className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
-                            ? "border-green-600 bg-green-50 text-green-600 hover:bg-green-100"
-                            : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-                            }`}
+                        className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${
+                            hasPhoneNumber
+                                ? "border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                                : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
                     >
                         <Phone size={14} />
                         <span>Call</span>
@@ -589,30 +635,31 @@ const SingleNursingServiceCard: React.FC<{
 };
 
 // Main Component - displays grid of dummy data or single card
-const NearbyNursingServiceCard: React.FC<NearbyNursingServiceCardProps> = (props) => {
-    // If no job is provided, render the grid of dummy nursing services
+const NearbyHotelsCard: React.FC<NearbyHotelsCardProps> = (props) => {
+    // If no job is provided, render the grid of dummy hotels
     if (!props.job) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-                {DUMMY_NURSING_SERVICES.map((nursing) => (
-                    <SingleNursingServiceCard
-                        key={nursing.place_id}
+                {DUMMY_HOTELS.map((hotel) => (
+                    <SingleHotelCard
+                        key={hotel.place_id}
                         job={{
-                            id: nursing.place_id,
-                            title: nursing.name,
-                            location: nursing.vicinity,
-                            distance: nursing.distance,
-                            category: "Nursing Service",
+                            id: hotel.place_id,
+                            title: hotel.name,
+                            location: hotel.vicinity,
+                            category: "Hotel",
                             jobData: {
-                                rating: nursing.rating,
-                                user_ratings_total: nursing.user_ratings_total,
-                                opening_hours: nursing.opening_hours,
-                                geometry: nursing.geometry,
-                                business_status: nursing.business_status,
-                                price_level: nursing.price_level,
-                                types: nursing.types,
-                                special_tags: nursing.special_tags,
-                                customer_review: nursing.customer_review,
+                                rating: hotel.rating,
+                                user_ratings_total: hotel.user_ratings_total,
+                                opening_hours: hotel.opening_hours,
+                                geometry: hotel.geometry,
+                                business_status: hotel.business_status,
+                                price_level: hotel.price_level,
+                                distance_text: hotel.distance_text,
+                                special_tags: hotel.special_tags,
+                                amenities: hotel.amenities,
+                                nearby_landmark: hotel.nearby_landmark,
+                                price_per_night: hotel.price_per_night,
                             },
                         }}
                         onViewDetails={props.onViewDetails}
@@ -623,9 +670,7 @@ const NearbyNursingServiceCard: React.FC<NearbyNursingServiceCardProps> = (props
     }
 
     // If job is provided, render individual card
-    return (
-        <SingleNursingServiceCard job={props.job} onViewDetails={props.onViewDetails} />
-    );
+    return <SingleHotelCard job={props.job} onViewDetails={props.onViewDetails} />;
 };
 
-export default NearbyNursingServiceCard;
+export default NearbyHotelsCard;

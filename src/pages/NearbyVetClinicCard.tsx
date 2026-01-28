@@ -8,13 +8,14 @@ import {
     Star,
     Clock,
     CheckCircle,
-    Heart,
-    MessageCircle,
+    Calendar,
+    Zap,
+    PawPrint,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
 
-export interface NursingService {
+export interface VetClinic {
     place_id: string;
     name: string;
     vicinity: string;
@@ -25,12 +26,17 @@ export interface NursingService {
         location: { lat: number; lng: number };
     };
     business_status: string;
-    opening_hours: { open_now: boolean };
+    opening_hours: {
+        open_now: boolean;
+        hours?: string;
+        opens_at?: string;
+    };
     price_level: number;
     types: string[];
-    distance: number;
     special_tags?: string[];
-    customer_review?: string;
+    years_in_healthcare?: string;
+    response_time?: string;
+    has_booking?: boolean;
 }
 
 export interface JobType {
@@ -45,171 +51,177 @@ export interface JobType {
 
 /* ================= CONSTANTS - EXACT FROM REACT NATIVE ================= */
 
-// Phone numbers map for nursing services
+// Phone numbers map for veterinary clinics
 const PHONE_NUMBERS_MAP: { [key: string]: string } = {
-    nursing_1: "07383516825",
-    nursing_2: "08401345295",
-    nursing_3: "07041590314",
-    nursing_4: "07411809617",
-    nursing_5: "09876543210",
+    vet_1: "07947138022",
+    vet_2: "08401339877",
+    vet_3: "08460413885",
+    vet_4: "07942686016",
+    vet_5: "09876543210",
 };
 
-// Export dummy nursing data - EXACT FROM REACT NATIVE
-export const DUMMY_NURSING_SERVICES: NursingService[] = [
+// Export dummy veterinary data - EXACT FROM REACT NATIVE
+export const DUMMY_VET_CLINICS: VetClinic[] = [
     {
-        place_id: "nursing_1",
-        name: "JYOTHI PATIENT CARE CENTRE & HOME NURSING SERVICE",
-        vicinity: "Opp Staro Hotel Enikepadu, Vijayawada",
-        rating: 4.7,
-        user_ratings_total: 248,
-        photos: [{ photo_reference: "nursing_photo_1" }],
+        place_id: "vet_1",
+        name: "Veterinary Hospital",
+        vicinity: "Ramalingeswara Pet Tenali Tenali Bazar, Tenali",
+        rating: 3.8,
+        user_ratings_total: 8,
+        photos: [{ photo_reference: "vet_photo_1" }],
+        geometry: {
+            location: { lat: 16.24, lng: 80.648 },
+        },
+        business_status: "OPERATIONAL",
+        opening_hours: {
+            open_now: false,
+            opens_at: "Opens at 8:00 am tomorrow",
+        },
+        price_level: 2,
+        types: ["veterinary_care", "pet_hospital", "animal_care"],
+        special_tags: [],
+    },
+    {
+        place_id: "vet_2",
+        name: "Care Well Dog Clinic",
+        vicinity: "Pantakaluva Road NTR Circle, Vijayawada",
+        rating: 4.5,
+        user_ratings_total: 299,
+        photos: [{ photo_reference: "vet_photo_2" }],
         geometry: {
             location: { lat: 16.5062, lng: 80.648 },
         },
         business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
+        opening_hours: {
+            open_now: true,
+            hours: "9:00 am - 9:30 pm",
+        },
         price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["Top Search", "Trust", "Verified", "Great customer service"],
-        customer_review: '"Great customer service" 42 Suggestions',
-        distance: 1.4,
+        types: ["veterinary_care", "pet_hospital", "dog_clinic"],
+        special_tags: ["Top Search", "15 Years in Healthcare"],
+        years_in_healthcare: "15 Years in Healthcare",
+        has_booking: true,
     },
     {
-        place_id: "nursing_2",
-        name: "Prasanna Old Age Home & Home Nursing Care Service",
-        vicinity: "Christurajpuram Road Moghalraja Puram, Vijayawada",
-        rating: 4.5,
-        user_ratings_total: 340,
-        photos: [{ photo_reference: "nursing_photo_2" }],
+        place_id: "vet_3",
+        name: "THE GOLDEN PET CLINIC & STORE",
+        vicinity: "ELURU ROAD Gunadala, Vijayawada",
+        rating: 4.9,
+        user_ratings_total: 40,
+        photos: [{ photo_reference: "vet_photo_3" }],
         geometry: {
             location: { lat: 16.507, lng: 80.6485 },
         },
         business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
+        opening_hours: {
+            open_now: true,
+            hours: "Open 24 Hrs",
+        },
         price_level: 2,
-        types: ["nursing_service", "health", "home_care", "old_age_home"],
-        special_tags: ["Popular", "Trust", "Verified", "Great customer service"],
-        customer_review: '"Great customer service" 26 Suggestions',
-        distance: 2.2,
+        types: ["veterinary_care", "pet_hospital", "pet_store"],
+        special_tags: ["Verified", "1 Year in Healthcare"],
+        years_in_healthcare: "1 Year in Healthcare",
+        response_time: "Responds in 20 Mins",
     },
     {
-        place_id: "nursing_3",
-        name: "AMMA NANNA HOME NURSING CARE SERVICES",
-        vicinity: "Gundu Kottaya ST Naidupet, Vijayawada",
-        rating: 4.0,
-        user_ratings_total: 42,
-        photos: [{ photo_reference: "nursing_photo_3" }],
+        place_id: "vet_4",
+        name: "Ntr Veterinary Super Speciality Hospital",
+        vicinity: "MG Road Labbipet, Vijayawada",
+        rating: 4.1,
+        user_ratings_total: 106,
+        photos: [{ photo_reference: "vet_photo_4" }],
         geometry: {
             location: { lat: 16.508, lng: 80.649 },
         },
         business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
+        opening_hours: {
+            open_now: true,
+            hours: "Open 24 Hrs",
+        },
         price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["Responsive", "Trust", "Verified", "Easy booking"],
-        customer_review: '"Easy booking" 15 Suggestions',
-        distance: 1.7,
+        types: ["veterinary_care", "pet_hospital", "specialty_hospital"],
+        special_tags: ["Trending"],
     },
     {
-        place_id: "nursing_4",
-        name: "Dokka Sitamma Old Age Home & Nursing Services",
-        vicinity: "Brts Road Satyanarayanapuram, Vijayawada",
-        rating: 3.5,
-        user_ratings_total: 79,
-        photos: [{ photo_reference: "nursing_photo_4" }],
+        place_id: "vet_5",
+        name: "Area Veterinary Hospital",
+        vicinity: "Burripalem Road Nazerpeta, Tenali",
+        rating: 4.1,
+        user_ratings_total: 157,
+        photos: [{ photo_reference: "vet_photo_5" }],
         geometry: {
-            location: { lat: 16.509, lng: 80.65 },
+            location: { lat: 16.238, lng: 80.647 },
         },
         business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
-        price_level: 2,
-        types: ["nursing_service", "health", "home_care", "old_age_home"],
-        special_tags: ["Nursing services", "Home care", "Old Age Home"],
-        distance: 2.8,
-    },
-    {
-        place_id: "nursing_5",
-        name: "Care Plus Home Nursing Services",
-        vicinity: "Gandhi Nagar Vijayawada, Vijayawada",
-        rating: 4.3,
-        user_ratings_total: 156,
-        photos: [{ photo_reference: "nursing_photo_5" }],
-        geometry: {
-            location: { lat: 16.5075, lng: 80.6495 },
+        opening_hours: {
+            open_now: true,
+            hours: "9:00 am - 6:00 pm",
         },
-        business_status: "OPERATIONAL",
-        opening_hours: { open_now: true },
         price_level: 2,
-        types: ["nursing_service", "health", "home_care"],
-        special_tags: ["24/7 Service", "Professional Staff", "Verified", "Responsive"],
-        distance: 1.9,
+        types: ["veterinary_care", "pet_hospital", "animal_care"],
+        special_tags: ["Trending"],
     },
 ];
 
-// Nursing service images
-const NURSING_IMAGES_MAP: { [key: string]: string[] } = {
-    nursing_1: [
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+// Veterinary clinic images
+const VET_IMAGES_MAP: { [key: string]: string[] } = {
+    vet_1: [
+        "https://images.unsplash.com/photo-1530041539828-114de669390e?w=800",
+        "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800",
+        "https://images.unsplash.com/photo-1415369629372-26f2fe60c467?w=800",
     ],
-    nursing_2: [
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
+    vet_2: [
+        "https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=800",
+        "https://images.unsplash.com/photo-1530041539828-114de669390e?w=800",
+        "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800",
     ],
-    nursing_3: [
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+    vet_3: [
+        "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800",
+        "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800",
+        "https://images.unsplash.com/photo-1530041539828-114de669390e?w=800",
     ],
-    nursing_4: [
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
+    vet_4: [
+        "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800",
+        "https://images.unsplash.com/photo-1530041539828-114de669390e?w=800",
+        "https://images.unsplash.com/photo-1415369629372-26f2fe60c467?w=800",
     ],
-    nursing_5: [
-        "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800",
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
-        "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?w=800",
+    vet_5: [
+        "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800",
+        "https://images.unsplash.com/photo-1530041539828-114de669390e?w=800",
+        "https://images.unsplash.com/photo-1415369629372-26f2fe60c467?w=800",
     ],
 };
 
-// Nursing service descriptions
-const NURSING_DESCRIPTIONS_MAP: { [key: string]: string } = {
-    nursing_1:
-        "Top rated nursing service with 4.7★ rating and 248 reviews. Verified and Trusted. Great customer service with 42 suggestions. Professional home nursing and patient care services available.",
-    nursing_2:
-        "Popular nursing and old age home service with 4.5★ rating and 340 reviews. Verified and Trusted. Great customer service with 26 suggestions. Specialized in elderly care and home nursing.",
-    nursing_3:
-        "Responsive nursing service with 4.0★ rating and 42 reviews. Verified and Trusted. Easy booking with 15 suggestions. Dedicated home nursing care services available.",
-    nursing_4:
-        "Nursing and old age home service with 3.5★ rating and 79 reviews. Comprehensive nursing services for elderly and patients. Professional care facility available.",
-    nursing_5:
-        "Professional nursing service with 4.3★ rating and 156 reviews. 24/7 Service available. Verified and Responsive. Professional staff for all nursing care needs.",
+// Veterinary clinic descriptions
+const VET_DESCRIPTIONS_MAP: { [key: string]: string } = {
+    vet_1: "General veterinary hospital with 3.8★ rating and 8 reviews. Opens at 8:00 am tomorrow. Comprehensive pet care services available for all animals.",
+    vet_2: "Top rated dog clinic with 4.5★ rating and 299 reviews. Top Search clinic with 15 Years in Healthcare. Book appointment available. Open from 9:00 am - 9:30 pm.",
+    vet_3: "Premium pet clinic and store with 4.9★ rating and 40 reviews. Verified clinic with 1 Year in Healthcare. Quick response in 20 minutes. Open 24 hours for emergency care.",
+    vet_4: "Trending super speciality hospital with 4.1★ rating and 106 reviews. Open 24 hours. Advanced veterinary care and specialty treatments available.",
+    vet_5: "Trending veterinary hospital with 4.1★ rating and 157 reviews. Comprehensive animal care services. Open from 9:00 am - 6:00 pm daily.",
 };
 
-// Nursing services offered
-const NURSING_SERVICES = [
-    "Home Nursing Services",
-    "Patient Care Taker Services",
-    "ICU Care",
-    "Post-Surgery Care",
-    "Elderly Care",
-    "Medical Assistance",
-    "Physiotherapy",
-    "24/7 Availability",
+// Veterinary services offered
+const VET_SERVICES = [
+    "General Checkup",
+    "Vaccinations",
+    "Surgery",
+    "Emergency Care",
+    "Dental Care",
+    "Grooming",
+    "Pet Store",
+    "Specialty Treatment",
 ];
 
 /* ================= COMPONENT ================= */
 
-interface NearbyNursingServiceCardProps {
+interface NearbyVetClinicCardProps {
     job?: JobType;
     onViewDetails: (job: JobType) => void;
 }
 
-// Single Nursing Service Card Component
-const SingleNursingServiceCard: React.FC<{
+// Single Vet Clinic Card Component
+const SingleVetClinicCard: React.FC<{
     job: JobType;
     onViewDetails: (job: JobType) => void;
 }> = ({ job, onViewDetails }) => {
@@ -219,8 +231,8 @@ const SingleNursingServiceCard: React.FC<{
     // Get all available photos from job data - Using useCallback like React Native
     const getPhotos = useCallback(() => {
         if (!job) return [];
-        const jobId = job.id || "nursing_1";
-        return NURSING_IMAGES_MAP[jobId] || NURSING_IMAGES_MAP["nursing_1"];
+        const jobId = job.id || "vet_1";
+        return VET_IMAGES_MAP[jobId] || VET_IMAGES_MAP["vet_1"];
     }, [job]);
 
     const photos = getPhotos();
@@ -249,10 +261,10 @@ const SingleNursingServiceCard: React.FC<{
         [hasPhotos, currentImageIndex, photos.length]
     );
 
-    // Get nursing service name from job data - Using useCallback like React Native
+    // Get vet clinic name from job data - Using useCallback like React Native
     const getName = useCallback((): string => {
-        if (!job) return "Nursing Service";
-        return job.title || "Nursing Service";
+        if (!job) return "Veterinary Clinic";
+        return job.title || "Veterinary Clinic";
     }, [job]);
 
     // Get location string from job data - Using useCallback like React Native
@@ -275,12 +287,12 @@ const SingleNursingServiceCard: React.FC<{
 
     // Get description - Using useCallback like React Native
     const getDescription = useCallback((): string => {
-        if (!job) return "Professional nursing services";
-        const jobId = job.id || "nursing_1";
+        if (!job) return "Professional veterinary care services";
+        const jobId = job.id || "vet_1";
         return (
-            NURSING_DESCRIPTIONS_MAP[jobId] ||
+            VET_DESCRIPTIONS_MAP[jobId] ||
             job.description ||
-            "Professional nursing services"
+            "Professional veterinary care services"
         );
     }, [job]);
 
@@ -302,13 +314,24 @@ const SingleNursingServiceCard: React.FC<{
     const getOpeningStatus = useCallback((): string | null => {
         if (!job) return null;
         const jobData = job.jobData as any;
-        const isOpen = jobData?.opening_hours?.open_now;
 
+        // Check for specific opening time message
+        if (jobData?.opening_hours?.opens_at) {
+            return jobData.opening_hours.opens_at;
+        }
+
+        // Check for hours string
+        if (jobData?.opening_hours?.hours) {
+            return jobData.opening_hours.hours;
+        }
+
+        // Check if open now
+        const isOpen = jobData?.opening_hours?.open_now;
         if (isOpen === undefined || isOpen === null) {
             return null;
         }
 
-        return isOpen ? "Available Now" : "Currently Unavailable";
+        return isOpen ? "Open Now" : "Currently Closed";
     }, [job]);
 
     // Get special tags from job data - Using useCallback like React Native
@@ -318,14 +341,28 @@ const SingleNursingServiceCard: React.FC<{
         return jobData?.special_tags || [];
     }, [job]);
 
-    // Get customer review from job data - Using useCallback like React Native
-    const getCustomerReview = useCallback((): string | null => {
+    // Get years in healthcare from job data - Using useCallback like React Native
+    const getYearsInHealthcare = useCallback((): string | null => {
         if (!job) return null;
         const jobData = job.jobData as any;
-        return jobData?.customer_review || null;
+        return jobData?.years_in_healthcare || null;
     }, [job]);
 
-    // Get phone number for the nursing service - Using useCallback like React Native
+    // Get response time from job data - Using useCallback like React Native
+    const getResponseTime = useCallback((): string | null => {
+        if (!job) return null;
+        const jobData = job.jobData as any;
+        return jobData?.response_time || null;
+    }, [job]);
+
+    // Check if has booking available - Using useCallback like React Native
+    const hasBooking = useCallback((): boolean => {
+        if (!job) return false;
+        const jobData = job.jobData as any;
+        return jobData?.has_booking || false;
+    }, [job]);
+
+    // Get phone number for the vet clinic - Using useCallback like React Native
     const getPhoneNumber = useCallback((): string | null => {
         if (!job) return null;
         const jobId = job.id || "";
@@ -355,6 +392,24 @@ const SingleNursingServiceCard: React.FC<{
         [job, getPhoneNumber, getName]
     );
 
+    // Handle book appointment button press
+    const handleBookAppointment = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!job) return;
+
+            const name = getName();
+            const confirmed = window.confirm(
+                `Would you like to book an appointment at ${name}?`
+            );
+
+            if (confirmed) {
+                handleCall(e);
+            }
+        },
+        [job, getName, handleCall]
+    );
+
     // Handle directions button press - Opens Maps app with exact location
     const handleDirections = useCallback(
         (e: React.MouseEvent) => {
@@ -381,7 +436,7 @@ const SingleNursingServiceCard: React.FC<{
     // Handle image loading error - Using useCallback like React Native
     const handleImageError = useCallback(() => {
         console.warn(
-            "⚠️ Failed to load image for nursing service:",
+            "⚠️ Failed to load image for vet clinic:",
             job?.id || "unknown"
         );
         setImageError(true);
@@ -394,10 +449,11 @@ const SingleNursingServiceCard: React.FC<{
     const distance = getDistance();
     const description = getDescription();
     const specialTags = getSpecialTags();
-    const customerReview = getCustomerReview();
-    const visibleServices = NURSING_SERVICES.slice(0, 4);
-    const moreServices =
-        NURSING_SERVICES.length > 4 ? NURSING_SERVICES.length - 4 : 0;
+    const yearsInHealthcare = getYearsInHealthcare();
+    const responseTime = getResponseTime();
+    const bookingAvailable = hasBooking();
+    const visibleServices = VET_SERVICES.slice(0, 4);
+    const moreServices = VET_SERVICES.length > 4 ? VET_SERVICES.length - 4 : 0;
     const hasPhoneNumber = getPhoneNumber() !== null;
 
     // Early return if job is not provided (after all hooks)
@@ -451,14 +507,14 @@ const SingleNursingServiceCard: React.FC<{
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full bg-gray-200">
-                        <Heart size={48} className="text-gray-400" />
+                        <PawPrint size={48} className="text-gray-400" />
                     </div>
                 )}
             </div>
 
             {/* Content */}
             <div className="p-3.5">
-                {/* Nursing Service Name */}
+                {/* Vet Clinic Name */}
                 <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 leading-snug line-clamp-2">
                     {getName()}
                 </h3>
@@ -471,13 +527,13 @@ const SingleNursingServiceCard: React.FC<{
 
                 {/* Distance */}
                 {distance && (
-                    <p className="text-xs font-semibold text-purple-600 mb-2">{distance}</p>
+                    <p className="text-xs font-semibold text-emerald-600 mb-2">{distance}</p>
                 )}
 
                 {/* Special Tags */}
                 {specialTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
-                        {specialTags.slice(0, 4).map((tag, index) => (
+                        {specialTags.map((tag, index) => (
                             <span
                                 key={index}
                                 className="inline-flex items-center bg-yellow-100 text-yellow-800 text-[10px] font-semibold px-2 py-1 rounded"
@@ -488,13 +544,25 @@ const SingleNursingServiceCard: React.FC<{
                     </div>
                 )}
 
-                {/* Customer Review */}
-                {customerReview && (
-                    <div className="flex items-center gap-1 mb-2">
-                        <MessageCircle size={12} className="text-green-600 flex-shrink-0" />
-                        <span className="text-xs text-green-600 font-medium line-clamp-1">
-                            {customerReview}
-                        </span>
+                {/* Years in Healthcare & Response Time */}
+                {(yearsInHealthcare || responseTime) && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {yearsInHealthcare && (
+                            <div className="flex items-center gap-1">
+                                <Clock size={12} className="text-emerald-600 flex-shrink-0" />
+                                <span className="text-[11px] text-gray-700 font-medium">
+                                    {yearsInHealthcare}
+                                </span>
+                            </div>
+                        )}
+                        {responseTime && (
+                            <div className="flex items-center gap-1">
+                                <Zap size={12} className="text-blue-500 flex-shrink-0" />
+                                <span className="text-[11px] text-gray-700 font-medium">
+                                    {responseTime}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -504,9 +572,9 @@ const SingleNursingServiceCard: React.FC<{
                 </p>
 
                 {/* Category Badge */}
-                <div className="inline-flex items-center gap-1 bg-purple-100 text-purple-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
-                    <Heart size={12} />
-                    <span>Nursing Service</span>
+                <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
+                    <PawPrint size={12} />
+                    <span>Veterinary Clinic</span>
                 </div>
 
                 {/* Rating and Status Row */}
@@ -527,7 +595,7 @@ const SingleNursingServiceCard: React.FC<{
 
                     {openingStatus && (
                         <div
-                            className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes("Available")
+                            className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes("Open") || openingStatus.includes("24")
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
                                 }`}
@@ -547,7 +615,7 @@ const SingleNursingServiceCard: React.FC<{
                         {visibleServices.map((service, index) => (
                             <span
                                 key={index}
-                                className="inline-flex items-center gap-1 bg-purple-100 text-purple-600 text-[11px] font-medium px-2 py-1 rounded"
+                                className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-600 text-[11px] font-medium px-2 py-1 rounded"
                             >
                                 <CheckCircle size={11} />
                                 <span>{service}</span>
@@ -562,57 +630,69 @@ const SingleNursingServiceCard: React.FC<{
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 mb-2">
                     <button
                         onClick={handleDirections}
-                        className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95"
+                        className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-[11px] py-2 rounded-lg transition-all active:scale-95"
                     >
-                        <Navigation size={14} />
+                        <Navigation size={13} />
                         <span>Directions</span>
                     </button>
 
                     <button
                         onClick={handleCall}
                         disabled={!hasPhoneNumber}
-                        className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
-                            ? "border-green-600 bg-green-50 text-green-600 hover:bg-green-100"
+                        className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-[11px] py-2 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
+                            ? "border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
                             : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
                             }`}
                     >
-                        <Phone size={14} />
+                        <Phone size={13} />
                         <span>Call</span>
                     </button>
                 </div>
+
+                {/* Book Appointment Button (if available) */}
+                {bookingAvailable && (
+                    <button
+                        onClick={handleBookAppointment}
+                        className="w-full flex items-center justify-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-[13px] py-2.5 rounded-lg transition-all active:scale-95"
+                    >
+                        <Calendar size={14} />
+                        <span>Book Appointment</span>
+                    </button>
+                )}
             </div>
         </div>
     );
 };
 
 // Main Component - displays grid of dummy data or single card
-const NearbyNursingServiceCard: React.FC<NearbyNursingServiceCardProps> = (props) => {
-    // If no job is provided, render the grid of dummy nursing services
+const NearbyVetClinicCard: React.FC<NearbyVetClinicCardProps> = (props) => {
+    // If no job is provided, render the grid of dummy vet clinics
     if (!props.job) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-                {DUMMY_NURSING_SERVICES.map((nursing) => (
-                    <SingleNursingServiceCard
-                        key={nursing.place_id}
+                {DUMMY_VET_CLINICS.map((vet) => (
+                    <SingleVetClinicCard
+                        key={vet.place_id}
                         job={{
-                            id: nursing.place_id,
-                            title: nursing.name,
-                            location: nursing.vicinity,
-                            distance: nursing.distance,
-                            category: "Nursing Service",
+                            id: vet.place_id,
+                            title: vet.name,
+                            location: vet.vicinity,
+                            category: "Veterinary Clinic",
                             jobData: {
-                                rating: nursing.rating,
-                                user_ratings_total: nursing.user_ratings_total,
-                                opening_hours: nursing.opening_hours,
-                                geometry: nursing.geometry,
-                                business_status: nursing.business_status,
-                                price_level: nursing.price_level,
-                                types: nursing.types,
-                                special_tags: nursing.special_tags,
-                                customer_review: nursing.customer_review,
+                                rating: vet.rating,
+                                user_ratings_total: vet.user_ratings_total,
+                                opening_hours: vet.opening_hours,
+                                geometry: vet.geometry,
+                                business_status: vet.business_status,
+                                price_level: vet.price_level,
+                                types: vet.types,
+                                special_tags: vet.special_tags,
+                                years_in_healthcare: vet.years_in_healthcare,
+                                response_time: vet.response_time,
+                                has_booking: vet.has_booking,
                             },
                         }}
                         onViewDetails={props.onViewDetails}
@@ -624,8 +704,8 @@ const NearbyNursingServiceCard: React.FC<NearbyNursingServiceCardProps> = (props
 
     // If job is provided, render individual card
     return (
-        <SingleNursingServiceCard job={props.job} onViewDetails={props.onViewDetails} />
+        <SingleVetClinicCard job={props.job} onViewDetails={props.onViewDetails} />
     );
 };
 
-export default NearbyNursingServiceCard;
+export default NearbyVetClinicCard;

@@ -68,6 +68,9 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import NearbyCafes from "./pages/NearByCafes";
 import FoodService from "./pages/FoodService";
 import FoodServiceForm from "./pages/FoodServiceForm";
+import HospitalServiceList from "./pages/HospitalServiceList";
+import HotelServiceList from "./pages/HotelServiceList";
+import BeautyServicesList from "./pages/BeautyServiceList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -170,7 +173,12 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-food-service-form/:id" element={<FoodServiceForm />} />
 
                     <Route path="/food-services/:subcategory" element={<FoodService />} />
+                    <Route path="/hospital-services/:subcategory" element={<HospitalServiceList />} />
 
+                    <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
+                    {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
+<Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
+<Route path="/beauty-services" element={<BeautyServicesList />} />
 
                     <Route
                         path="/add-skills"

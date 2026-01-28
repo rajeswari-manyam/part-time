@@ -1,6 +1,3 @@
-
-
-
 // src/utils/SubCategories.ts
 
 export const PLACE_SUBCATEGORIES = [
@@ -41,17 +38,6 @@ export const PLACE_SUBCATEGORIES = [
   "bike/car rentals",
   "bus ticket booking",
   "train ticket booking",
-
-  // Category 5: Beauty & Wellness
-  "beauty parlours",
-  "salons",
-  "spa & massage centres",
-  "makeup artists",
-  "mehendi artists",
-  "fitness centres / gyms",
-  "yoga centres",
-  "skin clinics",
-  "tattoo studios",
 
   // Category 6: Real Estate (Places)
   "property dealers",
@@ -250,11 +236,10 @@ export const WORKER_SUBCATEGORIES = [
 
 // ✅ UPDATED: Automotive subcategories (Category ID: 9) - lowercase with exact matching
 export const AUTOMOTIVE_SUBCATEGORIES = [
-  "car repair / service",
+  "car repair",
   "bike repair",
   "car wash",
   "bike wash",
-  "tyre shops",
   "battery shops",
   "automobile spare parts",
   "towing services",
@@ -352,4 +337,90 @@ export const FOOD_SUBCATEGORIES = [
   "food delivery",
   "mess / tiffin services",
   "catering services",
+];
+
+// ✅ Hospital subcategories (must match lowercase exactly)
+export const HOSPITAL_SUBCATEGORIES = [
+  "hospitals",
+  "clinics",
+  "dental clinics",
+  "eye hospitals",
+  "dermatologists",
+  "diagnostic labs",
+  "blood banks",
+  "ambulance services",
+  "physiotherapy centres",
+  "nursing services",
+  "vet hospitals / pet clinics",
+  "pharmacies / medical shops",
+];
+
+// ✅ Hotel & Travel subcategories (must match lowercase exactly)
+export const HOTEL_SUBCATEGORIES = [
+  "hotels",
+  "resorts",
+  "lodges",
+  "guest houses",
+  "travel agencies",
+  "tour packages",
+  "taxi services",
+  "bike/car rentals",
+  "bus ticket booking",
+  "train ticket booking",
+];
+
+// ✅ Beauty & Wellness subcategories - COMPREHENSIVE LIST with all variations
+export const BEAUTY_SUBCATEGORIES = [
+  // Beauty Parlours
+  "beauty parlours",
+  "beauty-parlours",
+  "beautyparlours",
+  "beauty parlour",
+
+  // Salons
+  "salons",
+  "salon",
+
+  // Spa & Massage
+  "spa & massage centres",
+  "spa-massage-centres",
+  "spa & massage",
+  "spa",
+  "massage centres",
+  "massage",
+
+  // Makeup Artists
+  "makeup artists",
+  "makeup-artists",
+  "makeup artist",
+
+  // Mehendi Artists
+  "mehendi artists",
+  "mehendi-artists",
+  "mehendi artist",
+  "mehndi artists",
+  "mehndi-artists",
+
+  // Fitness & Gyms
+  "fitness centres / gyms",
+  "fitness-centres-/-gyms",
+  "fitness centres",
+  "fitness-centres",
+  "gyms",
+  "gym",
+
+  // Yoga
+  "yoga centres",
+  "yoga-centres",
+  "yoga centre",
+
+  // Skin Clinics
+  "skin clinics",
+  "skin-clinics",
+  "skin clinic",
+
+  // Tattoo Studios
+  "tattoo studios",
+  "tattoo-studios",
+  "tattoo studio",
 ];
