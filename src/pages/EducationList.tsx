@@ -3,22 +3,24 @@ import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
-// Import existing automotive card components
-import NearbyTowingCard from "../components/cards/Automotive/NearByTowingService";
-import NearbyBikeRepairCard from "../components/cards/Automotive/NearByBikeRepairCard";
-import NearbyCarRepairCard from "../components/cards/Automotive/NearByCarRepair";
-import NearbyBikeWashingCard from "../components/cards/Automotive/NearByBikeWash";
-import NearbyCarWashingCard from "../components/cards/Automotive/NearByCarWashing";
-import NearbyAutomotiveSparePartsCard from "../components/cards/Automotive/NearByAutomotiveSpareParts";
+// Import education card components
+import NearbySchoolCard from "../components/cards/Education/NearBySchoolCard";
+import NearbyCollegeCard from "../components/cards/Education/NearByCollegeCard";
+import NearbyCoachingCard from "../components/cards/Education/NearByCoaching";
+import NearbyComputerTrainingCard from "../components/cards/Education/NearByComputer";
+import NearbyMusicClassesCard from "../components/cards/Education/NearByMusicCard";
+import NearbySkillCard from "../components/cards/Education/NearBySkillCard";
+import NearbySpokenEnglishCard from "../components/cards/Education/NearBySpokenCard";
+import NearbyTuitionCard from "../components/cards/Education/NearByTutionCard";
 
-export interface AutomotiveType {
+export interface EducationType {
     id: string;
     title: string;
     location: string;
     description: string;
     distance?: number;
     category: string;
-    automotiveData?: {
+    educationData?: {
         status: boolean;
         pincode: string;
         icon: string;
@@ -28,8 +30,10 @@ export interface AutomotiveType {
         geometry?: { location: { lat: number; lng: number } };
         phone?: string;
         photos?: string[];
-        price_range?: string;
-        services?: string[];
+        courses?: string[];
+        subjects?: string[];
+        degree_types?: string[];
+        facilities?: string[];
         special_tags?: string[];
     };
 }
@@ -90,21 +94,21 @@ const ActionDropdown: React.FC<{
     );
 };
 
-const AutomotiveList: React.FC = () => {
+const EducationList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<AutomotiveType[]>([]);
+    const [services, setServices] = useState<EducationType[]>([]);
     const [loading] = useState(false);
     const [error] = useState("");
 
     const handleView = (service: any) => {
-        navigate(`/automotive/details/${service.id}`);
+        navigate(`/education/details/${service.id}`);
     };
 
     const handleEdit = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        navigate(`/add-automotive-form/${id}`);
+        navigate(`/add-education-form/${id}`);
     };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -121,11 +125,11 @@ const AutomotiveList: React.FC = () => {
     };
 
     const handleAddPost = () => {
-        navigate("/add-automotive-form");
+        navigate("/add-education-form");
     };
 
     const getDisplayTitle = () => {
-        if (!subcategory) return "All Automotive Services";
+        if (!subcategory) return "All Education Services";
         return subcategory
             .split("-")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -135,14 +139,9 @@ const AutomotiveList: React.FC = () => {
     // ✅ Normalize subcategory to handle different route formats
     const normalizeSubcategory = (sub: string | undefined): string => {
         if (!sub) return "";
-
-        // Convert to lowercase for consistent comparison
         const normalized = sub.toLowerCase();
-
-        // Log for debugging
         console.log("📍 Raw subcategory:", sub);
         console.log("📍 Normalized subcategory:", normalized);
-
         return normalized;
     };
 
@@ -154,44 +153,55 @@ const AutomotiveList: React.FC = () => {
 
         const normalized = normalizeSubcategory(subcategory);
 
-        // ✅ TOWING SERVICES MATCHING
-        if (normalized.includes("towing") || normalized.includes("tow")) {
-            console.log("✅ Matched to NearbyTowingCard");
-            return NearbyTowingCard;
+        // ✅ SCHOOLS MATCHING
+        if (normalized.includes("school")) {
+            console.log("✅ Matched to NearbySchoolCard");
+            return NearbySchoolCard;
         }
 
-        // ✅ CAR REPAIR MATCHING
-        if (normalized.includes("car") && normalized.includes("repair")) {
-            console.log("✅ Matched to NearbyCarRepairCard");
-            return NearbyCarRepairCard;
+        // ✅ COLLEGES MATCHING
+        if (normalized.includes("college")) {
+            console.log("✅ Matched to NearbyCollegeCard");
+            return NearbyCollegeCard;
         }
 
-        // ✅ BIKE REPAIR MATCHING
-        if (normalized.includes("bike") && normalized.includes("repair")) {
-            console.log("✅ Matched to NearbyBikeRepairCard");
-            return NearbyBikeRepairCard;
+        // ✅ COACHING CENTRES MATCHING
+        if (normalized.includes("coaching")) {
+            console.log("✅ Matched to NearbyCoachingCard");
+            return NearbyCoachingCard;
         }
 
-        // ✅ CAR WASHING MATCHING
-        if (normalized.includes("car") && normalized.includes("wash")) {
-            console.log("✅ Matched to NearbyCarWashingCard");
-            return NearbyCarWashingCard;
+        // ✅ COMPUTER TRAINING MATCHING
+        if (normalized.includes("computer") && normalized.includes("training")) {
+            console.log("✅ Matched to NearbyComputerTrainingCard");
+            return NearbyComputerTrainingCard;
         }
 
-        // ✅ BIKE WASHING MATCHING
-        if (normalized.includes("bike") && normalized.includes("wash")) {
-            console.log("✅ Matched to NearbyBikeWashingCard");
-            return NearbyBikeWashingCard;
-        }
-
-        // ✅ AUTOMOTIVE SPARE PARTS MATCHING
+        // ✅ MUSIC & DANCE CLASSES MATCHING
         if (
-            (normalized.includes("spare") && normalized.includes("part")) ||
-            normalized.includes("sparepart") ||
-            normalized.includes("parts")
+            (normalized.includes("music") || normalized.includes("dance")) &&
+            normalized.includes("class")
         ) {
-            console.log("✅ Matched to NearbyAutomotiveSparePartsCard");
-            return NearbyAutomotiveSparePartsCard;
+            console.log("✅ Matched to NearbyMusicClassesCard");
+            return NearbyMusicClassesCard;
+        }
+
+        // ✅ SPOKEN ENGLISH MATCHING
+        if (normalized.includes("spoken") && normalized.includes("english")) {
+            console.log("✅ Matched to NearbySpokenEnglishCard");
+            return NearbySpokenEnglishCard;
+        }
+
+        // ✅ SKILL DEVELOPMENT MATCHING
+        if (normalized.includes("skill")) {
+            console.log("✅ Matched to NearbySkillCard");
+            return NearbySkillCard;
+        }
+
+        // ✅ TUITION MATCHING (catch-all for home tuition)
+        if (normalized.includes("tuition")) {
+            console.log("✅ Matched to NearbyTuitionCard");
+            return NearbyTuitionCard;
         }
 
         console.warn(`⚠️ No matching card component for: "${subcategory}"`);
@@ -204,16 +214,19 @@ const AutomotiveList: React.FC = () => {
 
         const normalized = normalizeSubcategory(subcategory);
 
-        // Check if any of the keywords match
         const keywords = [
-            "towing",
-            "tow",
-            "repair",
-            "wash",
-            "spare",
-            "part",
-            "bike",
-            "car",
+            "school",
+            "college",
+            "coaching",
+            "computer",
+            "training",
+            "music",
+            "dance",
+            "class",
+            "spoken",
+            "english",
+            "skill",
+            "tuition",
         ];
 
         const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
@@ -237,7 +250,7 @@ const AutomotiveList: React.FC = () => {
                 {/* Nearby Card Components - renders built-in dummy data */}
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        🚗 Nearby {getDisplayTitle()}
+                        🎓 Nearby {getDisplayTitle()}
                     </h2>
                     <CardComponent onViewDetails={handleView} />
                 </div>
@@ -248,7 +261,7 @@ const AutomotiveList: React.FC = () => {
                         <div className="my-8 flex items-center gap-4">
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                             <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                🚗 Your Listed Services ({services.length})
+                                🎓 Your Listed Services ({services.length})
                             </span>
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                         </div>
@@ -313,7 +326,7 @@ const AutomotiveList: React.FC = () => {
                     <>
                         {services.length === 0 ? (
                             <div className="text-center py-20">
-                                <div className="text-6xl mb-4">🚗</div>
+                                <div className="text-6xl mb-4">🎓</div>
                                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                                     No Services Found
                                 </h3>
@@ -340,14 +353,14 @@ const AutomotiveList: React.FC = () => {
 
                                         {/* Service Badge */}
                                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                            <span>{service.automotiveData?.icon || "🚗"}</span>
+                                            <span>{service.educationData?.icon || "🎓"}</span>
                                             <span>{service.category}</span>
                                         </div>
 
                                         {/* Image Placeholder */}
-                                        <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col items-center justify-center text-gray-400">
+                                        <div className="w-full h-48 bg-gradient-to-br from-indigo-50 to-blue-50 flex flex-col items-center justify-center text-gray-400">
                                             <span className="text-5xl mb-2">
-                                                {service.automotiveData?.icon || "🚗"}
+                                                {service.educationData?.icon || "🎓"}
                                             </span>
                                             <span className="text-sm">No Image</span>
                                         </div>
@@ -364,27 +377,28 @@ const AutomotiveList: React.FC = () => {
                                                 {service.description}
                                             </p>
 
-                                            {service.automotiveData?.pincode && (
+                                            {service.educationData?.pincode && (
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <span className="text-gray-400">📍</span>
                                                     <span className="text-gray-700">
-                                                        Pincode: {service.automotiveData.pincode}
+                                                        Pincode: {service.educationData.pincode}
                                                     </span>
                                                 </div>
                                             )}
 
-                                            {service.automotiveData?.status !== undefined && (
+                                            {service.educationData?.status !== undefined && (
                                                 <div className="flex items-center gap-2">
                                                     <span
-                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.automotiveData.status
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-red-100 text-red-800"
-                                                            }`}
+                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                                            service.educationData.status
+                                                                ? "bg-green-100 text-green-800"
+                                                                : "bg-red-100 text-red-800"
+                                                        }`}
                                                     >
                                                         <span className="mr-1">
-                                                            {service.automotiveData.status ? "✓" : "✗"}
+                                                            {service.educationData.status ? "✓" : "✗"}
                                                         </span>
-                                                        {service.automotiveData.status ? "Open" : "Closed"}
+                                                        {service.educationData.status ? "Open" : "Closed"}
                                                     </span>
                                                 </div>
                                             )}
@@ -400,4 +414,4 @@ const AutomotiveList: React.FC = () => {
     );
 };
 
-export default AutomotiveList;
+export default EducationList;

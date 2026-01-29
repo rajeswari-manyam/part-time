@@ -6,15 +6,14 @@ import {
   Phone,
   Navigation,
   Star,
-  Flame,
-  Zap,
-  Hammer,
+  Clock,
   CheckCircle,
+  Bike,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
 
-export interface Builder {
+export interface BikeRepairService {
   place_id: string;
   name: string;
   vicinity: string;
@@ -26,138 +25,166 @@ export interface Builder {
   };
   business_status: string;
   opening_hours: { open_now: boolean };
+  price_level: number;
   types: string[];
   special_tags: string[];
-  amenities: string[];
   distance: number;
 }
 
 /* ================= CONSTANTS ================= */
 
-// Phone numbers map for builders
+// Phone numbers map for bike repair services
 const PHONE_NUMBERS_MAP: { [key: string]: string } = {
-  builder_1: "09980795583",
-  builder_2: "04760622445",
-  builder_3: "08460232445",
-  builder_4: "09988003289",
+  bike_repair_1: "0704821667",
+  bike_repair_2: "07043189878",
+  bike_repair_3: "08197420033",
+  bike_repair_4: "07383349778",
 };
 
-// Export dummy builders data
-export const DUMMY_BUILDERS: Builder[] = [
+// Export dummy bike repair data
+export const DUMMY_BIKE_REPAIRS: BikeRepairService[] = [
   {
-    place_id: "builder_1",
-    name: "Prestige Group Constructions",
-    vicinity: "Financial District, Hyderabad",
-    rating: 4.8,
-    user_ratings_total: 567,
-    photos: [{ photo_reference: "builder_photo_1" }],
+    place_id: "bike_repair_1",
+    name: "Sri Sai Laxmi Maruthi Bike Zone",
+    vicinity: "Pipeline Road Jeedimetla, Hyderabad",
+    rating: 4.2,
+    user_ratings_total: 17,
+    photos: [{ photo_reference: "bike_repair_photo_1" }],
     geometry: {
-      location: { lat: 17.4239, lng: 78.3772 },
+      location: { lat: 17.5081, lng: 78.4382 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Trending", "Premium Quality"],
-    amenities: ["Luxury Apartments", "Gated Communities", "Commercial Spaces", "RERA Approved"],
-    distance: 2.5,
+    price_level: 2,
+    types: ["bike_repair", "motorcycle_service"],
+    special_tags: [
+      "Trending",
+      "Motorcycle Repair & Services",
+    ],
+    distance: 2.8,
   },
   {
-    place_id: "builder_2",
-    name: "My Home Constructions",
-    vicinity: "Kokapet, Hyderabad",
-    rating: 4.7,
-    user_ratings_total: 423,
-    photos: [{ photo_reference: "builder_photo_2" }],
+    place_id: "bike_repair_2",
+    name: "Star Motors Aurthorised Two Wheeler Showroom",
+    vicinity: "Moosapet, Hyderabad",
+    rating: 3.8,
+    user_ratings_total: 348,
+    photos: [{ photo_reference: "bike_repair_photo_2" }],
     geometry: {
-      location: { lat: 17.4065, lng: 78.3438 },
+      location: { lat: 17.4892, lng: 78.4365 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Award Winner", "Quick Response"],
-    amenities: ["High-Rise Towers", "Smart Homes", "Club Facilities", "Green Building"],
-    distance: 4.2,
+    price_level: 2,
+    types: ["bike_repair", "motorcycle_dealer"],
+    special_tags: [
+      "Verified",
+      "Top Search",
+      "Company Authorised Dealer",
+      "Same Day Delivery",
+      "Delivery Available",
+    ],
+    distance: 4.0,
   },
   {
-    place_id: "builder_3",
-    name: "Aparna Constructions",
-    vicinity: "Nallagandla, Hyderabad",
-    rating: 4.6,
-    user_ratings_total: 312,
-    photos: [{ photo_reference: "builder_photo_3" }],
+    place_id: "bike_repair_3",
+    name: "Marvel Bikes Pvt Ltd",
+    vicinity: "Sanjeeviya Nagar Colony Tar Bund, Hyderabad",
+    rating: 4.1,
+    user_ratings_total: 251,
+    photos: [{ photo_reference: "bike_repair_photo_3" }],
     geometry: {
-      location: { lat: 17.4486, lng: 78.3503 },
+      location: { lat: 17.4856, lng: 78.4421 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Affordable", "Quality Construction"],
-    amenities: ["2BHK-3BHK", "Villas", "Plots", "On-Time Delivery"],
-    distance: 5.8,
+    price_level: 2,
+    types: ["bike_repair", "motorcycle_dealer"],
+    special_tags: [
+      "Trust",
+      "Verified",
+      "Responsive",
+      "Company Authorised Dealer",
+    ],
+    distance: 4.5,
   },
   {
-    place_id: "builder_4",
-    name: "Lodha Builders",
-    vicinity: "Kondapur, Hyderabad",
-    rating: 4.9,
-    user_ratings_total: 689,
-    photos: [{ photo_reference: "builder_photo_4" }],
+    place_id: "bike_repair_4",
+    name: "Appple Motors",
+    vicinity: "Bhagya Laxmi Colony-Jeedimetla, Hyderabad",
+    rating: 3.7,
+    user_ratings_total: 130,
+    photos: [{ photo_reference: "bike_repair_photo_4" }],
     geometry: {
-      location: { lat: 17.4624, lng: 78.3647 },
+      location: { lat: 17.5095, lng: 78.4395 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Premium", "Trending"],
-    amenities: ["Luxury Villas", "Penthouses", "Swimming Pool", "Gym & Spa"],
-    distance: 3.1,
+    price_level: 2,
+    types: ["bike_repair", "motorcycle_service"],
+    special_tags: [
+      "Breakdown Support Over Phone",
+    ],
+    distance: 2.1,
   },
 ];
 
-// Builder images
-const BUILDER_IMAGES_MAP: { [key: string]: string[] } = {
-  builder_1: [
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
-    "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
+// Bike repair images
+const BIKE_REPAIR_IMAGES_MAP: { [key: string]: string[] } = {
+  bike_repair_1: [
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+    "https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800",
+    "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800",
   ],
-  builder_2: [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
-    "https://images.unsplash.com/photo-1590586767908-20d6d1b6db58?w=800",
+  bike_repair_2: [
+    "https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+    "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800",
   ],
-  builder_3: [
-    "https://images.unsplash.com/photo-1625844775804-9975a9b4748d?w=800",
-    "https://images.unsplash.com/photo-1590586767908-20d6d1b6db58?w=800",
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
+  bike_repair_3: [
+    "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+    "https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800",
   ],
-  builder_4: [
-    "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800",
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800",
+  bike_repair_4: [
+    "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=800",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+    "https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800",
   ],
 };
 
-// Builder descriptions
-const BUILDER_DESCRIPTIONS_MAP: { [key: string]: string } = {
-  builder_1:
-    "Premier builder with 25+ years of excellence in luxury apartments and commercial spaces. RERA approved projects with premium quality construction.",
-  builder_2:
-    "Award-winning builder specializing in high-rise residential projects. Smart home technology and world-class amenities in all projects.",
-  builder_3:
-    "Trusted name in affordable housing with quality construction. Known for on-time delivery and transparent pricing. Multiple successful projects.",
-  builder_4:
-    "Premium builder with modern architecture and world-class amenities. Luxury villas and penthouses with exceptional finishes and facilities.",
+// Bike repair descriptions
+const BIKE_REPAIR_DESCRIPTIONS_MAP: { [key: string]: string } = {
+  bike_repair_1:
+    "Trending bike repair service with 4.2★ rating and 17 reviews. Motorcycle Repair & Services specialist. Professional bike maintenance and repair services available.",
+  bike_repair_2:
+    "Top Search authorised two-wheeler showroom with 3.8★ rating and 348 reviews. Verified Company Authorised Dealer. Same Day Delivery and Delivery Available. Expert motorcycle service.",
+  bike_repair_3:
+    "Trusted bike dealership with 4.1★ rating and 251 reviews. Verified and Responsive service. Company Authorised Dealer. Professional motorcycle care and maintenance.",
+  bike_repair_4:
+    "Reliable bike service center with 3.7★ rating and 130 reviews. Breakdown Support Over Phone available. Quick response and professional motorcycle repair services.",
 };
+
+// Bike repair services offered
+const BIKE_REPAIR_SERVICES = [
+  "Oil Change",
+  "Brake Service",
+  "Engine Tune-up",
+  "Tire Replacement",
+  "Chain Lubrication",
+  "Battery Service",
+  "Periodic Maintenance",
+  "Spare Parts",
+];
 
 /* ================= COMPONENT ================= */
 
-interface NearbyBuildersCardProps {
+interface NearbyBikeRepairCardProps {
   job?: any;
   onViewDetails: (job: any) => void;
 }
 
-const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
+const SingleBikeRepairCard: React.FC<NearbyBikeRepairCardProps> = ({
   job,
   onViewDetails,
 }) => {
@@ -167,8 +194,8 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
   // Get all available photos from job data
   const getPhotos = useCallback(() => {
     if (!job) return [];
-    const jobId = job.id || "builder_1";
-    return BUILDER_IMAGES_MAP[jobId] || BUILDER_IMAGES_MAP["builder_1"];
+    const jobId = job.id || "bike_repair_1";
+    return BIKE_REPAIR_IMAGES_MAP[jobId] || BIKE_REPAIR_IMAGES_MAP["bike_repair_1"];
   }, [job]);
 
   const photos = getPhotos();
@@ -197,10 +224,10 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
     [hasPhotos, currentImageIndex, photos.length]
   );
 
-  // Get builder name from job data
+  // Get bike repair name from job data
   const getName = useCallback((): string => {
-    if (!job) return "Builder";
-    return job.title || "Builder";
+    if (!job) return "Bike Repair Service";
+    return job.title || "Bike Repair Service";
   }, [job]);
 
   // Get location string from job data
@@ -223,12 +250,12 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
   // Get description
   const getDescription = useCallback((): string => {
-    if (!job) return "Professional construction services";
-    const jobId = job.id || "builder_1";
+    if (!job) return "Professional bike repair and maintenance services";
+    const jobId = job.id || "bike_repair_1";
     return (
-      BUILDER_DESCRIPTIONS_MAP[jobId] ||
+      BIKE_REPAIR_DESCRIPTIONS_MAP[jobId] ||
       job.description ||
-      "Professional construction services"
+      "Professional bike repair and maintenance services"
     );
   }, [job]);
 
@@ -256,7 +283,7 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
       return null;
     }
 
-    return isOpen ? "Open Now" : "Closed";
+    return isOpen ? "Open Now" : "Currently Closed";
   }, [job]);
 
   // Get special tags from job data
@@ -266,21 +293,14 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
     return jobData?.special_tags || [];
   }, [job]);
 
-  // Get amenities from job data
-  const getAmenities = useCallback((): string[] => {
-    if (!job) return [];
-    const jobData = job.jobData as any;
-    return jobData?.amenities || [];
-  }, [job]);
-
-  // Get phone number for the builder
+  // Get phone number for the bike repair service
   const getPhoneNumber = useCallback((): string | null => {
     if (!job) return null;
     const jobId = job.id || "";
     return PHONE_NUMBERS_MAP[jobId] || null;
   }, [job]);
 
-  // Handle call button press
+  // Handle call button press - Opens phone dialer
   const handleCall = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -294,14 +314,16 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
         return;
       }
 
+      // Format phone number for tel: URL (remove all non-numeric characters)
       const formattedNumber = phoneNumber.replace(/[^0-9+]/g, "");
       const telUrl = `tel:${formattedNumber}`;
+
       window.location.href = telUrl;
     },
     [job, getPhoneNumber, getName]
   );
 
-  // Handle directions button press
+  // Handle directions button press - Opens Maps app with exact location
   const handleDirections = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -316,7 +338,9 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
         return;
       }
 
+      // Create Google Maps URL with exact coordinates
       const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${job.id || ""}`;
+
       window.open(googleMapsUrl, "_blank");
     },
     [job]
@@ -324,7 +348,7 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
   // Handle image loading error
   const handleImageError = useCallback(() => {
-    console.warn("⚠️ Failed to load image for builder:", job?.id || "unknown");
+    console.warn("⚠️ Failed to load image for bike repair:", job?.id || "unknown");
     setImageError(true);
   }, [job]);
 
@@ -335,12 +359,12 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
   const distance = getDistance();
   const description = getDescription();
   const specialTags = getSpecialTags();
-  const amenities = getAmenities();
-  const visibleAmenities = amenities.slice(0, 4);
-  const moreAmenities = amenities.length > 4 ? amenities.length - 4 : 0;
+  const visibleServices = BIKE_REPAIR_SERVICES.slice(0, 4);
+  const moreServices =
+    BIKE_REPAIR_SERVICES.length > 4 ? BIKE_REPAIR_SERVICES.length - 4 : 0;
   const hasPhoneNumber = getPhoneNumber() !== null;
 
-  // Early return if job is not provided
+  // Early return if job is not provided (after all hooks)
   if (!job) {
     return null;
   }
@@ -390,15 +414,15 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
             )}
           </>
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-orange-50 to-red-50">
-            <Hammer size={60} className="text-orange-400" />
+          <div className="flex items-center justify-center h-full bg-gray-200">
+            <span className="text-6xl">🏍️</span>
           </div>
         )}
       </div>
 
       {/* Content */}
       <div className="p-3.5">
-        {/* Builder Name */}
+        {/* Bike Repair Name */}
         <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 leading-snug line-clamp-2">
           {getName()}
         </h3>
@@ -417,21 +441,14 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
         {/* Special Tags */}
         {specialTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {specialTags.map((tag, index) => {
-              const isTrending = tag === "Trending";
-              const isQuickResponse = tag === "Quick Response";
-
-              return (
-                <span
-                  key={index}
-                  className="bg-orange-100 text-orange-800 text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1"
-                >
-                  {isTrending && <Flame size={10} />}
-                  {isQuickResponse && <Zap size={10} />}
-                  {tag}
-                </span>
-              );
-            })}
+            {specialTags.map((tag, index) => (
+              <span
+                key={index}
+                className="bg-yellow-100 text-yellow-800 text-[10px] font-semibold px-2 py-0.5 rounded"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         )}
 
@@ -442,8 +459,8 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
         {/* Category Badge */}
         <div className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
-          <span className="text-sm">🏗️</span>
-          <span>Builder & Developer</span>
+          <Bike size={13} />
+          <span>Bike Repair Service</span>
         </div>
 
         {/* Rating and Status Row */}
@@ -469,35 +486,34 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
                   : "bg-red-100 text-red-700"
                 }`}
             >
+              <Clock size={11} />
               <span>{openingStatus}</span>
             </div>
           )}
         </div>
 
-        {/* Amenities */}
-        {amenities.length > 0 && (
-          <div className="mb-3">
-            <p className="text-[10px] font-bold text-gray-500 tracking-wide mb-1.5">
-              SPECIALTIES:
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {visibleAmenities.map((amenity, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-[11px] font-medium px-2 py-1 rounded"
-                >
-                  <CheckCircle size={11} />
-                  <span>{amenity}</span>
-                </span>
-              ))}
-              {moreAmenities > 0 && (
-                <span className="inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded">
-                  +{moreAmenities} more
-                </span>
-              )}
-            </div>
+        {/* Services */}
+        <div className="mb-3">
+          <p className="text-[10px] font-bold text-gray-500 tracking-wide mb-1.5">
+            SERVICES:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleServices.map((service, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-[11px] font-medium px-2 py-1 rounded"
+              >
+                <CheckCircle size={11} />
+                <span>{service}</span>
+              </span>
+            ))}
+            {moreServices > 0 && (
+              <span className="inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded">
+                +{moreServices} more
+              </span>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2">
@@ -527,50 +543,40 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 };
 
 // Wrapper component - displays grid of dummy data or single card
-const NearbyBuildersCard: React.FC<NearbyBuildersCardProps> = (props) => {
-  // If no job is provided, render the grid of dummy builders
+const NearbyBikeRepairCard: React.FC<NearbyBikeRepairCardProps> = (props) => {
+  // If no job is provided, render the grid of dummy bike repairs
   if (!props.job) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            🏗️ Nearby Builders & Developers
-          </h2>
-          <span className="text-sm text-gray-500">
-            {DUMMY_BUILDERS.length} builders found
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-          {DUMMY_BUILDERS.map((builder) => (
-            <SingleBuilderCard
-              key={builder.place_id}
-              job={{
-                id: builder.place_id,
-                title: builder.name,
-                location: builder.vicinity,
-                distance: builder.distance,
-                category: "Builder",
-                jobData: {
-                  rating: builder.rating,
-                  user_ratings_total: builder.user_ratings_total,
-                  opening_hours: builder.opening_hours,
-                  geometry: builder.geometry,
-                  business_status: builder.business_status,
-                  types: builder.types,
-                  special_tags: builder.special_tags,
-                  amenities: builder.amenities,
-                },
-              }}
-              onViewDetails={props.onViewDetails}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+        {DUMMY_BIKE_REPAIRS.map((bikeRepair) => (
+          <SingleBikeRepairCard
+            key={bikeRepair.place_id}
+            job={{
+              id: bikeRepair.place_id,
+              title: bikeRepair.name,
+              location: bikeRepair.vicinity,
+              distance: bikeRepair.distance,
+              category: "Bike Repair Service",
+              jobData: {
+                rating: bikeRepair.rating,
+                user_ratings_total: bikeRepair.user_ratings_total,
+                opening_hours: bikeRepair.opening_hours,
+                geometry: bikeRepair.geometry,
+                business_status: bikeRepair.business_status,
+                price_level: bikeRepair.price_level,
+                types: bikeRepair.types,
+                special_tags: bikeRepair.special_tags,
+              },
+            }}
+            onViewDetails={props.onViewDetails}
+          />
+        ))}
       </div>
     );
   }
 
   // If job is provided, render individual card
-  return <SingleBuilderCard job={props.job} onViewDetails={props.onViewDetails} />;
+  return <SingleBikeRepairCard job={props.job} onViewDetails={props.onViewDetails} />;
 };
 
-export default NearbyBuildersCard;
+export default NearbyBikeRepairCard;

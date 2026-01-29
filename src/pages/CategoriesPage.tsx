@@ -12,6 +12,9 @@ import {
     HOSPITAL_SUBCATEGORIES,
     HOTEL_SUBCATEGORIES,
     BEAUTY_SUBCATEGORIES,
+    REAL_ESTATE_SUBCATEGORIES,
+    SHOPPING_SUBCATEGORIES,
+    EDUCATION_SUBCATEGORIES,
 } from "../utils/SubCategories";
 import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
@@ -84,6 +87,11 @@ const CategoryPage: React.FC = () => {
             console.log("✅ Navigating to automotive");
             navigate(`/automotive/${slugWithDash}`);
         }
+        // Check if this is an education subcategory
+        else if (EDUCATION_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to education");
+            navigate(`/education/${slugWithDash}`);
+        }
         // Check if this is a food subcategory
         else if (FOOD_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to food services");
@@ -103,6 +111,16 @@ const CategoryPage: React.FC = () => {
         else if (BEAUTY_SUBCATEGORIES.includes(slug) || BEAUTY_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to beauty services");
             navigate(`/beauty-services/${slugWithDash}`);
+        }
+        // ✅ Check if this is a real estate subcategory
+        else if (REAL_ESTATE_SUBCATEGORIES.includes(slug) || REAL_ESTATE_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to real estate");
+            navigate(`/real-estate/${slugWithDash}`);
+        }
+        // ✅ NEW: Check if this is a shopping subcategory
+        else if (SHOPPING_SUBCATEGORIES.includes(slug) || SHOPPING_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to shopping");
+            navigate(`/shopping/${slugWithDash}`);
         }
         // Check if this is a place subcategory
         else if (PLACE_SUBCATEGORIES.includes(slug)) {

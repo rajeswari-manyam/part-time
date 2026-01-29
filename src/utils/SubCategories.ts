@@ -39,11 +39,6 @@ export const PLACE_SUBCATEGORIES = [
   "bus ticket booking",
   "train ticket booking",
 
-  // Category 6: Real Estate (Places)
-  "property dealers",
-  "rent/lease listings",
-  "builders & developers",
-
   // Category 7: Shopping & Retail
   "grocery stores",
   "supermarkets",
@@ -115,21 +110,6 @@ export const WORKER_SUBCATEGORIES = [
   "gas stove repair",
   "home appliance repair",
   "solar panel installation",
-
-  // Category 6: Real Estate (Workers)
-  "architect services",
-  "interior designers",
-  "construction contractors",
-  "home cleaning services",
-  "pest control",
-
-  // Category 7: Shopping & Retail (Workers)
-  "furniture repair services",
-
-  // Category 8: Education & Training (Workers)
-  "tuition teachers",
-  "computer training",
-  "vocational training",
 
   // Category 10: Home & Personal Services
   "maid services",
@@ -234,96 +214,16 @@ export const WORKER_SUBCATEGORIES = [
   "sangeet choreographers",
 ];
 
-// ✅ UPDATED: Automotive subcategories (Category ID: 9) - lowercase with exact matching
+// ✅ AUTOMOTIVE SUBCATEGORIES - ALL LOWERCASE for matching
 export const AUTOMOTIVE_SUBCATEGORIES = [
   "car repair",
   "bike repair",
   "car wash",
   "bike wash",
-  "battery shops",
   "automobile spare parts",
   "towing services",
-  "car hire / rentals",
 ];
 
-// ✅ Add this mapping for main categories → subcategories
-export const PLACE_CATEGORY_MAP: Record<string, string[]> = {
-  "food & dining": [
-    "restaurants",
-    "cafes",
-    "bakeries",
-    "street food",
-    "juice & smoothie shops",
-    "sweet shops",
-    "ice cream parlours",
-  ],
-  "travel / stay": ["hotels", "resorts", "lodges", "guest houses"],
-  shopping: [
-    "grocery stores",
-    "supermarkets",
-    "clothing stores",
-    "shoe shops",
-    "mobile stores",
-    "electronics shops",
-    "jewellery stores",
-    "stationery shops",
-  ],
-  education: ["schools", "colleges", "coaching centres"],
-  "transport / logistics": ["courier offices", "delivery services", "parcel services"],
-  health: ["hospitals", "clinics", "pharmacies / medical shops"],
-};
-
-export const AMENITY_MAP: Record<string, string[]> = {
-  // 🍽 FOOD
-  restaurants: ["amenity=restaurant"],
-  cafes: ["amenity=cafe"],
-  bakeries: ["shop=bakery"],
-  "street food": ["amenity=fast_food"],
-  "juice & smoothie shops": ["amenity=cafe", "shop=beverages"],
-  "sweet shops": ["shop=confectionery"],
-  "ice cream parlours": ["amenity=ice_cream"],
-
-  // 🏥 MEDICAL
-  hospitals: ["amenity=hospital"],
-  clinics: ["amenity=clinic", "amenity=doctors"],
-  "dental clinics": ["amenity=dentist"],
-  "eye hospitals": ["amenity=hospital"],
-  pharmacies: ["amenity=pharmacy"],
-  "diagnostic labs": ["amenity=laboratory"],
-  "blood banks": ["amenity=blood_bank"],
-
-  // 🏨 STAY
-  hotels: ["tourism=hotel"],
-  resorts: ["tourism=resort"],
-  lodges: ["tourism=guest_house"],
-  "guest houses": ["tourism=guest_house"],
-
-  // 💪 FITNESS
-  gyms: ["leisure=fitness_centre"],
-  "fitness centres / gyms": ["leisure=fitness_centre"],
-  "yoga centres": ["leisure=sports_centre"],
-
-  // 🎓 EDUCATION
-  schools: ["amenity=school"],
-  colleges: ["amenity=college"],
-  "coaching centres": ["amenity=training"],
-  coaching: ["amenity=training"],
-
-  // 🛒 SHOPPING
-  supermarkets: ["shop=supermarket"],
-  "grocery stores": ["shop=convenience", "shop=supermarket"],
-
-  // 🐾 PETS
-  "pet shops": ["shop=pet"],
-  "vet clinics": ["amenity=veterinary"],
-
-  // 📱 SERVICES
-  "mobile repair": ["shop=mobile_phone"],
-  "courier offices": ["amenity=courier"],
-
-  // fallback
-  default: ["amenity=restaurant"],
-};
 
 // ✅ Food subcategories (must match lowercase exactly)
 export const FOOD_SUBCATEGORIES = [
@@ -423,4 +323,212 @@ export const BEAUTY_SUBCATEGORIES = [
   "tattoo studios",
   "tattoo-studios",
   "tattoo studio",
+];
+
+// ✅ NEW: Real Estate subcategories - COMPREHENSIVE LIST with all variations
+export const REAL_ESTATE_SUBCATEGORIES = [
+  // Property Dealers
+  "property dealers",
+  "property-dealers",
+  "property",
+  "dealers",
+  "real estate agents",
+  "real-estate-agents",
+
+  // Builders & Developers
+  "builders & developers",
+  "builders-developers",
+  "builders",
+  "developers",
+  "construction companies",
+
+  // Rent/Lease
+  "rent/lease listings",
+  "rent-lease-listings",
+  "rent/lease",
+  "rent",
+  "lease",
+  "rental properties",
+  "properties for rent",
+
+  // Architects
+  "architect services",
+  "architect-services",
+  "architects",
+  "architectural services",
+
+  // Interior Designers
+  "interior designers",
+  "interior-designers",
+  "interior",
+  "interior design",
+
+  // Construction Contractors (Workers category but related to real estate)
+  "construction contractors",
+  "construction-contractors",
+  "construction",
+  "contractors",
+  "home construction",
+];
+
+// ✅ NEW: Shopping & Retail subcategories - COMPREHENSIVE LIST with all variations
+export const SHOPPING_SUBCATEGORIES = [
+  // Grocery & Supermarkets
+  "grocery stores",
+  "grocery-stores",
+  "grocery",
+  "supermarkets",
+  "supermarket",
+
+  // Clothing
+  "clothing stores",
+  "clothing-stores",
+  "clothing",
+  "cloth",
+  "clothes",
+  "garments",
+  "apparel",
+
+  // Footwear
+  "shoe shops",
+  "shoe-shops",
+  "shoes",
+  "footwear",
+
+  // Mobile & Electronics
+  "mobile stores",
+  "mobile-stores",
+  "mobile",
+  "phone stores",
+  "electronics shops",
+  "electronics-shops",
+  "electronics",
+  "electronic",
+
+  // Furniture
+  "furniture stores",
+  "furniture-stores",
+  "furniture",
+
+  // Jewellery
+  "jewellery stores",
+  "jewellery-stores",
+  "jewellery showrooms",
+  "jewellery",
+  "jewelry",
+  "jeweller",
+
+  // Stationery
+  "stationery shops",
+  "stationery-shops",
+  "stationery",
+  "stationary",
+
+  // Gift Shops
+  "gift shops",
+  "gift-shops",
+  "gift",
+  "gifts",
+
+  // Optical
+  "optical shops",
+  "optical-shops",
+  "optical",
+  "opticals",
+  "eyewear",
+
+  // Hobbies & Others
+  "hobbies",
+  "hobby shops",
+];
+
+// ✅ Add this mapping for main categories → subcategories
+export const PLACE_CATEGORY_MAP: Record<string, string[]> = {
+  "food & dining": [
+    "restaurants",
+    "cafes",
+    "bakeries",
+    "street food",
+    "juice & smoothie shops",
+    "sweet shops",
+    "ice cream parlours",
+  ],
+  "travel / stay": ["hotels", "resorts", "lodges", "guest houses"],
+  shopping: [
+    "grocery stores",
+    "supermarkets",
+    "clothing stores",
+    "shoe shops",
+    "mobile stores",
+    "electronics shops",
+    "jewellery stores",
+    "stationery shops",
+  ],
+  education: ["schools", "colleges", "coaching centres"],
+  "transport / logistics": ["courier offices", "delivery services", "parcel services"],
+  health: ["hospitals", "clinics", "pharmacies / medical shops"],
+};
+
+export const AMENITY_MAP: Record<string, string[]> = {
+  // 🍽 FOOD
+  restaurants: ["amenity=restaurant"],
+  cafes: ["amenity=cafe"],
+  bakeries: ["shop=bakery"],
+  "street food": ["amenity=fast_food"],
+  "juice & smoothie shops": ["amenity=cafe", "shop=beverages"],
+  "sweet shops": ["shop=confectionery"],
+  "ice cream parlours": ["amenity=ice_cream"],
+
+  // 🏥 MEDICAL
+  hospitals: ["amenity=hospital"],
+  clinics: ["amenity=clinic", "amenity=doctors"],
+  "dental clinics": ["amenity=dentist"],
+  "eye hospitals": ["amenity=hospital"],
+  pharmacies: ["amenity=pharmacy"],
+  "diagnostic labs": ["amenity=laboratory"],
+  "blood banks": ["amenity=blood_bank"],
+
+  // 🏨 STAY
+  hotels: ["tourism=hotel"],
+  resorts: ["tourism=resort"],
+  lodges: ["tourism=guest_house"],
+  "guest houses": ["tourism=guest_house"],
+
+  // 💪 FITNESS
+  gyms: ["leisure=fitness_centre"],
+  "fitness centres / gyms": ["leisure=fitness_centre"],
+  "yoga centres": ["leisure=sports_centre"],
+
+  // 🎓 EDUCATION
+  schools: ["amenity=school"],
+  colleges: ["amenity=college"],
+  "coaching centres": ["amenity=training"],
+  coaching: ["amenity=training"],
+
+  // 🛒 SHOPPING
+  supermarkets: ["shop=supermarket"],
+  "grocery stores": ["shop=convenience", "shop=supermarket"],
+
+  // 🐾 PETS
+  "pet shops": ["shop=pet"],
+  "vet clinics": ["amenity=veterinary"],
+
+  // 📱 SERVICES
+  "mobile repair": ["shop=mobile_phone"],
+  "courier offices": ["amenity=courier"],
+
+  // fallback
+  default: ["amenity=restaurant"],
+};
+// ✅ Education & Training subcategories (lowercase, consistent)
+export const EDUCATION_SUBCATEGORIES = [
+  "schools",
+  "colleges",
+  "coaching centres",
+ 
+  "computer training institutes",
+  "music & dance classes",
+  "spoken english classes",
+  "driving schools",
+  "skill development centres",
 ];

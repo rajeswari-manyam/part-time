@@ -508,7 +508,7 @@
       "categoryId": 9,
       "items": [
         {
-          "name": "Car Repair / Service",
+          "name": "Car Repair ",
           "icon": "🔧"
         },
         {
@@ -523,14 +523,8 @@
           "name": "Bike Wash",
           "icon": "🧼"
         },
-        {
-          "name": "Tyre Shops",
-          "icon": "🛞"
-        },
-        {
-          "name": "Battery Shops",
-          "icon": "🔋"
-        },
+   
+ 
         {
           "name": "Automobile Spare Parts",
           "icon": "⚙️"

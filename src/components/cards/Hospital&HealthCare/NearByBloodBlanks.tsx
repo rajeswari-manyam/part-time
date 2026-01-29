@@ -6,15 +6,15 @@ import {
   Phone,
   Navigation,
   Star,
-  Flame,
-  Zap,
-  Hammer,
+  Clock,
   CheckCircle,
+  Shield,
+  Tag,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
 
-export interface Builder {
+export interface BloodBank {
   place_id: string;
   name: string;
   vicinity: string;
@@ -26,149 +26,167 @@ export interface Builder {
   };
   business_status: string;
   opening_hours: { open_now: boolean };
+  price_level?: number;
   types: string[];
   special_tags: string[];
-  amenities: string[];
   distance: number;
+  blood_types?: string[];
 }
 
 /* ================= CONSTANTS ================= */
 
-// Phone numbers map for builders
+// Phone numbers map for blood banks
 const PHONE_NUMBERS_MAP: { [key: string]: string } = {
-  builder_1: "09980795583",
-  builder_2: "04760622445",
-  builder_3: "08460232445",
-  builder_4: "09988003289",
+  blood_bank_1: "08632245678",
+  blood_bank_2: "08632234567",
+  blood_bank_3: "08632223456",
+  blood_bank_4: "08632212345",
 };
 
-// Export dummy builders data
-export const DUMMY_BUILDERS: Builder[] = [
+// Blood bank images
+const BLOOD_BANK_IMAGES_MAP: { [key: string]: string[] } = {
+  blood_bank_1: [
+    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
+    "https://images.unsplash.com/photo-1615461066159-fea0960485d5?w=800",
+    "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800",
+  ],
+  blood_bank_2: [
+    "https://images.unsplash.com/photo-1580281657521-6c6d1f37b6e2?w=800",
+    "https://images.unsplash.com/photo-1615461066841-6712d0d8e55c?w=800",
+    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
+  ],
+  blood_bank_3: [
+    "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800",
+    "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800",
+    "https://images.unsplash.com/photo-1615461066159-fea0960485d5?w=800",
+  ],
+  blood_bank_4: [
+    "https://images.unsplash.com/photo-1584467735871-bd7a5c85b6b1?w=800",
+    "https://images.unsplash.com/photo-1615461066841-6712d0d8e55c?w=800",
+    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800",
+  ],
+};
+
+// Blood bank descriptions
+const BLOOD_BANK_DESCRIPTIONS_MAP: { [key: string]: string } = {
+  blood_bank_1:
+    "Trusted blood bank with 4.5★ rating and 120 reviews. Available 24/7. Verified service. All blood types available. Professional blood banking services with trained staff.",
+  blood_bank_2:
+    "Premium blood bank with 4.3★ rating and 89 reviews. Verified and trusted. Quick service. Maintains high standards of blood storage and safety protocols.",
+  blood_bank_3:
+    "Rotary affiliated blood bank with 4.6★ rating and 145 reviews. Trusted organization. Available 24 hours. Emergency blood supply services.",
+  blood_bank_4:
+    "Modern blood bank facility with 4.4★ rating and 95 reviews. Quick response. All blood groups available. Professional emergency blood services.",
+};
+
+// Blood services offered
+const BLOOD_SERVICES = [
+  "All Blood Types",
+  "24/7 Availability",
+  "Emergency Supply",
+  "Blood Donation",
+  "Platelet Donation",
+  "Component Separation",
+  "Blood Testing",
+  "Safe Storage",
+];
+
+/* ================= DUMMY DATA ================= */
+
+export const DUMMY_BLOOD_BANKS: BloodBank[] = [
   {
-    place_id: "builder_1",
-    name: "Prestige Group Constructions",
-    vicinity: "Financial District, Hyderabad",
-    rating: 4.8,
-    user_ratings_total: 567,
-    photos: [{ photo_reference: "builder_photo_1" }],
+    place_id: "blood_bank_1",
+    name: "New City Blood Bank",
+    vicinity: "Dornakal Road, Suryarao Pet, Vijayawada",
+    rating: 4.5,
+    user_ratings_total: 120,
+    photos: [{ photo_reference: "blood_bank_photo_1" }],
     geometry: {
-      location: { lat: 17.4239, lng: 78.3772 },
+      location: { lat: 16.5089, lng: 80.6493 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Trending", "Premium Quality"],
-    amenities: ["Luxury Apartments", "Gated Communities", "Commercial Spaces", "RERA Approved"],
-    distance: 2.5,
+    price_level: 2,
+    types: ["blood_bank", "health"],
+    special_tags: ["Verified", "24/7 Service", "Trust"],
+    distance: 2.3,
+    blood_types: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
   },
   {
-    place_id: "builder_2",
-    name: "My Home Constructions",
-    vicinity: "Kokapet, Hyderabad",
-    rating: 4.7,
-    user_ratings_total: 423,
-    photos: [{ photo_reference: "builder_photo_2" }],
+    place_id: "blood_bank_2",
+    name: "Vijaya Sri Blood Bank",
+    vicinity: "Dornakal Road, Suryarao Pet, Vijayawada",
+    rating: 4.3,
+    user_ratings_total: 89,
+    photos: [{ photo_reference: "blood_bank_photo_2" }],
     geometry: {
-      location: { lat: 17.4065, lng: 78.3438 },
+      location: { lat: 16.5095, lng: 80.6488 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Award Winner", "Quick Response"],
-    amenities: ["High-Rise Towers", "Smart Homes", "Club Facilities", "Green Building"],
-    distance: 4.2,
+    price_level: 2,
+    types: ["blood_bank", "health"],
+    special_tags: ["Verified", "Trust", "Quick Service"],
+    distance: 1.9,
+    blood_types: ["A+", "B+", "O+", "AB+"],
   },
   {
-    place_id: "builder_3",
-    name: "Aparna Constructions",
-    vicinity: "Nallagandla, Hyderabad",
+    place_id: "blood_bank_3",
+    name: "Rotary Red Cross Blood Bank Hall",
+    vicinity: "G S Raju Street, Gandhi Nagar, Vijayawada",
     rating: 4.6,
-    user_ratings_total: 312,
-    photos: [{ photo_reference: "builder_photo_3" }],
+    user_ratings_total: 145,
+    photos: [{ photo_reference: "blood_bank_photo_3" }],
     geometry: {
-      location: { lat: 17.4486, lng: 78.3503 },
+      location: { lat: 16.5102, lng: 80.6497 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Affordable", "Quality Construction"],
-    amenities: ["2BHK-3BHK", "Villas", "Plots", "On-Time Delivery"],
-    distance: 5.8,
+    price_level: 2,
+    types: ["blood_bank", "health", "charity"],
+    special_tags: ["Trust", "24/7 Service", "Verified"],
+    distance: 2.1,
+    blood_types: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
   },
   {
-    place_id: "builder_4",
-    name: "Lodha Builders",
-    vicinity: "Kondapur, Hyderabad",
-    rating: 4.9,
-    user_ratings_total: 689,
-    photos: [{ photo_reference: "builder_photo_4" }],
+    place_id: "blood_bank_4",
+    name: "Life Care Blood Bank",
+    vicinity: "Benz Circle, Vijayawada",
+    rating: 4.4,
+    user_ratings_total: 95,
+    photos: [{ photo_reference: "blood_bank_photo_4" }],
     geometry: {
-      location: { lat: 17.4624, lng: 78.3647 },
+      location: { lat: 16.5065, lng: 80.6502 },
     },
     business_status: "OPERATIONAL",
     opening_hours: { open_now: true },
-    types: ["general_contractor", "point_of_interest"],
-    special_tags: ["Premium", "Trending"],
-    amenities: ["Luxury Villas", "Penthouses", "Swimming Pool", "Gym & Spa"],
-    distance: 3.1,
+    price_level: 2,
+    types: ["blood_bank", "health"],
+    special_tags: ["Quick Service", "Trust"],
+    distance: 3.4,
+    blood_types: ["A+", "B+", "O+", "O-", "AB+"],
   },
 ];
 
-// Builder images
-const BUILDER_IMAGES_MAP: { [key: string]: string[] } = {
-  builder_1: [
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
-    "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
-  ],
-  builder_2: [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800",
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
-    "https://images.unsplash.com/photo-1590586767908-20d6d1b6db58?w=800",
-  ],
-  builder_3: [
-    "https://images.unsplash.com/photo-1625844775804-9975a9b4748d?w=800",
-    "https://images.unsplash.com/photo-1590586767908-20d6d1b6db58?w=800",
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
-  ],
-  builder_4: [
-    "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800",
-    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800",
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800",
-  ],
-};
+/* ================= SINGLE CARD COMPONENT ================= */
 
-// Builder descriptions
-const BUILDER_DESCRIPTIONS_MAP: { [key: string]: string } = {
-  builder_1:
-    "Premier builder with 25+ years of excellence in luxury apartments and commercial spaces. RERA approved projects with premium quality construction.",
-  builder_2:
-    "Award-winning builder specializing in high-rise residential projects. Smart home technology and world-class amenities in all projects.",
-  builder_3:
-    "Trusted name in affordable housing with quality construction. Known for on-time delivery and transparent pricing. Multiple successful projects.",
-  builder_4:
-    "Premium builder with modern architecture and world-class amenities. Luxury villas and penthouses with exceptional finishes and facilities.",
-};
-
-/* ================= COMPONENT ================= */
-
-interface NearbyBuildersCardProps {
+interface SingleBloodBankCardProps {
   job?: any;
   onViewDetails: (job: any) => void;
 }
 
-const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
+const SingleBloodBankCard: React.FC<SingleBloodBankCardProps> = ({
   job,
   onViewDetails,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  // Get all available photos from job data
+  // Get all available photos
   const getPhotos = useCallback(() => {
     if (!job) return [];
-    const jobId = job.id || "builder_1";
-    return BUILDER_IMAGES_MAP[jobId] || BUILDER_IMAGES_MAP["builder_1"];
+    const jobId = job.id || "blood_bank_1";
+    return BLOOD_BANK_IMAGES_MAP[jobId] || BLOOD_BANK_IMAGES_MAP["blood_bank_1"];
   }, [job]);
 
   const photos = getPhotos();
@@ -197,19 +215,19 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
     [hasPhotos, currentImageIndex, photos.length]
   );
 
-  // Get builder name from job data
+  // Get blood bank name
   const getName = useCallback((): string => {
-    if (!job) return "Builder";
-    return job.title || "Builder";
+    if (!job) return "Blood Bank";
+    return job.title || "Blood Bank";
   }, [job]);
 
-  // Get location string from job data
+  // Get location
   const getLocation = useCallback((): string => {
     if (!job) return "Location";
     return job.location || job.description || "Location";
   }, [job]);
 
-  // Get distance string from job data
+  // Get distance
   const getDistance = useCallback((): string => {
     if (!job) return "";
     if (job.distance !== undefined && job.distance !== null) {
@@ -223,30 +241,30 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
   // Get description
   const getDescription = useCallback((): string => {
-    if (!job) return "Professional construction services";
-    const jobId = job.id || "builder_1";
+    if (!job) return "Professional blood banking services";
+    const jobId = job.id || "blood_bank_1";
     return (
-      BUILDER_DESCRIPTIONS_MAP[jobId] ||
+      BLOOD_BANK_DESCRIPTIONS_MAP[jobId] ||
       job.description ||
-      "Professional construction services"
+      "Professional blood banking services"
     );
   }, [job]);
 
-  // Get rating from job data
+  // Get rating
   const getRating = useCallback((): number | null => {
     if (!job) return null;
     const jobData = job.jobData as any;
     return jobData?.rating || null;
   }, [job]);
 
-  // Get user ratings total from job data
+  // Get user ratings total
   const getUserRatingsTotal = useCallback((): number | null => {
     if (!job) return null;
     const jobData = job.jobData as any;
     return jobData?.user_ratings_total || null;
   }, [job]);
 
-  // Get opening hours status from job data
+  // Get opening status
   const getOpeningStatus = useCallback((): string | null => {
     if (!job) return null;
     const jobData = job.jobData as any;
@@ -256,31 +274,31 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
       return null;
     }
 
-    return isOpen ? "Open Now" : "Closed";
+    return isOpen ? "Available 24/7" : "Currently Closed";
   }, [job]);
 
-  // Get special tags from job data
+  // Get special tags
   const getSpecialTags = useCallback((): string[] => {
     if (!job) return [];
     const jobData = job.jobData as any;
     return jobData?.special_tags || [];
   }, [job]);
 
-  // Get amenities from job data
-  const getAmenities = useCallback((): string[] => {
+  // Get blood types
+  const getBloodTypes = useCallback((): string[] => {
     if (!job) return [];
     const jobData = job.jobData as any;
-    return jobData?.amenities || [];
+    return jobData?.blood_types || [];
   }, [job]);
 
-  // Get phone number for the builder
+  // Get phone number
   const getPhoneNumber = useCallback((): string | null => {
     if (!job) return null;
     const jobId = job.id || "";
     return PHONE_NUMBERS_MAP[jobId] || null;
   }, [job]);
 
-  // Handle call button press
+  // Handle call button
   const handleCall = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -296,12 +314,13 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
       const formattedNumber = phoneNumber.replace(/[^0-9+]/g, "");
       const telUrl = `tel:${formattedNumber}`;
+
       window.location.href = telUrl;
     },
     [job, getPhoneNumber, getName]
   );
 
-  // Handle directions button press
+  // Handle directions button
   const handleDirections = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -316,15 +335,21 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
         return;
       }
 
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${job.id || ""}`;
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${
+        job.id || ""
+      }`;
+
       window.open(googleMapsUrl, "_blank");
     },
     [job]
   );
 
-  // Handle image loading error
+  // Handle image error
   const handleImageError = useCallback(() => {
-    console.warn("⚠️ Failed to load image for builder:", job?.id || "unknown");
+    console.warn(
+      "⚠️ Failed to load image for blood bank:",
+      job?.id || "unknown"
+    );
     setImageError(true);
   }, [job]);
 
@@ -335,9 +360,10 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
   const distance = getDistance();
   const description = getDescription();
   const specialTags = getSpecialTags();
-  const amenities = getAmenities();
-  const visibleAmenities = amenities.slice(0, 4);
-  const moreAmenities = amenities.length > 4 ? amenities.length - 4 : 0;
+  const bloodTypes = getBloodTypes();
+  const visibleServices = BLOOD_SERVICES.slice(0, 4);
+  const moreServices =
+    BLOOD_SERVICES.length > 4 ? BLOOD_SERVICES.length - 4 : 0;
   const hasPhoneNumber = getPhoneNumber() !== null;
 
   // Early return if job is not provided
@@ -390,15 +416,15 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
             )}
           </>
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-orange-50 to-red-50">
-            <Hammer size={60} className="text-orange-400" />
+          <div className="flex items-center justify-center h-full bg-gray-200">
+            <span className="text-6xl">🩸</span>
           </div>
         )}
       </div>
 
       {/* Content */}
       <div className="p-3.5">
-        {/* Builder Name */}
+        {/* Blood Bank Name */}
         <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 leading-snug line-clamp-2">
           {getName()}
         </h3>
@@ -411,27 +437,20 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
         {/* Distance */}
         {distance && (
-          <p className="text-xs font-semibold text-orange-600 mb-2">{distance}</p>
+          <p className="text-xs font-semibold text-red-600 mb-2">{distance}</p>
         )}
 
         {/* Special Tags */}
         {specialTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {specialTags.map((tag, index) => {
-              const isTrending = tag === "Trending";
-              const isQuickResponse = tag === "Quick Response";
-
-              return (
-                <span
-                  key={index}
-                  className="bg-orange-100 text-orange-800 text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1"
-                >
-                  {isTrending && <Flame size={10} />}
-                  {isQuickResponse && <Zap size={10} />}
-                  {tag}
-                </span>
-              );
-            })}
+            {specialTags.map((tag, index) => (
+              <span
+                key={index}
+                className="bg-red-100 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         )}
 
@@ -441,9 +460,9 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
         </p>
 
         {/* Category Badge */}
-        <div className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
-          <span className="text-sm">🏗️</span>
-          <span>Builder & Developer</span>
+        <div className="inline-flex items-center gap-1 bg-red-100 text-red-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
+          <span className="text-sm">🩸</span>
+          <span>Blood Bank</span>
         </div>
 
         {/* Rating and Status Row */}
@@ -464,46 +483,71 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
 
           {openingStatus && (
             <div
-              className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes("Open")
+              className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${
+                openingStatus.includes("Available") ||
+                openingStatus.includes("24/7")
                   ? "bg-green-100 text-green-700"
                   : "bg-red-100 text-red-700"
-                }`}
+              }`}
             >
+              <Clock size={11} />
               <span>{openingStatus}</span>
             </div>
           )}
         </div>
 
-        {/* Amenities */}
-        {amenities.length > 0 && (
+        {/* Blood Types Available */}
+        {bloodTypes.length > 0 && (
           <div className="mb-3">
             <p className="text-[10px] font-bold text-gray-500 tracking-wide mb-1.5">
-              SPECIALTIES:
+              BLOOD TYPES AVAILABLE:
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {visibleAmenities.map((amenity, index) => (
+              {bloodTypes.slice(0, 4).map((type, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-[11px] font-medium px-2 py-1 rounded"
+                  className="inline-flex items-center bg-red-50 text-red-700 text-[11px] font-semibold px-2 py-1 rounded border border-red-200"
                 >
-                  <CheckCircle size={11} />
-                  <span>{amenity}</span>
+                  {type}
                 </span>
               ))}
-              {moreAmenities > 0 && (
+              {bloodTypes.length > 4 && (
                 <span className="inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded">
-                  +{moreAmenities} more
+                  +{bloodTypes.length - 4} more
                 </span>
               )}
             </div>
           </div>
         )}
 
+        {/* Services */}
+        <div className="mb-3">
+          <p className="text-[10px] font-bold text-gray-500 tracking-wide mb-1.5">
+            SERVICES:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleServices.map((service, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 bg-red-100 text-red-600 text-[11px] font-medium px-2 py-1 rounded"
+              >
+                <CheckCircle size={11} />
+                <span>{service}</span>
+              </span>
+            ))}
+            {moreServices > 0 && (
+              <span className="inline-flex items-center bg-gray-100 text-gray-600 text-[11px] font-medium px-2 py-1 rounded">
+                +{moreServices} more
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Action Buttons */}
         <div className="flex gap-2">
           <button
             onClick={handleDirections}
-            className="flex-1 flex items-center justify-center gap-1 border-2 border-orange-600 bg-orange-50 text-orange-700 hover:bg-orange-100 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95"
+            className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95"
           >
             <Navigation size={14} />
             <span>Directions</span>
@@ -512,10 +556,11 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
           <button
             onClick={handleCall}
             disabled={!hasPhoneNumber}
-            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
-                ? "border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${
+              hasPhoneNumber
+                ? "border-red-600 bg-red-50 text-red-600 hover:bg-red-100"
                 : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-              }`}
+            }`}
           >
             <Phone size={14} />
             <span>Call</span>
@@ -526,51 +571,50 @@ const SingleBuilderCard: React.FC<NearbyBuildersCardProps> = ({
   );
 };
 
-// Wrapper component - displays grid of dummy data or single card
-const NearbyBuildersCard: React.FC<NearbyBuildersCardProps> = (props) => {
-  // If no job is provided, render the grid of dummy builders
+/* ================= MAIN COMPONENT ================= */
+
+interface NearbyBloodBanksProps {
+  job?: any;
+  onViewDetails: (job: any) => void;
+}
+
+const NearbyBloodBanks: React.FC<NearbyBloodBanksProps> = (props) => {
+  // If no job is provided, render the grid of dummy blood banks
   if (!props.job) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            🏗️ Nearby Builders & Developers
-          </h2>
-          <span className="text-sm text-gray-500">
-            {DUMMY_BUILDERS.length} builders found
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-          {DUMMY_BUILDERS.map((builder) => (
-            <SingleBuilderCard
-              key={builder.place_id}
-              job={{
-                id: builder.place_id,
-                title: builder.name,
-                location: builder.vicinity,
-                distance: builder.distance,
-                category: "Builder",
-                jobData: {
-                  rating: builder.rating,
-                  user_ratings_total: builder.user_ratings_total,
-                  opening_hours: builder.opening_hours,
-                  geometry: builder.geometry,
-                  business_status: builder.business_status,
-                  types: builder.types,
-                  special_tags: builder.special_tags,
-                  amenities: builder.amenities,
-                },
-              }}
-              onViewDetails={props.onViewDetails}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+        {DUMMY_BLOOD_BANKS.map((bank) => (
+          <SingleBloodBankCard
+            key={bank.place_id}
+            job={{
+              id: bank.place_id,
+              title: bank.name,
+              location: bank.vicinity,
+              distance: bank.distance,
+              category: "Blood Bank",
+              jobData: {
+                rating: bank.rating,
+                user_ratings_total: bank.user_ratings_total,
+                opening_hours: bank.opening_hours,
+                geometry: bank.geometry,
+                business_status: bank.business_status,
+                price_level: bank.price_level,
+                types: bank.types,
+                special_tags: bank.special_tags,
+                blood_types: bank.blood_types,
+              },
+            }}
+            onViewDetails={props.onViewDetails}
+          />
+        ))}
       </div>
     );
   }
 
   // If job is provided, render individual card
-  return <SingleBuilderCard job={props.job} onViewDetails={props.onViewDetails} />;
+  return (
+    <SingleBloodBankCard job={props.job} onViewDetails={props.onViewDetails} />
+  );
 };
 
-export default NearbyBuildersCard;
+export default NearbyBloodBanks;

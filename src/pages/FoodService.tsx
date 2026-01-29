@@ -6,15 +6,15 @@ import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
 // Nearby cards - these components already contain dummy data internally
-import NearbyBakersCard from "../pages/NearByBackeries";
-import NearbyCafes from "../pages/NearByCafes";
-import NearbyIceCreamCard from "../pages/NearByIceCreamCard";
-import NearbyJuiceCard from "../pages/NearByJuice";
-import NearbyRestaurants from "../pages/NearByRestarents";
-import NearbyStreetFoodCard from "../pages/NearByStreetFood";
-import NearbySweetShopCard from "../pages/NearBySweetShop";
-import NearbyCateringService from "./NearByCateringService";
-import NearbyTiffinServiceCard from "./NearByTiffens";
+import NearbyBakersCard from "../components/cards/Restarents/NearByBackersCard";
+import NearbyCafes from "../components/cards/Restarents/NearByCafesCard";
+import NearbyIceCreamCard from "../components/cards/Restarents/NearByIceScreamCard";
+import NearbyJuiceCard from "../components/cards/Restarents/NearByJuiceShopsCard";
+import NearbyRestaurants from "../components/cards/Restarents/NearByRestarentsCard";
+import NearbyStreetFoodCard from "../components/cards/Restarents/NearByStreetFoodCard";
+import NearbySweetShopCard from "../components/cards/Restarents/NearBySweetShopsCard";
+import NearbyCateringService from "../components/cards/Restarents/NearByCateringServiceCard";
+import NearbyTiffinServiceCard from "../components/cards/Restarents/NearByTiffinsCard";
 
 export interface JobType {
     id: string;

@@ -155,6 +155,29 @@
                 }
             ]
         },
+
+        {
+  "categoryId": 4,
+  "items": [
+    { "name": "Hotels", "icon": "🏨" },
+    { "name": "Budget Hotels", "icon": "💰" },
+    { "name": "Luxury Hotels", "icon": "⭐" },
+    { "name": "Resorts", "icon": "🏖️" },
+    { "name": "Lodges", "icon": "🛏️" },
+    { "name": "Guest Houses", "icon": "🏡" },
+    { "name": "Homestays", "icon": "🏠" },
+    { "name": "Service Apartments", "icon": "🛋️" },
+    { "name": "Hostels", "icon": "🎒" },
+    { "name": "PG / Paying Guest", "icon": "🔑" },
+    { "name": "Travel Agencies", "icon": "✈️" },
+    { "name": "Tour Packages", "icon": "🗺️" },
+    { "name": "Taxi Services", "icon": "🚖" },
+    { "name": "Bike / Car Rentals", "icon": "🚗" },
+    { "name": "Bus Ticket Booking", "icon": "🚌" },
+    { "name": "Train Ticket Booking", "icon": "🚆" }
+  ]
+},
+
        {
   "categoryId": 5,
   "items": [
@@ -264,17 +287,11 @@
                     "icon": "📚"
                 },
                 {
-                    "name": "Coaching",
-                    "icon": "📖"
-                },
-                {
+               
                     "name": "Tuition Teachers",
                     "icon": "👨‍🏫"
                 },
-                {
-                    "name": "Computer Training",
-                    "icon": "💻"
-                },
+              
                 {
                     "name": "Computer Training Institutes",
                     "icon": "🖥️"
@@ -294,11 +311,8 @@
                 {
                     "name": "Skill Development Centres",
                     "icon": "🛠️"
-                },
-                {
-                    "name": "Vocational Training",
-                    "icon": "👨‍🔧"
                 }
+          
             ]
         },
         {
@@ -321,10 +335,7 @@
                     "icon": "🧼"
                 },
             
-                {
-                    "name": "Battery Shops",
-                    "icon": "🔋"
-                },
+           
                 {
                     "name": "Automobile Spare Parts",
                     "icon": "⚙️"
@@ -332,10 +343,6 @@
                 {
                     "name": "Towing Services",
                     "icon": "🚚"
-                },
-                {
-                    "name": "Car Hire / Rentals",
-                    "icon": "🚙"
                 }
             ]
         },

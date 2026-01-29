@@ -59,18 +59,21 @@ import WorkerDetails from "./pages/WorkerDetails";
 import AddAutomotive from "./pages/AddAutomotive";
 import AutomotiveDetails from "./pages/AutomotiveDetails";
 import AutomotiveEdit from "./pages/AutomotiveEdit";
-// Import Automotive Components
-import AutomotiveList from "./pages/AutomotiveList";
+
 import AutomotiveForm from "./pages/AutomotiveForm";
 import WorkerRedirectHandler from "./Routs/WorkerRender";
 import AddSkills from "./pages/AddSkills";
 import WorkerDashboard from "./pages/WorkerDashboard";
-import NearbyCafes from "./pages/NearByCafes";
+
 import FoodService from "./pages/FoodService";
 import FoodServiceForm from "./pages/FoodServiceForm";
 import HospitalServiceList from "./pages/HospitalServiceList";
 import HotelServiceList from "./pages/HotelServiceList";
 import BeautyServicesList from "./pages/BeautyServiceList";
+import RealEstateList from "./pages/RealEstateList";
+import ShoppingList from "./pages/ShoppingList";
+import AutomotiveList from "./pages/AutomotiveList";
+import EducationList from "./pages/EducationList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -119,9 +122,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
 
-                    {/* ================= AUTOMOTIVE ROUTES ================= */}
-                    <Route path="/automotive-list" element={<AutomotiveList />} />
-                    <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+            
                     {/* <Route path="/add-automotive" element={<AddAutomotive />} />
                     <Route path="/edit-automotive/:id" element={<AutomotiveEdit />} /> */}
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
@@ -179,7 +180,15 @@ const AppRoutes: React.FC = () => {
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
 <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
 <Route path="/beauty-services" element={<BeautyServicesList />} />
+<Route path="/real-estate/:subcategory" element={<RealEstateList />} />
+<Route path="/real-estate" element={<RealEstateList />} />
+<Route path="/shopping/:subcategory" element={<ShoppingList />} />
 
+<Route path="/shopping" element={<ShoppingList />} />
+<Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+<Route path="/automotive" element={<AutomotiveList />} />
+<Route path="/education/:subcategory" element={<EducationList />} />
+<Route path="/education" element={<EducationList />} />
                     <Route
                         path="/add-skills"
                         element={

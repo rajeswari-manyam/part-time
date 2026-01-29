@@ -4,18 +4,18 @@ import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
 // Import existing hospital card components
-import NearbyHospitalCard from "../pages/NearbyHospitalCard";
-import NearbyClinicsCard from "../pages/NearbyClinicsCard";
-import NearbyDentalCard from "../pages/NearbyDentalCard";
-import NearbyPharmaciesCard from "../pages/NearbyPharmaciesCard";
-import NearbyEyeCard from "../pages/NearbyEyeCard";
-import NearbyDermatologistsCard from "../pages/NearbyDermatologistsCard";
-import NearbyPhysiotherapyCard from "../pages/NearbyPhysiotherapyCard";
-import NearbyVetClinicCard from "../pages/NearbyVetClinicCard";
-import NearbyAmbulanceCard from "../pages/NearbyAmbulanceCard";
-import NearbyBloodBankCard from "../pages/NearbyBloodBankCard";
-import NearbyNursingServiceCard from "../pages/NearbyNursingServiceCard";
-
+import NearbyHospitalCard from "../components/cards/Hospital&HealthCare/NearByHospitals";
+import NearbyClinicsCard from "../components/cards/Hospital&HealthCare/NearByClinicsCard";
+import NearbyDentalCard from "../components/cards/Hospital&HealthCare/NearByDentalClinicsCard";
+import NearbyPharmaciesCard from "../components/cards/Hospital&HealthCare/NearByPharmacies";
+import NearbyEyeCard from "../components/cards/Hospital&HealthCare/NearByEyeHospital";
+import NearbyDermatologistsCard from "../components/cards/Hospital&HealthCare/NearByDermotologists";
+import NearbyPhysiotherapyCard from "../components/cards/Hospital&HealthCare/NearByPhysiotheraphy";
+import NearbyVetClinicCard from "../components/cards/Hospital&HealthCare/NearByVetHospital";
+import NearbyAmbulanceCard from "../components/cards/Hospital&HealthCare/NearByAmbulance";
+import NearbyBloodBankCard from "../components/cards/Hospital&HealthCare/NearByBloodBlanks";
+import NearbyNursingServiceCard from "../components/cards/Hospital&HealthCare/NearByNursing";
+import NearbyDiagnosticLabsCard from "../components/cards/Hospital&HealthCare/NearByDiagnosticlabs";
 export interface HospitalType {
     id: string;
     title: string;
@@ -189,6 +189,8 @@ const HospitalServicesList: React.FC = () => {
             !normalized.includes("dental") &&
             !normalized.includes("eye") &&
             !normalized.includes("vet") &&
+            !normalized.includes("pharm") &&
+            !normalized.includes("lab") &&
             !normalized.includes("pet")
         ) {
             console.log("✅ Matched to NearbyClinicsCard");
@@ -213,6 +215,15 @@ const HospitalServicesList: React.FC = () => {
             return NearbyDermatologistsCard;
         }
 
+        // ✅ PHARMACY MATCHING
+        if (normalized.includes("pharm")) {
+            console.log("✅ Matched to NearbyPharmaciesCard");
+            return NearbyPharmaciesCard;
+        }
+        if (normalized.includes("lab")) {
+            console.log("✅ Matched to NearbyDiagnosticLabsCard");
+            return NearbyDiagnosticLabsCard;
+        }
         // ✅ PHYSIOTHERAPY MATCHING
         if (normalized.includes("physio")) {
             console.log("✅ Matched to NearbyPhysiotherapyCard");
@@ -230,13 +241,17 @@ const HospitalServicesList: React.FC = () => {
             console.log("✅ Matched to NearbyBloodBankCard");
             return NearbyBloodBankCard;
         }
-
+          if (normalized.includes("blood")) {
+            console.log("✅ Matched to NearbyBloodBankCard");
+            return NearbyBloodBankCard;
+        }
+        
         // ✅ NURSING SERVICE MATCHING
         if (normalized.includes("nursing")) {
             console.log("✅ Matched to NearbyNursingServiceCard");
             return NearbyNursingServiceCard;
         }
-
+          
         console.warn(`⚠️ No matching card component for: "${subcategory}"`);
         return null;
     };
