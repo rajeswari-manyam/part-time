@@ -156,7 +156,7 @@
     {
       "categoryId": 11,
       "items": [
-        { "name": "CA / Tax Consultants", "icon": "📊" },
+       
         { "name": "Chartered Accountant", "icon": "💰" },
         { "name": "Lawyers", "icon": "⚖️" },
         { "name": "Notary", "icon": "📝" },
@@ -165,9 +165,7 @@
         { "name": "Printing & Xerox Shops", "icon": "🖨️" },
         { "name": "Printing & Publishing Services", "icon": "📰" },
         { "name": "Event Planners", "icon": "🎉" },
-        { "name": "Photography/Videography", "icon": "📸" },
-        { "name": "Courier Services", "icon": "📦" },
-        { "name": "Security Services", "icon": "🔒" },
+        
         { "name": "Placement Services", "icon": "💼" },
         { "name": "Registration Consultants", "icon": "📋" }
       ]
@@ -176,10 +174,8 @@
       "categoryId": 12,
       "items": [
         { "name": "Mobile Repair", "icon": "📱" },
-        { "name": "Laptop Repair", "icon": "💻" },
         { "name": "Computer & Laptop Repair", "icon": "🖥️" },
         { "name": "CCTV Installation", "icon": "📹" },
-        { "name": "Security System", "icon": "🔐" },
         { "name": "Software Services", "icon": "💾" },
         { "name": "Website Development", "icon": "🌐" },
         { "name": "Internet Website Designers", "icon": "🎨" },
@@ -200,33 +196,30 @@
       "categoryId": 14,
       "items": [
         { "name": "DJ Services", "icon": "🎧" },
-        { "name": "Catering", "icon": "🍽️" },
-        { "name": "Event Halls", "icon": "🏛️" },
+      
         { "name": "Party Decorations", "icon": "🎈" },
-        { "name": "Light & Sound", "icon": "🔊" },
+   
         { "name": "Mandap Decorations", "icon": "🌺" }
       ]
     },
     {
       "categoryId": 15,
       "items": [
-        { "name": "Packers & Movers", "icon": "📦" },
+       
         { "name": "Transporters", "icon": "🚚" },
         { "name": "Water Tank Cleaning", "icon": "💧" },
         { "name": "Borewell Services", "icon": "🕳️" },
-        { "name": "Welding Services", "icon": "🔥" },
-        { "name": "Fabrication Work", "icon": "🔨" },
+    
         { "name": "Fabricators", "icon": "⚒️" },
         { "name": "Machine Repair", "icon": "⚙️" },
-        { "name": "Scrap Dealers", "icon": "♻️" },
-        { "name": "Scrap Buyers", "icon": "🗑️" }
+        { "name": "Scrap Dealers", "icon": "♻️" }
       ]
     },
     {
       "categoryId": 16,
       "items": [
         { "name": "Courier offices", "icon": "📮" },
-        { "name": "Delivery services", "icon": "🚚" },
+  
         { "name": "Parcel services", "icon": "📦" },
         { "name": "Movers & Packers", "icon": "📦" }
       ]

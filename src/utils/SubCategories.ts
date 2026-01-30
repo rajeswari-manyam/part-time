@@ -68,7 +68,7 @@ export const PLACE_SUBCATEGORIES = [
   // Category 11: Business & Professional Services (Places)
   "printing & xerox shops",
 
-  // Category 13: Pet Services
+  // Category 13: Pet Services (Places)
   "pet shops",
   "vet clinics",
 
@@ -133,24 +133,10 @@ export const WORKER_SUBCATEGORIES = [
   "printing & publishing services",
   "event planners",
   "photography/videography",
-  "courier services",
-  "security services",
   "placement services",
   "registration consultants",
 
-  // Category 12: Tech & Digital Services
-  "mobile repair",
-  "laptop repair",
-  "computer & laptop repair",
-  "cctv installation",
-  "security system",
-  "software services",
-  "website development",
-  "internet website designers",
-  "digital marketing",
-  "graphic designers",
-
-  // Category 13: Pet Services
+  // Category 13: Pet Services (Workers)
   "pet grooming",
   "pet training",
 
@@ -224,7 +210,6 @@ export const AUTOMOTIVE_SUBCATEGORIES = [
   "towing services",
 ];
 
-
 // ✅ Food subcategories (must match lowercase exactly)
 export const FOOD_SUBCATEGORIES = [
   "restaurants",
@@ -238,6 +223,112 @@ export const FOOD_SUBCATEGORIES = [
   "mess / tiffin services",
   "catering services",
 ];
+
+// ✅ INDUSTRIAL CATEGORY MAP - UPDATED with comprehensive variations
+// This maps main categories to their route variations for better matching
+export const INDUSTRIAL_CATEGORY_MAP: Record<string, string[]> = {
+  "packers & movers": [
+    "packers & movers",
+    "packers-movers",
+    "packers-and-movers",
+    "movers & packers",
+    "movers-packers",
+    "movers-and-packers",
+    "household shifting",
+    "relocation services",
+    "relocation",
+    "shifting services",
+    "moving services",
+    "packing services",
+  ],
+  transporters: [
+    "transporters",
+    "transporter",
+    "transport services",
+    "transport-services",
+    "goods transport",
+    "goods-transport",
+    "logistics",
+    "logistics services",
+    "cargo services",
+    "cargo",
+    "freight services",
+  ],
+  "water services": [
+    "water tank cleaning",
+    "water-tank-cleaning",
+    "tank cleaning services",
+    "tank-cleaning-services",
+    "tank cleaning",
+    "overhead tank cleaning",
+    "overhead-tank-cleaning",
+    "underground tank cleaning",
+    "underground-tank-cleaning",
+    "water tank",
+  ],
+  "borewell services": [
+    "borewell services",
+    "borewell-services",
+    "borewell",
+    "bore well",
+    "bore-well",
+    "borewell drilling",
+    "borewell-drilling",
+    "borewell contractors",
+    "borewell-contractors",
+    "borewell repair",
+    "borewell-repair",
+    "drilling services",
+    "well drilling",
+  ],
+  "metal work": [
+    "welding services",
+    "welding-services",
+    "welding",
+    "fabrication work",
+    "fabrication-work",
+    "fabricators",
+    "fabricator",
+    "fabrication",
+    "metal fabrication",
+    "metal-fabrication",
+    "steel fabrication",
+    "steel-fabrication",
+    "iron fabrication",
+  ],
+  "machine services": [
+    "machine repair",
+    "machine-repair",
+    "machine work",
+    "machine-work",
+    "machinery repair",
+    "machinery-repair",
+    "industrial machine repair",
+    "industrial-machine-repair",
+    "machine",
+    "machinery",
+    "machine services",
+  ],
+  "scrap & recycling": [
+    "scrap dealers",
+    "scrap-dealers",
+    "scrap dealer",
+    "scrap buyers",
+    "scrap-buyers",
+    "scrap buyer",
+    "scrap",
+    "battery scrap",
+    "battery-scrap",
+    "e-waste scrap",
+    "e-waste-scrap",
+    "e-waste",
+    "metal scrap",
+    "metal-scrap",
+    "recycling",
+    "recycling services",
+    "scrap metal",
+  ],
+};
 
 // ✅ Hospital subcategories (must match lowercase exactly)
 export const HOSPITAL_SUBCATEGORIES = [
@@ -325,7 +416,7 @@ export const BEAUTY_SUBCATEGORIES = [
   "tattoo studio",
 ];
 
-// ✅ NEW: Real Estate subcategories - COMPREHENSIVE LIST with all variations
+// ✅ Real Estate subcategories - COMPREHENSIVE LIST with all variations
 export const REAL_ESTATE_SUBCATEGORIES = [
   // Property Dealers
   "property dealers",
@@ -371,7 +462,7 @@ export const REAL_ESTATE_SUBCATEGORIES = [
   "home construction",
 ];
 
-// ✅ NEW: Shopping & Retail subcategories - COMPREHENSIVE LIST with all variations
+// ✅ Shopping & Retail subcategories - COMPREHENSIVE LIST with all variations
 export const SHOPPING_SUBCATEGORIES = [
   // Grocery & Supermarkets
   "grocery stores",
@@ -442,6 +533,162 @@ export const SHOPPING_SUBCATEGORIES = [
   "hobby shops",
 ];
 
+// ✅ Education & Training subcategories (lowercase, consistent)
+export const EDUCATION_SUBCATEGORIES = [
+  "schools",
+  "colleges",
+  "coaching centres",
+  "computer training institutes",
+  "music & dance classes",
+  "spoken english classes",
+  "driving schools",
+  "skill development centres",
+];
+
+// ✅ Business & Professional Services subcategories (lowercase, consistent)
+export const BUSINESS_SUBCATEGORIES = [
+  "chartered accountant",
+  "lawyers",
+  "notary",
+  "insurance agents",
+  "marketing agencies",
+  "printing & xerox shops",
+  "printing & publishing services",
+  "event planners",
+  "placement services",
+  "registration consultants",
+];
+
+// ✅ Pet Service subcategories
+export const PET_SERVICE_SUBCATEGORIES = [
+  "pet clinics",
+  "pet shops",
+  "pet grooming",
+  "pet training",
+];
+
+// ✅ Tech & Digital Services subcategories - COMPREHENSIVE LIST with all variations
+export const TECH_DIGITAL_SUBCATEGORIES = [
+  // Mobile Repair
+  "mobile repair",
+  "mobile-repair",
+  "phone repair",
+  "smartphone repair",
+
+  // Laptop Repair
+  "laptop repair",
+  "laptop-repair",
+  "computer repair",
+  "computer & laptop repair",
+  "computer-laptop-repair",
+
+  // CCTV Installation
+  "cctv installation",
+  "cctv-installation",
+  "security system",
+  "security-system",
+  "surveillance",
+
+  // Software Services
+  "software services",
+  "software-services",
+  "software development",
+  "software-development",
+
+  // Website Development
+  "website development",
+  "website-development",
+  "web development",
+  "web-development",
+
+  // Internet Website Designers
+  "internet website designers",
+  "internet-website-designers",
+  "website designers",
+  "website-designers",
+  "web designers",
+
+  // Digital Marketing
+  "digital marketing",
+  "digital-marketing",
+  "online marketing",
+  "seo services",
+
+  // Graphic Designers
+  "graphic designers",
+  "graphic-designers",
+  "graphic design",
+  "graphic-design",
+  "designers",
+];
+
+// ✅ Event Services subcategories - COMPREHENSIVE LIST with all variations
+export const EVENT_SUBCATEGORIES = [
+  // Party Decorations
+  "party decorations",
+  "party-decorations",
+  "party decoration",
+  "decorations",
+
+  // Mandap Decorations
+  "mandap decorations",
+  "mandap-decorations",
+  "mandap decoration",
+  "wedding decorations",
+  "wedding-decorations",
+
+  // DJ Services
+  "dj services",
+  "dj-services",
+  "disc jockey",
+  "disc-jockey",
+  "dj",
+];
+
+// ✅ Courier & Logistics subcategories - COMPREHENSIVE LIST with all variations
+export const COURIER_SUBCATEGORIES = [
+  // Courier Offices
+  "courier offices",
+  "courier-offices",
+  "courier office",
+  "courier",
+  "courier services",
+
+  // Delivery Services
+  "delivery services",
+  "delivery-services",
+  "delivery",
+  "express delivery",
+  "same day delivery",
+
+  // Parcel Services
+  "parcel services",
+  "parcel-services",
+  "parcel",
+  "parcels",
+
+  // Packers & Movers
+  "packers & movers",
+  "packers-movers",
+  "packers and movers",
+  "movers & packers",
+  "movers-packers",
+  "packing services",
+  "moving services",
+  "relocation services",
+
+  // Logistics
+  "logistics",
+  "logistics services",
+  "cargo services",
+  "cargo",
+
+  // Transporters
+  "transporters",
+  "transport services",
+  "goods transport",
+];
+
 // ✅ Add this mapping for main categories → subcategories
 export const PLACE_CATEGORY_MAP: Record<string, string[]> = {
   "food & dining": [
@@ -467,8 +714,10 @@ export const PLACE_CATEGORY_MAP: Record<string, string[]> = {
   education: ["schools", "colleges", "coaching centres"],
   "transport / logistics": ["courier offices", "delivery services", "parcel services"],
   health: ["hospitals", "clinics", "pharmacies / medical shops"],
+  "pet services": ["pet shops", "vet clinics"],
 };
 
+// ✅ AMENITY MAP - Updated to include industrial services
 export const AMENITY_MAP: Record<string, string[]> = {
   // 🍽 FOOD
   restaurants: ["amenity=restaurant"],
@@ -517,18 +766,41 @@ export const AMENITY_MAP: Record<string, string[]> = {
   "mobile repair": ["shop=mobile_phone"],
   "courier offices": ["amenity=courier"],
 
+  // 🏭 INDUSTRIAL SERVICES (added for completeness)
+  "borewell services": ["craft=borewell_driller"],
+  fabricators: ["craft=metal_construction"],
+  transporters: ["office=transport"],
+  "water tank cleaning": ["office=cleaning"],
+  "scrap dealers": ["shop=scrap"],
+  "machine repair": ["craft=machining"],
+
   // fallback
   default: ["amenity=restaurant"],
 };
-// ✅ Education & Training subcategories (lowercase, consistent)
-export const EDUCATION_SUBCATEGORIES = [
-  "schools",
-  "colleges",
-  "coaching centres",
- 
-  "computer training institutes",
-  "music & dance classes",
-  "spoken english classes",
-  "driving schools",
-  "skill development centres",
-];
+
+// ✅ HELPER FUNCTION: Check if a subcategory is industrial
+export const isIndustrialSubcategory = (subcategory: string): boolean => {
+  const normalized = subcategory.toLowerCase();
+
+  // Check if it matches any industrial category
+  for (const variants of Object.values(INDUSTRIAL_CATEGORY_MAP)) {
+    if (variants.some(variant => normalized.includes(variant))) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+// ✅ HELPER FUNCTION: Get main category for a subcategory
+export const getMainIndustrialCategory = (subcategory: string): string | null => {
+  const normalized = subcategory.toLowerCase();
+
+  for (const [mainCategory, variants] of Object.entries(INDUSTRIAL_CATEGORY_MAP)) {
+    if (variants.some(variant => normalized.includes(variant))) {
+      return mainCategory;
+    }
+  }
+
+  return null;
+};

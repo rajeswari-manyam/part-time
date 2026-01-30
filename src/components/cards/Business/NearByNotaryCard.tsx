@@ -314,9 +314,11 @@ const SingleNotaryCard: React.FC<NearbyNotaryCardProps> = ({
       onClick={() => onViewDetails(job)}
       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-[0.99] mb-4"
     >
-      <div className="flex flex-col md:flex-row">
+     <div className="flex flex-col">
+
         {/* Image Section */}
-        <div className="relative h-48 md:h-auto md:w-64 bg-gray-100 flex-shrink-0">
+      <div className="relative h-48 bg-gray-100">
+
           {currentPhoto && !imageError ? (
             <>
               <img
@@ -360,10 +362,12 @@ const SingleNotaryCard: React.FC<NearbyNotaryCardProps> = ({
         </div>
 
         {/* Content Section */}
-        <div className="p-4 flex-1">
+        <div className="p-3.5">
+
           {/* Header with Name and Badge */}
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-xl font-bold text-gray-900 flex-1 pr-2">
+            <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 leading-snug line-clamp-2">
+
               {getName()}
             </h3>
             {verified && (
@@ -377,10 +381,14 @@ const SingleNotaryCard: React.FC<NearbyNotaryCardProps> = ({
           {(rating || trending) && (
             <div className="flex items-center gap-2 mb-2">
               {rating && (
-                <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded">
-                  <span className="text-sm font-bold">{rating.toFixed(1)}</span>
-                  <Star size={12} fill="white" />
-                </div>
+           <div className="flex items-center gap-1 mb-2">
+  <Star size={13} className="text-yellow-400 fill-yellow-400" />
+  <span className="text-[13px] font-semibold">{rating?.toFixed(1)}</span>
+  {userRatingsTotal && (
+    <span className="text-xs text-gray-500">({userRatingsTotal})</span>
+  )}
+</div>
+
               )}
               {userRatingsTotal && (
                 <span className="text-xs text-gray-600">
@@ -399,11 +407,12 @@ const SingleNotaryCard: React.FC<NearbyNotaryCardProps> = ({
           {/* Location */}
           <div className="flex items-center text-gray-600 mb-3">
             <MapPin size={16} className="mr-1.5 flex-shrink-0" />
-            <span className="text-sm">{getLocation()}</span>
+            <span className="text-[13px] line-clamp-1">{getLocation()}</span>
+
             {distance && (
-              <span className="ml-3 text-xs font-semibold text-purple-700">
-                {distance}
-              </span>
+             <p className="text-xs font-semibold text-purple-700 mb-2">{distance}</p>
+
+                
             )}
           </div>
 
@@ -413,7 +422,8 @@ const SingleNotaryCard: React.FC<NearbyNotaryCardProps> = ({
               {specializations.map((spec, index) => (
                 <span
                   key={index}
-                  className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-1 rounded border border-gray-200"
+                 className="bg-indigo-100 text-indigo-700 text-[11px] font-medium px-2 py-1 rounded"
+
                 >
                   {spec}
                 </span>

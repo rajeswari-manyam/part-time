@@ -15,6 +15,12 @@ import {
     REAL_ESTATE_SUBCATEGORIES,
     SHOPPING_SUBCATEGORIES,
     EDUCATION_SUBCATEGORIES,
+    BUSINESS_SUBCATEGORIES,
+    PET_SERVICE_SUBCATEGORIES,
+    TECH_DIGITAL_SUBCATEGORIES,
+    EVENT_SUBCATEGORIES,
+    COURIER_SUBCATEGORIES,
+    INDUSTRIAL_CATEGORY_MAP
 } from "../utils/SubCategories";
 import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
@@ -92,6 +98,16 @@ const CategoryPage: React.FC = () => {
             console.log("✅ Navigating to education");
             navigate(`/education/${slugWithDash}`);
         }
+        // Check if this is a business subcategory
+        else if (BUSINESS_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to business");
+            navigate(`/business/${slugWithDash}`);
+        }
+        // Check if this is a courier subcategory
+        else if (COURIER_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to courier");
+            navigate(`/courier/${slugWithDash}`);
+        }
         // Check if this is a food subcategory
         else if (FOOD_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to food services");
@@ -102,25 +118,45 @@ const CategoryPage: React.FC = () => {
             console.log("✅ Navigating to hospital services");
             navigate(`/hospital-services/${slugWithDash}`);
         }
-        // ✅ Check if this is a hotel/travel subcategory
+        // Check if this is a hotel/travel subcategory
         else if (HOTEL_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to hotel services");
             navigate(`/hotel-services/${slugWithDash}`);
         }
-        // ✅ Check if this is a beauty subcategory (MUST come before PLACE_SUBCATEGORIES)
+        // Check if this is a beauty subcategory (MUST come before PLACE_SUBCATEGORIES)
         else if (BEAUTY_SUBCATEGORIES.includes(slug) || BEAUTY_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to beauty services");
             navigate(`/beauty-services/${slugWithDash}`);
         }
-        // ✅ Check if this is a real estate subcategory
+        // Check if this is a real estate subcategory
         else if (REAL_ESTATE_SUBCATEGORIES.includes(slug) || REAL_ESTATE_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to real estate");
             navigate(`/real-estate/${slugWithDash}`);
         }
-        // ✅ NEW: Check if this is a shopping subcategory
+        // Check if this is an industrial subcategory
+        else if (INDUSTRIAL_CATEGORY_MAP[slug] || INDUSTRIAL_CATEGORY_MAP[slugWithDash]) {
+            console.log("✅ Navigating to industrial services");
+            navigate(`/industrial-services/${slugWithDash}`);
+        }
+        // Check if this is a shopping subcategory
         else if (SHOPPING_SUBCATEGORIES.includes(slug) || SHOPPING_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to shopping");
             navigate(`/shopping/${slugWithDash}`);
+        }
+        // ✅ NEW: Check if this is a pet service subcategory
+        else if (PET_SERVICE_SUBCATEGORIES.includes(slug) || PET_SERVICE_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to pet services");
+            navigate(`/pet-services/${slugWithDash}`);
+        }
+        // ✅ NEW: Check if this is a tech/digital service subcategory
+        else if (TECH_DIGITAL_SUBCATEGORIES.includes(slug) || TECH_DIGITAL_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to tech/digital services");
+            navigate(`/tech-digital-services/${slugWithDash}`);
+        }
+        // ✅ NEW: Check if this is an event service subcategory
+        else if (EVENT_SUBCATEGORIES.includes(slug) || EVENT_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to event services");
+            navigate(`/event-services/${slugWithDash}`);
         }
         // Check if this is a place subcategory
         else if (PLACE_SUBCATEGORIES.includes(slug)) {

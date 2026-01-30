@@ -394,10 +394,7 @@
         {
             "categoryId": 11,
             "items": [
-                {
-                    "name": "CA / Tax Consultants",
-                    "icon": "📊"
-                },
+             
                 {
                     "name": "Chartered Accountant",
                     "icon": "💰"
@@ -430,18 +427,7 @@
                     "name": "Event Planners",
                     "icon": "🎉"
                 },
-                {
-                    "name": "Photography/Videography",
-                    "icon": "📸"
-                },
-                {
-                    "name": "Courier Services",
-                    "icon": "📦"
-                },
-                {
-                    "name": "Security Services",
-                    "icon": "🔒"
-                },
+               
                 {
                     "name": "Placement Services",
                     "icon": "💼"
@@ -459,10 +445,7 @@
                     "name": "Mobile Repair",
                     "icon": "📱"
                 },
-                {
-                    "name": "Laptop Repair",
-                    "icon": "💻"
-                },
+              
                 {
                     "name": "Computer & Laptop Repair",
                     "icon": "🖥️"
@@ -471,10 +454,7 @@
                     "name": "CCTV Installation",
                     "icon": "📹"
                 },
-                {
-                    "name": "Security System",
-                    "icon": "🔐"
-                },
+                
                 {
                     "name": "Software Services",
                     "icon": "💾"
@@ -525,22 +505,13 @@
                     "name": "DJ Services",
                     "icon": "🎧"
                 },
-                {
-                    "name": "Catering",
-                    "icon": "🍽️"
-                },
-                {
-                    "name": "Event Halls",
-                    "icon": "🏛️"
-                },
+              
+            
                 {
                     "name": "Party Decorations",
                     "icon": "🎈"
                 },
-                {
-                    "name": "Light & Sound",
-                    "icon": "🔊"
-                },
+             
                 {
                     "name": "Mandap Decorations",
                     "icon": "🌺"
@@ -550,10 +521,7 @@
         {
             "categoryId": 15,
             "items": [
-                {
-                    "name": "Packers & Movers",
-                    "icon": "📦"
-                },
+             
                 {
                     "name": "Transporters",
                     "icon": "🚚"
@@ -566,14 +534,7 @@
                     "name": "Borewell Services",
                     "icon": "🕳️"
                 },
-                {
-                    "name": "Welding Services",
-                    "icon": "🔥"
-                },
-                {
-                    "name": "Fabrication Work",
-                    "icon": "🔨"
-                },
+               
                 {
                     "name": "Fabricators",
                     "icon": "⚒️"
@@ -585,11 +546,7 @@
                 {
                     "name": "Scrap Dealers",
                     "icon": "♻️"
-                },
-                {
-                    "name": "Scrap Buyers",
-                    "icon": "🗑️"
-                }
+                }               
             ]
         },
         {
@@ -599,10 +556,7 @@
                     "name": "Courier offices",
                     "icon": "📮"
                 },
-                {
-                    "name": "Delivery services",
-                    "icon": "🚚"
-                },
+              
                 {
                     "name": "Parcel services",
                     "icon": "📦"

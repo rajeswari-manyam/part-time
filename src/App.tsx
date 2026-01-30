@@ -74,6 +74,12 @@ import RealEstateList from "./pages/RealEstateList";
 import ShoppingList from "./pages/ShoppingList";
 import AutomotiveList from "./pages/AutomotiveList";
 import EducationList from "./pages/EducationList";
+import BusinessList from "./pages/BusinessList";
+import PetServiceList from "./pages/PetServiceList";
+import TechDigitalServiceList from "./pages/Tech&DigitalServiceList";
+import EventList from "./pages/EventList";
+import CourierList from "./pages/CourierServiceList";
+import IndustrialServiceList from "./pages/IndustrialServiceList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -122,7 +128,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
 
-            
+
                     {/* <Route path="/add-automotive" element={<AddAutomotive />} />
                     <Route path="/edit-automotive/:id" element={<AutomotiveEdit />} /> */}
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
@@ -178,17 +184,29 @@ const AppRoutes: React.FC = () => {
 
                     <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
-<Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
-<Route path="/beauty-services" element={<BeautyServicesList />} />
-<Route path="/real-estate/:subcategory" element={<RealEstateList />} />
-<Route path="/real-estate" element={<RealEstateList />} />
-<Route path="/shopping/:subcategory" element={<ShoppingList />} />
+                    <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
+                    <Route path="/beauty-services" element={<BeautyServicesList />} />
+                    <Route path="/real-estate/:subcategory" element={<RealEstateList />} />
+                    <Route path="/real-estate" element={<RealEstateList />} />
+                    <Route path="/shopping/:subcategory" element={<ShoppingList />} />
 
-<Route path="/shopping" element={<ShoppingList />} />
-<Route path="/automotive/:subcategory" element={<AutomotiveList />} />
-<Route path="/automotive" element={<AutomotiveList />} />
-<Route path="/education/:subcategory" element={<EducationList />} />
-<Route path="/education" element={<EducationList />} />
+                    <Route path="/shopping" element={<ShoppingList />} />
+                    <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+                    <Route path="/automotive" element={<AutomotiveList />} />
+                    <Route path="/education/:subcategory" element={<EducationList />} />
+                    <Route path="/education" element={<EducationList />} />
+                    <Route path="/business/:subcategory" element={<BusinessList />} />
+                    <Route path="/business" element={<BusinessList />} />
+                    <Route path="/pet-services/:subcategory" element={<PetServiceList />} />
+                    <Route path="/pet-services" element={<PetServiceList />} />
+                    <Route path="/tech-digital-services/:subcategory" element={<TechDigitalServiceList />} />
+                    <Route path="/tech-digital-services" element={<TechDigitalServiceList />} />
+                    <Route path="/event-services/:subcategory" element={<EventList />} />
+                    <Route path="/event-services" element={<EventList />} />
+                    <Route path="/courier/:subcategory" element={<CourierList />} />
+                    <Route path="/courier" element={<CourierList />} />
+                    <Route path="/industrial-services/:subcategory" element={<IndustrialServiceList />} />
+                    <Route path="/industrial-services" element={<IndustrialServiceList />} />
                     <Route
                         path="/add-skills"
                         element={
