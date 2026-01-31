@@ -13,9 +13,13 @@ export const AMENITY_MAP: Record<string, string[]> = {
   clinics: ["amenity=clinic", "amenity=doctors"],
   "dental clinics": ["amenity=dentist"],
   "eye hospitals": ["amenity=hospital"],
-  pharmacies: ["amenity=pharmacy"],
   "diagnostic labs": ["amenity=laboratory"],
   "blood banks": ["amenity=blood_bank"],
+  "medical shops": ["amenity=pharmacy"],
+  "nursing services": ["amenity=nursing"],
+  "vet hospitals / pet clinics": ["amenity=veterinary"],
+  "physiotherapy centres": ["amenity=physiotherapy"],
+  
 
   // 🏨 STAY
   hotels: ["tourism=hotel"],

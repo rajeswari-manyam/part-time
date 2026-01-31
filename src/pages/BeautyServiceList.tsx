@@ -147,16 +147,22 @@ const BeautyServicesList: React.FC = () => {
             console.log("✅ Matched to NearbyBeautyCard");
             return NearbyBeautyCard;
         }
+ 
 
-        // FITNESS/GYM MATCHING
-        if (
-            normalized.includes("fitness") ||
-            normalized.includes("gym") ||
-            (normalized.includes("fitness") && normalized.includes("centre"))
-        ) {
-            console.log("✅ Matched to NearbyFitnessCard");
-            return NearbyFitnessCard;
-        }
+const fitnessKeywords = [
+  "fitness centre",
+  "fitness centers",
+  "fitness centres",
+  "fitness center",
+  "fitness",
+  "gym",
+  "gyms",
+];
+
+if (fitnessKeywords.some(keyword => normalized.includes(keyword))) {
+  console.log("✅ Matched to NearbyFitnessCard");
+  return NearbyFitnessCard;
+}
 
         // MAKEUP ARTIST MATCHING
         if (

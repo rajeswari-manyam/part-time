@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
@@ -10,6 +11,12 @@ import TransporterServiceCard from "../components/cards/Industrial/NearByTranspo
 import WaterTankCleaningCard from "../components/cards/Industrial/NearByWaterTankCleaning";
 import ScrapDealerCard from "../components/cards/Industrial/NearByScrapDealers";
 import MachineWorkCard from "../components/cards/Industrial/NearByMachine";
+
+// Import utilities
+import {
+    getMainIndustrialCategory,
+    isIndustrialSubcategory,
+} from "../utils/SubCategories";
 
 export interface IndustrialServiceType {
     id: string;
@@ -135,8 +142,13 @@ const IndustrialServicesList: React.FC = () => {
         navigate("/add-industrial-service-form");
     };
 
+    /**
+     * Get display title for the page
+     */
     const getDisplayTitle = () => {
         if (!subcategory) return "All Industrial Services";
+
+        // Remove hyphens and capitalize each word
         return subcategory
             .split("-")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -144,191 +156,113 @@ const IndustrialServicesList: React.FC = () => {
     };
 
     /**
-     * Normalize subcategory to handle different route formats
-     * Converts to lowercase and logs for debugging
+     * Normalize subcategory string for consistent matching
      */
     const normalizeSubcategory = (sub: string | undefined): string => {
         if (!sub) return "";
-        const normalized = sub.toLowerCase();
-        console.log("📍 Raw subcategory:", sub);
-        console.log("📍 Normalized subcategory:", normalized);
-        return normalized;
+        return sub.toLowerCase().trim();
     };
 
     /**
-     * Smart matching function to handle route variations
-     * Returns the appropriate card component based on subcategory
-     * 
-     * ✅ FIXED ISSUES:
-     * - Removed duplicate checks
-     * - Fixed operator precedence for water tank cleaning
-     * - Added more comprehensive keyword matching
-     * - Added missing variants (drilling, logistics, recycling, etc.)
+     * ROBUST CARD COMPONENT MATCHER
+     * Uses the utility functions from SubCategories.ts
      */
     const getCardComponentForSubcategory = (
         subcategory: string | undefined
     ): React.ComponentType<any> | null => {
-        if (!subcategory) return null;
-
-        const normalized = normalizeSubcategory(subcategory);
-
-        // BOREWELL SERVICES MATCHING
-        // Matches: borewell, bore-well, bore well, borewell-services, borewell-drilling, etc.
-        if (
-            normalized.includes("borewell") ||
-            normalized.includes("bore well") ||
-            normalized.includes("bore-well") ||
-            normalized.includes("drilling")
-        ) {
-            console.log("✅ Matched to BorewellServiceCard");
-            return BorewellServiceCard;
-        }
-
-        // FABRICATORS MATCHING
-        // Matches: fabricator, fabricators, fabrication, welding, welding-services, etc.
-        if (
-            normalized.includes("fabricat") ||
-            normalized.includes("welding")
-        ) {
-            console.log("✅ Matched to FabricatorServiceCard");
-            return FabricatorServiceCard;
-        }
-
-        // TRANSPORTERS MATCHING
-        // Matches: transport, transporter, transporters, logistics, cargo, goods-transport, etc.
-        if (
-            normalized.includes("transport") ||
-            normalized.includes("logistic") ||
-            normalized.includes("cargo")
-        ) {
-            console.log("✅ Matched to TransporterServiceCard");
-            return TransporterServiceCard;
-        }
-
-        // WATER TANK CLEANING MATCHING
-        // ✅ FIXED: Added parentheses to fix operator precedence
-        // Matches: water-tank-cleaning, tank-cleaning, overhead-tank, underground-tank, etc.
-        if (
-            (normalized.includes("water") && normalized.includes("tank")) ||
-            normalized.includes("tank cleaning") ||
-            normalized.includes("overhead tank") ||
-            normalized.includes("underground tank")
-        ) {
-            console.log("✅ Matched to WaterTankCleaningCard");
-            return WaterTankCleaningCard;
-        }
-
-        // SCRAP DEALERS MATCHING
-        // ✅ FIXED: Removed duplicate checks, added recycling variants
-        // Matches: scrap, scrap-dealers, scrap-buyers, recycling, e-waste, battery-scrap, etc.
-        if (
-            normalized.includes("scrap") ||
-            normalized.includes("recycl") ||
-            normalized.includes("e-waste") ||
-            normalized.includes("battery")
-        ) {
-            console.log("✅ Matched to ScrapDealerCard");
-            return ScrapDealerCard;
-        }
-
-        // MACHINE WORK MATCHING
-        // ✅ FIXED: Removed duplicate checks
-        // Matches: machine, machine-work, machine-repair, machinery, machinery-repair, etc.
-        if (
-            normalized.includes("machine")
-        ) {
-            console.log("✅ Matched to MachineWorkCard");
-            return MachineWorkCard;
-        }
-
-        // PACKERS & MOVERS MATCHING
-        // Note: Add PackersMoversCard component when available
-        if (
-            normalized.includes("packer") ||
-            normalized.includes("mover") ||
-            normalized.includes("relocation") ||
-            normalized.includes("shifting")
-        ) {
-            console.log("⚠️ No PackersMoversCard component available yet");
-            // return PackersMoversCard; // Uncomment when component exists
+        if (!subcategory) {
+            console.warn("⚠️ No subcategory provided");
             return null;
         }
 
-        console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-        return null;
+        const normalized = normalizeSubcategory(subcategory);
+        console.log("📍 Matching subcategory:", normalized);
+
+        // Get the main category using utility function
+        const mainCategory = getMainIndustrialCategory(normalized);
+
+        if (!mainCategory) {
+            console.warn(`⚠️ No matching industrial category for: "${subcategory}"`);
+            return null;
+        }
+
+        console.log("✅ Matched to main category:", mainCategory);
+
+        // Map main categories to their card components
+        const componentMap: Record<string, React.ComponentType<any>> = {
+            "borewell": BorewellServiceCard,
+            "fabricators": FabricatorServiceCard,
+            "transporters": TransporterServiceCard,
+            "water-tank-cleaning": WaterTankCleaningCard,
+            "scrap-dealers": ScrapDealerCard,
+            "machine-repair": MachineWorkCard,
+            // "movers-packers": PackersMoversCard, // Add when component is ready
+        };
+
+        const CardComponent = componentMap[mainCategory];
+
+        if (CardComponent) {
+            console.log("✅ Component found:", CardComponent.name);
+        } else {
+            console.warn(`⚠️ No component mapped for category: "${mainCategory}"`);
+        }
+
+        return CardComponent || null;
     };
 
     /**
-     * Helper function to check if subcategory should show nearby cards
-     * ✅ UPDATED: Added more comprehensive keywords
+     * Check if should show nearby cards
+     * Uses the utility function from SubCategories.ts
      */
     const shouldShowNearbyCards = (): boolean => {
         if (!subcategory) return false;
 
-        const normalized = normalizeSubcategory(subcategory);
+        const isIndustrial = isIndustrialSubcategory(subcategory);
+        console.log(`📊 Is industrial subcategory "${subcategory}":`, isIndustrial);
 
-        const keywords = [
-            "borewell",
-            "bore well",
-            "drilling",
-            "fabricat",
-            "welding",
-            "transport",
-            "logistic",
-            "cargo",
-            "water tank",
-            "tank cleaning",
-            "overhead",
-            "underground",
-            "scrap",
-            "recycl",
-            "e-waste",
-            "machine",
-            "machinery",
-            "packer",
-            "mover",
-            "relocation",
-            "shifting",
-        ];
-
-        const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
-
-        console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
-
-        return hasMatch;
+        return isIndustrial;
     };
 
     /**
-     * Get category icon based on subcategory
-     * ✅ UPDATED: Added more comprehensive matching with fixed operator precedence
+     * Get category icon based on main category
      */
     const getCategoryIcon = () => {
-        const normalized = normalizeSubcategory(subcategory);
+        if (!subcategory) return "🏭";
 
-        if (normalized.includes("borewell") || normalized.includes("drilling")) return "🚜";
-        if (normalized.includes("fabricat") || normalized.includes("welding")) return "🔧";
-        if (normalized.includes("transport") || normalized.includes("logistic")) return "🚛";
-        if (
-            (normalized.includes("water") && normalized.includes("tank")) ||
-            normalized.includes("tank cleaning")
-        ) return "💧";
-        if (normalized.includes("scrap") || normalized.includes("recycl")) return "♻️";
-        if (normalized.includes("machine")) return "⚙️";
-        if (normalized.includes("packer") || normalized.includes("mover")) return "📦";
+        const mainCategory = getMainIndustrialCategory(subcategory);
 
-        return "🏭";
+        const iconMap: Record<string, string> = {
+            "borewell": "🚜",
+            "fabricators": "🔧",
+            "transporters": "🚛",
+            "water-tank-cleaning": "💧",
+            "scrap-dealers": "♻️",
+            "machine-repair": "⚙️",
+            "movers-packers": "📦",
+        };
+
+        return iconMap[mainCategory || ""] || "🏭";
     };
 
     /**
-     * Render nearby cards which have dummy data built-in
-     * This section shows the card components with their internal dummy data
+     * Render nearby cards section with dummy data
      */
     const renderNearbyCardsSection = () => {
         const CardComponent = getCardComponentForSubcategory(subcategory);
 
         if (!CardComponent) {
             console.error(`❌ No card component available for subcategory: "${subcategory}"`);
-            return null;
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">{getCategoryIcon()}</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        Service Type Not Available
+                    </h3>
+                    <p className="text-gray-600">
+                        Card component for "{getDisplayTitle()}" is not yet implemented.
+                    </p>
+                </div>
+            );
         }
 
         return (
@@ -479,8 +413,8 @@ const IndustrialServicesList: React.FC = () => {
                                                 <div className="flex items-center gap-2">
                                                     <span
                                                         className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.jobData.status
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-red-100 text-red-800"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-red-100 text-red-800"
                                                             }`}
                                                     >
                                                         <span className="mr-1">

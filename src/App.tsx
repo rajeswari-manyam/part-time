@@ -80,6 +80,8 @@ import TechDigitalServiceList from "./pages/Tech&DigitalServiceList";
 import EventList from "./pages/EventList";
 import CourierList from "./pages/CourierServiceList";
 import IndustrialServiceList from "./pages/IndustrialServiceList";
+import SportsServiceList from "./pages/SportsServiceList";
+import AgricultureList from "./pages/AgricultureList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -207,6 +209,10 @@ const AppRoutes: React.FC = () => {
                     <Route path="/courier" element={<CourierList />} />
                     <Route path="/industrial-services/:subcategory" element={<IndustrialServiceList />} />
                     <Route path="/industrial-services" element={<IndustrialServiceList />} />
+                    <Route path="/sports/:subcategory" element={<SportsServiceList />} />
+                    <Route path="/sports" element={<SportsServiceList />} />
+                    <Route path="/agriculture/:subcategory" element={<AgricultureList />} />
+                    <Route path="/agriculture" element={<AgricultureList />} />
                     <Route
                         path="/add-skills"
                         element={

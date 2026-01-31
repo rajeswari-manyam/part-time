@@ -215,11 +215,10 @@ const HospitalServicesList: React.FC = () => {
             return NearbyDermatologistsCard;
         }
 
-        // ✅ PHARMACY MATCHING
-        if (normalized.includes("pharm")) {
-            console.log("✅ Matched to NearbyPharmaciesCard");
-            return NearbyPharmaciesCard;
-        }
+      if(normalized.includes("pharm")) {
+        console.log("✅ Matched to NearbyPharmaciesCard");
+        return NearbyPharmaciesCard;
+      }
         if (normalized.includes("lab")) {
             console.log("✅ Matched to NearbyDiagnosticLabsCard");
             return NearbyDiagnosticLabsCard;
@@ -245,13 +244,22 @@ const HospitalServicesList: React.FC = () => {
             console.log("✅ Matched to NearbyBloodBankCard");
             return NearbyBloodBankCard;
         }
+        if(
+            normalized.includes("vet")
+        ){
+            console.log("✅ Matched to NearbyVetClinicCard");
+            return NearbyVetClinicCard;
+        }
         
         // ✅ NURSING SERVICE MATCHING
         if (normalized.includes("nursing")) {
             console.log("✅ Matched to NearbyNursingServiceCard");
             return NearbyNursingServiceCard;
         }
-          
+          if(normalized.includes("nursing")) {
+            console.log("✅ Matched to NearbyNursingServiceCard");
+            return NearbyNursingServiceCard;
+          }
         console.warn(`⚠️ No matching card component for: "${subcategory}"`);
         return null;
     };

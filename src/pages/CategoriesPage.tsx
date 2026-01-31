@@ -20,7 +20,9 @@ import {
     TECH_DIGITAL_SUBCATEGORIES,
     EVENT_SUBCATEGORIES,
     COURIER_SUBCATEGORIES,
-    INDUSTRIAL_CATEGORY_MAP
+    INDUSTRIAL_CATEGORY_MAP,
+    SPORTS_SUBCATEGORIES,
+    AGRICULTURE_SUBCATEGORIES,
 } from "../utils/SubCategories";
 import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
@@ -142,6 +144,14 @@ const CategoryPage: React.FC = () => {
         else if (SHOPPING_SUBCATEGORIES.includes(slug) || SHOPPING_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to shopping");
             navigate(`/shopping/${slugWithDash}`);
+        }
+        else if (SPORTS_SUBCATEGORIES.includes(slug) || SPORTS_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to sports");
+            navigate(`/sports/${slugWithDash}`);
+        }
+        else if (AGRICULTURE_SUBCATEGORIES.includes(slug) || AGRICULTURE_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to agriculture");
+            navigate(`/agriculture/${slugWithDash}`);
         }
         // ✅ NEW: Check if this is a pet service subcategory
         else if (PET_SERVICE_SUBCATEGORIES.includes(slug) || PET_SERVICE_SUBCATEGORIES.includes(slugWithDash)) {

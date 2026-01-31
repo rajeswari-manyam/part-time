@@ -1,6 +1,6 @@
 import * as React from "react";
 import { X } from "lucide-react";
-
+import Button from "../components/ui/Buttons";
 interface UserModalProps {
     phoneNumber: string;
     userId: string;
@@ -121,7 +121,8 @@ const UserModal: React.FC<UserModalProps> = ({
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
-                <div className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] px-6 py-8 text-center">
+            <div className="bg-[#1A5F9E] px-6 py-8 text-center">
+
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">😊</span>
                     </div>
@@ -150,7 +151,7 @@ const UserModal: React.FC<UserModalProps> = ({
                                 setError(null);
                             }}
                             placeholder="Enter your name"
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 transition-colors text-gray-900"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#1A5F9E] text-gray-900"
                             autoFocus
                             disabled={isSubmitting}
                         />
@@ -159,7 +160,8 @@ const UserModal: React.FC<UserModalProps> = ({
                         )}
                     </div>
 
-                    <div className="mb-6 p-3 bg-gray-50 rounded-lg">
+            <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
+
                         <p className="text-xs text-gray-500 mb-1">Registered Phone</p>
                         <p className="text-sm font-semibold text-gray-900">
                             +91 {phoneNumber}
@@ -184,32 +186,35 @@ const UserModal: React.FC<UserModalProps> = ({
                     </div>
 
                     <div className="space-y-3">
-                        <button
+                        <Button
                             type="submit"
                             disabled={isSubmitting || !name.trim()}
-                            className="w-full py-3 bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] text-white rounded-xl font-semibold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
+
+
                         >
                             {isSubmitting ? "Updating..." : "Continue"}
-                        </button>
+                        </Button>
 
                         <button
                             type="button"
                             onClick={handleSkip}
                             disabled={isSubmitting}
-                            className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                          className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
+
                         >
                             Skip for now
                         </button>
                     </div>
                 </form>
 
-                <button
+                <Button
                     onClick={handleSkip}
                     disabled={isSubmitting}
                     className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
                 >
                     <X className="w-5 h-5" />
-                </button>
+                </Button>
             </div>
         </div>
     );
