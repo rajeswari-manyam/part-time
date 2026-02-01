@@ -10,18 +10,10 @@ import {
 } from "lucide-react";
 
 // Import existing sports card components
-import NearbyPlayAreaCard, {
-  DUMMY_PLAY_AREAS,
-} from "../components/cards/Sports/NearByPlayArear";
-import NearbySportsCard, {
-  DUMMY_SPORTS_CLUBS,
-} from "../components/cards/Sports/NearBySports";
-import NearbyFitnessCard, {
-  DUMMY_FITNESS_CENTRES,
-} from "../components/cards/Beauty/NearByFittness";
-import NearbyStadiumCard, {
-  DUMMY_STADIUMS,
-} from "../components/cards/Sports/NearByStadium";
+import NearbyPlayAreaCard, { DUMMY_PLAY_AREAS } from "../components/cards/Sports/NearByPlayArear";
+import NearbySportsCard, { DUMMY_SPORTS_CLUBS } from "../components/cards/Sports/NearBySports";
+import NearbyFitnessCard, { DUMMY_FITNESS_CENTRES } from "../components/cards/Beauty/NearByFittness";
+import NearbyStadiumCard, { DUMMY_STADIUMS } from "../components/cards/Sports/NearByStadium";
 
 /* ================= TYPES ================= */
 
@@ -274,7 +266,7 @@ const SportsServicesList: React.FC = () => {
 
     return (
       <div className="space-y-8">
-      
+
         {/* Nearby Services */}
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -353,7 +345,7 @@ const SportsServicesList: React.FC = () => {
                 {getDisplayTitle()}
               </span>
             </h1>
-        
+
           </div>
 
           <button
@@ -464,11 +456,10 @@ const SportsServicesList: React.FC = () => {
                       {service.jobData?.status !== undefined && (
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center text-sm font-black px-4 py-2 rounded-xl shadow-md ${
-                              service.jobData.status
-                                ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white"
-                                : "bg-gradient-to-r from-red-400 to-pink-500 text-white"
-                            }`}
+                            className={`inline-flex items-center text-sm font-black px-4 py-2 rounded-xl shadow-md ${service.jobData.status
+                              ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white"
+                              : "bg-gradient-to-r from-red-400 to-pink-500 text-white"
+                              }`}
                           >
                             <span className="mr-2 text-lg">
                               {service.jobData.status ? "✓" : "✗"}

@@ -11,7 +11,7 @@ import {
 
 /* ================= TYPES ================= */
 
-export interface HandmadeGift {
+interface Business {
     id: string;
     title: string;
     description?: string;
@@ -26,137 +26,91 @@ export interface HandmadeGift {
     };
 }
 
-/* ================= PROPS ================= */
-
-interface NearbyHandmadeGiftCardProps {
-    business?: HandmadeGift;
-    onViewDetails: (business: HandmadeGift) => void;
+interface CraftBusinessCardProps {
+    business?: Business;
+    onViewDetails: (business: Business) => void;
 }
 
-/* ================= PHONE MAP ================= */
+/* ================= CONSTANTS ================= */
 
 const PHONE_NUMBERS_MAP: Record<string, string> = {
-    shop_1: "07947138792",
-    shop_2: "07947138962",
-    shop_3: "07947430941",
-    shop_4: "08460471716",
+    craft_1: "07947110492",
+    craft_2: "09562742701",
+    craft_3: "09544742701",
+    craft_4: "07947418289",
 };
 
-/* ================= IMAGES ================= */
-
-const GIFT_IMAGES_MAP: Record<string, string[]> = {
-    shop_1: [
-        "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=800",
-        "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800",
-        "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800",
+const BUSINESS_IMAGES_MAP: Record<string, string[]> = {
+    craft_1: [
+        "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800",
+        "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800",
     ],
-    shop_2: [
-        "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800",
-        "https://images.unsplash.com/photo-1608528924449-679e86baff75?w=800",
-        "https://images.unsplash.com/photo-1566041510394-cf7c8fe21800?w=800",
+    craft_2: [
+        "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800",
+        "https://images.unsplash.com/photo-1581092160607-ee67e66dce83?w=800",
     ],
-    shop_3: [
-        "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800",
-        "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=800",
-        "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800",
+    craft_3: [
+        "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800",
     ],
-    shop_4: [
-        "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=800",
-        "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800",
-        "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800",
+    craft_4: [
+        "https://images.unsplash.com/photo-1581092162384-8987c1d64926?w=800",
     ],
 };
 
-/* ================= DESCRIPTIONS ================= */
+const BUSINESS_SERVICES = [
+    "Expert Service",
+    "Quality Guaranteed",
+    "Fast Delivery",
+    "Custom Solutions",
+];
 
-const GIFT_DESCRIPTIONS_MAP: Record<string, string> = {
-    shop_1: "Handmade dreamcatchers and unique artisan decor gifts.",
-    shop_2: "Personalized gifts, greeting cards and premium collections.",
-    shop_3: "Festive decorations, pooja items and handcrafted gifts.",
-    shop_4: "Toys, educational gifts and curated gift collections.",
-};
-
-/* ================= DUMMY DATA ================= */
-
-const DUMMY_GIFTS: HandmadeGift[] = [
+const DUMMY_BUSINESSES: Business[] = [
     {
-        id: "shop_1",
-        title: "Ekdant Artbox Dreamcatchers",
-        description: GIFT_DESCRIPTIONS_MAP.shop_1,
-        location: "Raviwar Peth, Pune",
-        distance: 1.5,
-        category: "Gift Shop",
+        id: "craft_1",
+        title: "Craft Tech Cutting Tools Pvt Ltd",
+        description:
+            "Leading provider of precision cutting tools and agricultural machinery.",
+        location: "Mancheswar Industrial Area, Bhubaneswar",
+        distance: 12.5,
+        category: "Machinery",
         businessData: {
-            rating: 4.9,
-            user_ratings_total: 74,
+            rating: 4.5,
+            user_ratings_total: 17,
             opening_hours: { open_now: true },
-            geometry: { location: { lat: 18.5204, lng: 73.8567 } },
+            geometry: { location: { lat: 20.2961, lng: 85.8245 } },
         },
     },
     {
-        id: "shop_2",
-        title: "Arva Collection",
-        description: GIFT_DESCRIPTIONS_MAP.shop_2,
-        location: "Nashik Road, Nashik",
-        distance: 2.1,
-        category: "Gift Shop",
-        businessData: {
-            rating: 4.0,
-            user_ratings_total: 1,
-            opening_hours: { open_now: true },
-            geometry: { location: { lat: 19.9975, lng: 73.7898 } },
-        },
-    },
-    {
-        id: "shop_3",
-        title: "Ganesh Gift House",
-        description: GIFT_DESCRIPTIONS_MAP.shop_3,
-        location: "Bhadrakali Road, Nashik",
-        distance: 3.2,
-        category: "Gift Shop",
-        businessData: {
-            rating: 4.4,
-            user_ratings_total: 34,
-            opening_hours: { open_now: true },
-            geometry: { location: { lat: 19.9975, lng: 73.7898 } },
-        },
-    },
-    {
-        id: "shop_4",
-        title: "Neo Toys & Gift Gallery",
-        description: GIFT_DESCRIPTIONS_MAP.shop_4,
-        location: "Vapi Industrial Estate",
-        distance: 5.0,
-        category: "Gift Shop",
+        id: "craft_2",
+        title: "Craft Core Cutting Services",
+        description:
+            "Professional core cutting and slab cutting services for construction.",
+        location: "North Edayur, Malappuram",
+        distance: 8.3,
+        category: "Construction",
         businessData: {
             rating: 4.7,
-            user_ratings_total: 15,
-            opening_hours: { open_now: false },
-            geometry: { location: { lat: 20.3717, lng: 72.9046 } },
+            user_ratings_total: 7,
+            opening_hours: { open_now: true },
+            geometry: { location: { lat: 11.051, lng: 76.0711 } },
         },
     },
 ];
 
 /* ================= SINGLE CARD ================= */
 
-const SingleHandmadeGiftCard: React.FC<{
-    business: HandmadeGift;
-    onViewDetails: (business: HandmadeGift) => void;
+const SingleBusinessCard: React.FC<{
+    business: Business;
+    onViewDetails: (business: Business) => void;
 }> = ({ business, onViewDetails }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    const photos = GIFT_IMAGES_MAP[business.id] || [];
+    const photos = BUSINESS_IMAGES_MAP[business.id] || [];
     const currentPhoto = photos[currentImageIndex];
 
-    const handleNext = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrentImageIndex((p) => (p + 1) % photos.length);
-    };
-
-    const handlePrev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrentImageIndex((p) => (p - 1 + photos.length) % photos.length);
-    };
+    const rating = business.businessData?.rating;
+    const totalRatings = business.businessData?.user_ratings_total;
+    const isOpen = business.businessData?.opening_hours?.open_now;
 
     const handleCall = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -175,10 +129,6 @@ const SingleHandmadeGiftCard: React.FC<{
         }
     };
 
-    const rating = business.businessData?.rating;
-    const total = business.businessData?.user_ratings_total;
-    const isOpen = business.businessData?.opening_hours?.open_now;
-
     return (
         <div
             onClick={() => onViewDetails(business)}
@@ -188,36 +138,48 @@ const SingleHandmadeGiftCard: React.FC<{
             <div className="relative h-48 bg-gray-200">
                 {currentPhoto ? (
                     <>
-                        <img src={currentPhoto} className="w-full h-full object-cover" />
+                        <img
+                            src={currentPhoto}
+                            alt={business.title}
+                            className="w-full h-full object-cover"
+                        />
                         {photos.length > 1 && (
                             <>
                                 <button
-                                    onClick={handlePrev}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCurrentImageIndex(
+                                            (prev) => (prev - 1 + photos.length) % photos.length
+                                        );
+                                    }}
                                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
                                 >
-                                    <ChevronLeft size={20} />
+                                    <ChevronLeft size={18} />
                                 </button>
                                 <button
-                                    onClick={handleNext}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCurrentImageIndex((prev) => (prev + 1) % photos.length);
+                                    }}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
                                 >
-                                    <ChevronRight size={20} />
+                                    <ChevronRight size={18} />
                                 </button>
                             </>
                         )}
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full text-4xl">
-                        🎁
+                        🛠️
                     </div>
                 )}
             </div>
 
             {/* Content */}
-            <div className="p-4 space-y-2 flex-grow flex flex-col">
-                <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
+            <div className="p-4 flex flex-col flex-grow space-y-2">
+                <h3 className="text-xl font-bold text-gray-800 line-clamp-2">
                     {business.title}
-                </h2>
+                </h3>
 
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                     <MapPin size={16} />
@@ -235,15 +197,14 @@ const SingleHandmadeGiftCard: React.FC<{
                 </p>
 
                 {/* Rating & Status */}
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex items-center gap-3 text-sm pt-2">
                     {rating && (
                         <div className="flex items-center gap-1">
                             <Star size={14} className="fill-yellow-400 text-yellow-400" />
                             <span className="font-semibold">{rating.toFixed(1)}</span>
-                            <span className="text-gray-500">({total})</span>
+                            <span className="text-gray-500">({totalRatings})</span>
                         </div>
                     )}
-
                     {isOpen !== undefined && (
                         <div
                             className={`flex items-center gap-1 px-2 py-0.5 rounded ${isOpen
@@ -259,8 +220,25 @@ const SingleHandmadeGiftCard: React.FC<{
                     )}
                 </div>
 
-                {/* Buttons */}
-                <div className="flex gap-2 pt-4 mt-auto">
+                {/* Services */}
+                <div className="pt-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                        Services
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {BUSINESS_SERVICES.slice(0, 3).map((service, i) => (
+                            <span
+                                key={i}
+                                className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs"
+                            >
+                                ✓ {service}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-4">
                     <button
                         onClick={handleDirections}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border-2 border-indigo-600 rounded-lg hover:bg-indigo-100 font-semibold"
@@ -281,19 +259,19 @@ const SingleHandmadeGiftCard: React.FC<{
     );
 };
 
-/* ================= LIST VIEW ================= */
+/* ================= MAIN EXPORT ================= */
 
-const NearbyHandmadeGiftCard: React.FC<NearbyHandmadeGiftCardProps> = ({
+const CraftBusinessCard: React.FC<CraftBusinessCardProps> = ({
     business,
     onViewDetails,
 }) => {
     if (!business) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {DUMMY_GIFTS.map((item) => (
-                    <SingleHandmadeGiftCard
-                        key={item.id}
-                        business={item}
+                {DUMMY_BUSINESSES.map((b) => (
+                    <SingleBusinessCard
+                        key={b.id}
+                        business={b}
                         onViewDetails={onViewDetails}
                     />
                 ))}
@@ -302,11 +280,8 @@ const NearbyHandmadeGiftCard: React.FC<NearbyHandmadeGiftCardProps> = ({
     }
 
     return (
-        <SingleHandmadeGiftCard
-            business={business}
-            onViewDetails={onViewDetails}
-        />
+        <SingleBusinessCard business={business} onViewDetails={onViewDetails} />
     );
 };
 
-export default NearbyHandmadeGiftCard;
+export default CraftBusinessCard;

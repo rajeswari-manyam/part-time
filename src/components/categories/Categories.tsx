@@ -152,4 +152,10 @@ export const categories: Category[] = [
         icon: SportsIcon,
         link: "/sports",
     },
+    {
+        id: "22",
+        name: "Wedding Services",
+        icon: WeddingIcon,
+        link: "/wedding",
+    },
 ];

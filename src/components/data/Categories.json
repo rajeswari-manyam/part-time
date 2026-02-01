@@ -132,7 +132,7 @@
           "icon": "🌮"
         },
         {
-          "name": "Juice & Smoothie Shops",
+          "name": "Juice  Shops",
           "icon": "🥤"
         },
         {
@@ -152,7 +152,7 @@
           "icon": "🛵"
         },
         {
-          "name": "Mess / Tiffin Services",
+          "name": "Mess Services",
           "icon": "🍛"
         }
       ]
@@ -201,7 +201,7 @@
           "icon": "👩‍⚕️"
         },
         {
-          "name": "Vet Hospitals / Pet Clinics",
+          "name": "Vet Hospitals",
           "icon": "🐕"
         },
         {
@@ -229,10 +229,7 @@
           "name": "Painters",
           "icon": "🎨"
         },
-        {
-          "name": "Painting Contractors",
-          "icon": "🖌️"
-        },
+        
         {
           "name": "AC Repair",
           "icon": "❄️"
@@ -249,18 +246,12 @@
           "name": "RO/Water Purifier Service",
           "icon": "💧"
         },
-        {
-          "name": "Geyser Repair",
-          "icon": "🔥"
-        },
+        
         {
           "name": "Gas Stove Repair",
           "icon": "🔥"
         },
-        {
-          "name": "Home Appliance Repair",
-          "icon": "🔌"
-        },
+      
         {
           "name": "Solar Panel Installation",
           "icon": "☀️"
@@ -290,16 +281,13 @@
           "name": "Travel Agencies",
           "icon": "✈️"
         },
-        {
-          "name": "Tour Packages",
-          "icon": "🗺️"
-        },
+     
         {
           "name": "Taxi Services",
           "icon": "🚖"
         },
         {
-          "name": "Bike/Car Rentals",
+          "name": "Vehicle Rentals",
           "icon": "🚗"
         },
         {
@@ -336,7 +324,7 @@
           "icon": "🎨"
         },
         {
-          "name": "Fitness Centres / Gyms",
+          "name": "Fitness Centres",
           "icon": "💪"
         },
         {
@@ -361,11 +349,11 @@
           "icon": "🏠"
         },
         {
-          "name": "Rent/Lease Listings",
+          "name": "Rent Lease Listings",
           "icon": "🔑"
         },
         {
-          "name": "Builders & Developers",
+          "name": "Builders Developers",
           "icon": "🏗️"
         },
         {
@@ -754,7 +742,7 @@
           "icon": "📦"
         },
         {
-          "name": "Movers & Packers",
+          "name": "Packers",
           "icon": "📦"
         }
       ]
@@ -788,20 +776,12 @@
           "icon": "👷"
         },
         {
-          "name": "Loading/Unloading Workers",
+          "name": "Loading Workers",
           "icon": "📦"
-        },
-        {
-          "name": "Garden Workers",
-          "icon": "🌱"
         },
         {
           "name": "Cleaning Helpers",
           "icon": "🧹"
-        },
-        {
-          "name": "Event Helpers",
-          "icon": "🎪"
         },
         {
           "name": "Watchmen",
@@ -833,10 +813,6 @@
           "icon": "🐄"
         },
         {
-          "name": "Farm Labour",
-          "icon": "👨‍🌾"
-        },
-        {
           "name": "Water Pump Repair",
           "icon": "💧"
         }
@@ -845,14 +821,7 @@
     {
       "categoryId": 20,
       "items": [
-        {
-          "name": "Office Boy Hiring",
-          "icon": "👨‍💼"
-        },
-        {
-          "name": "Receptionist Hiring",
-          "icon": "💁"
-        },
+        
         {
           "name": "Background Verification",
           "icon": "🔍"
@@ -864,10 +833,6 @@
         {
           "name": "Office Cleaning",
           "icon": "🧹"
-        },
-        {
-          "name": "HR & Recruiting Agencies",
-          "icon": "👥"
         }
       ]
     },
@@ -893,10 +858,6 @@
         {
           "name": "Craft Training",
           "icon": "✂️"
-        },
-        {
-          "name": "Art Supplies",
-          "icon": "🖌️"
         }
       ]
     },
@@ -908,20 +869,16 @@
           "icon": "💒"
         },
         {
-          "name": "Pandits / Poojari",
+          "name": "Poojari",
           "icon": "🕉️"
         },
         {
-          "name": "Band / Music Team",
+          "name": "Music Team",
           "icon": "🎺"
         },
         {
           "name": "Flower Decoration",
           "icon": "💐"
-        },
-        {
-          "name": "Caterers",
-          "icon": "🍽️"
         },
         {
           "name": "Sangeet Choreographers",

@@ -23,6 +23,11 @@ import {
     INDUSTRIAL_CATEGORY_MAP,
     SPORTS_SUBCATEGORIES,
     AGRICULTURE_SUBCATEGORIES,
+    ART_SERVICE_SUBCATEGORIES,
+    DAILY_WAGE_SUBCATEGORIES,
+    WEDDING_SUBCATEGORIES,
+    CORPORATE_SUBCATEGORIES,
+    PLUMBERS_SUBCATEGORIES,
 } from "../utils/SubCategories";
 import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
@@ -90,15 +95,30 @@ const CategoryPage: React.FC = () => {
         console.log("🔍 Slug:", slug);
         console.log("🔍 Slug with dash:", slugWithDash);
 
+        // ✅ PRIORITY: Check if this is a wedding/traditional service subcategory FIRST
+        // This must come early to prevent false matches with PLACE_SUBCATEGORIES or WORKER_SUBCATEGORIES
+        if (WEDDING_SUBCATEGORIES.includes(slug) || WEDDING_SUBCATEGORIES.includes(slugWithDash)) {
+            console.log("✅ Navigating to wedding services");
+            navigate(`/wedding-services/${slugWithDash}`);
+        }
         // Check if this is an automotive subcategory
-        if (AUTOMOTIVE_SUBCATEGORIES.includes(slug)) {
+        else if (AUTOMOTIVE_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to automotive");
             navigate(`/automotive/${slugWithDash}`);
+        }
+        else if (ART_SERVICE_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to art services");
+            navigate(`/art-services/${slugWithDash}`);
         }
         // Check if this is an education subcategory
         else if (EDUCATION_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to education");
             navigate(`/education/${slugWithDash}`);
+        }
+        // Check if this is a corporate subcategory
+        else if (CORPORATE_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to corporate");
+            navigate(`/corporate/${slugWithDash}`);
         }
         // Check if this is a business subcategory
         else if (BUSINESS_SUBCATEGORIES.includes(slug)) {
@@ -109,6 +129,15 @@ const CategoryPage: React.FC = () => {
         else if (COURIER_SUBCATEGORIES.includes(slug)) {
             console.log("✅ Navigating to courier");
             navigate(`/courier/${slugWithDash}`);
+        }
+        // Check if this is a plumber subcategory
+        else if (PLUMBERS_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to plumber");
+            navigate(`/plumber/${slugWithDash}`);
+        }
+        else if (DAILY_WAGE_SUBCATEGORIES.includes(slug)) {
+            console.log("✅ Navigating to daily wages");
+            navigate(`/daily-wages/${slugWithDash}`);
         }
         // Check if this is a food subcategory
         else if (FOOD_SUBCATEGORIES.includes(slug)) {

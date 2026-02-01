@@ -7,12 +7,12 @@
         { "name": "Cafes", "icon": "☕" },
         { "name": "Bakeries", "icon": "🥖" },
         { "name": "Street Food", "icon": "🌮" },
-        { "name": "Juice & Smoothie Shops", "icon": "🥤" },
+        { "name": "Juice Shops", "icon": "🥤" },
         { "name": "Sweet Shops", "icon": "🍬" },
         { "name": "Ice Cream Parlours", "icon": "🍦" },
         { "name": "Catering Services", "icon": "🍱" },
         { "name": "Food Delivery", "icon": "🛵" },
-        { "name": "mess / tiffin services", "icon": "🍛" }
+        { "name": "Mess Services", "icon": "🍛" }
       ]
     },
     {
@@ -28,7 +28,7 @@
         { "name": "Ambulance Services", "icon": "🚑" },
         { "name": "Physiotherapy Centres", "icon": "🧘" },
         { "name": "Nursing Services", "icon": "👩‍⚕️" },
-        { "name": "Vet Hospitals / Pet Clinics", "icon": "🐕" },
+        { "name": "Vet Hospitals ", "icon": "🐕" },
         { "name": " Medical Shops", "icon": "💊" }
       ]
     },
@@ -39,14 +39,14 @@
         { "name": "Electricians", "icon": "💡" },
         { "name": "Carpenters", "icon": "🪚" },
         { "name": "Painters", "icon": "🎨" },
-        { "name": "Painting Contractors", "icon": "🖌️" },
+       
         { "name": "AC Repair", "icon": "❄️" },
         { "name": "Fridge Repair", "icon": "🧊" },
         { "name": "Washing Machine Repair", "icon": "🫧" },
-        { "name": "RO/Water Purifier Service", "icon": "💧" },
-        { "name": "Geyser Repair", "icon": "🔥" },
+        { "name": "Water Purifier Service", "icon": "💧" },
+   
         { "name": "Gas Stove Repair", "icon": "🔥" },
-        { "name": "Home Appliance Repair", "icon": "🔌" },
+     
         { "name": "Solar Panel Installation", "icon": "☀️" }
       ]
     },
@@ -58,9 +58,9 @@
         { "name": "Lodges", "icon": "🛏️" },
         { "name": "Guest Houses", "icon": "🏡" },
         { "name": "Travel Agencies", "icon": "✈️" },
-        { "name": "Tour Packages", "icon": "🗺️" },
+  
         { "name": "Taxi Services", "icon": "🚖" },
-        { "name": "Bike/Car Rentals", "icon": "🚗" },
+        { "name": "Vehicle Rentals", "icon": "🚗" },
         { "name": "Bus Ticket Booking", "icon": "🚌" },
         { "name": "Train Ticket Booking", "icon": "🚆" }
       ]
@@ -73,7 +73,7 @@
         { "name": "Spa & Massage Centres", "icon": "💆" },
         { "name": "Makeup Artists", "icon": "💅" },
         { "name": "Mehendi Artists", "icon": "🎨" },
-        { "name": "Fitness Centres / Gyms", "icon": "💪" },
+        { "name": "Fitness Centres", "icon": "💪" },
         { "name": "Yoga Centres", "icon": "🧘‍♀️" },
         { "name": "Skin Clinics", "icon": "✨" },
         { "name": "Tattoo Studios", "icon": "🖊️" }
@@ -83,8 +83,8 @@
       "categoryId": 6,
       "items": [
         { "name": "Property Dealers", "icon": "🏠" },
-        { "name": "Rent/Lease Listings", "icon": "🔑" },
-        { "name": "Builders & Developers", "icon": "🏗️" },
+        { "name": "Rent Lease Listings", "icon": "🔑" },
+        { "name": "Builders Developers", "icon": "🏗️" },
         { "name": "Architect Services", "icon": "📐" },
         { "name": "Interior Designers", "icon": "🛋️" },
         { "name": "Construction Contractors", "icon": "👷" },
@@ -221,7 +221,7 @@
         { "name": "Courier offices", "icon": "📮" },
   
         { "name": "Parcel services", "icon": "📦" },
-        { "name": "Movers & Packers", "icon": "📦" }
+        { "name": "Packers", "icon": "📦" }
       ]
     },
     {
@@ -237,10 +237,10 @@
       "categoryId": 18,
       "items": [
         { "name": "Construction Labor", "icon": "👷" },
-        { "name": "Loading/Unloading Workers", "icon": "📦" },
-        { "name": "Garden Workers", "icon": "🌱" },
+        { "name": "Loading Workers", "icon": "📦" },
+   
         { "name": "Cleaning Helpers", "icon": "🧹" },
-        { "name": "Event Helpers", "icon": "🎪" },
+    
         { "name": "Watchmen", "icon": "👮" }
       ]
     },
@@ -252,19 +252,18 @@
         { "name": "Seeds Shops", "icon": "🌱" },
         { "name": "Farming Tools", "icon": "🔨" },
         { "name": "Veterinary Doctors", "icon": "🐄" },
-        { "name": "Farm Labour", "icon": "👨‍🌾" },
+      
         { "name": "Water Pump Repair", "icon": "💧" }
       ]
     },
     {
       "categoryId": 20,
       "items": [
-        { "name": "Office Boy Hiring", "icon": "👨‍💼" },
-        { "name": "Receptionist Hiring", "icon": "💁" },
+     
         { "name": "Background Verification", "icon": "🔍" },
         { "name": "Document Courier", "icon": "📄" },
-        { "name": "Office Cleaning", "icon": "🧹" },
-        { "name": "HR & Recruiting Agencies", "icon": "👥" }
+        { "name": "Office Cleaning", "icon": "🧹" }
+      
       ]
     },
     {
@@ -274,18 +273,17 @@
         { "name": "Caricature Artists", "icon": "✏️" },
         { "name": "Handmade Gift Designers", "icon": "🎁" },
         { "name": "Wall Murals", "icon": "🖼️" },
-        { "name": "Craft Training", "icon": "✂️" },
-        { "name": "Art Supplies", "icon": "🖌️" }
+        { "name": "Craft Training", "icon": "✂️" }
       ]
     },
     {
       "categoryId": 22,
       "items": [
         { "name": "Wedding Planners", "icon": "💒" },
-        { "name": "Pandits / Poojari", "icon": "🕉️" },
-        { "name": "Band / Music Team", "icon": "🎺" },
+        { "name": "Poojari", "icon": "🕉️" },
+        { "name": "Music Team", "icon": "🎺" },
         { "name": "Flower Decoration", "icon": "💐" },
-        { "name": "Caterers", "icon": "🍽️" },
+     
         { "name": "Sangeet Choreographers", "icon": "💃" }
       ]
     }

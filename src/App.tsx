@@ -27,13 +27,11 @@ import FeedBack from "./pages/FeedBack";
 import Help from "./pages/Help";
 import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
-import NearByJobs from "./pages/NearByJobs";
+
 import JobDetails from "./pages/JobDetails";
 import UserProfile from "./pages/UserProfile";
-import MatchedWorkers from "./pages/MatchedWorkers";
 import WorkerProfile from "./pages/WorkerProfile";
-import ChatScreen from "./pages/Chat";
-import NearbyPlaces from "./pages/NearByPlaces";
+
 import CallingScreen from "./pages/Call";
 import ServiceEnquiryForm from "./pages/ServiceEnquiryForm";
 import FeedbackForm from "./pages/FeedBack";
@@ -82,6 +80,11 @@ import CourierList from "./pages/CourierServiceList";
 import IndustrialServiceList from "./pages/IndustrialServiceList";
 import SportsServiceList from "./pages/SportsServiceList";
 import AgricultureList from "./pages/AgricultureList";
+import ArtServiceList from "./pages/ArtServiceList";
+import DailyWagesList from "./pages/DailyWagesList";
+import WeddingServiceList from "./pages/WeddingServiceList";
+import CorporativeServiceList from "./pages/CorporativeServiceList";
+import PlumberServiceList from "./pages/PlumbarsList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -125,7 +128,6 @@ const AppRoutes: React.FC = () => {
                     <Route path="/role-selection" element={<RoleSelection />} />
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
-                    <Route path="/NearByJobs" element={<NearByJobs />} />
                     <Route path="/jobs/:jobId" element={<JobDetails />} />
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
@@ -139,9 +141,6 @@ const AppRoutes: React.FC = () => {
                         element={<AutomotiveDetails />}
                     />
 
-                    {/* ================= WORKER ROUTES ================= */}
-                    <Route path="/matched-workers/:subcategory" element={<MatchedWorkers />} />
-                    <Route path="/matched-workers" element={<MatchedWorkers />} />
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/worker-list/:id" element={<WorkerList />} />
                     <Route path="/worker-profile" element={<CreateWorkerProfile />} />
@@ -149,13 +148,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-skills" element={<AddSkillsScreen />} />
                     <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
 
-                    {/* ================= PLACE ROUTES ================= */}
-                    <Route path="/nearby-places/:subcategory" element={<NearbyPlaces />} />
-                    <Route path="/nearby-places" element={<NearbyPlaces />} />
-
                     {/* ================= BOOKING & INTERACTION ROUTES ================= */}
                     <Route path="/booknow/:jobId" element={<BookNow />} />
-                    <Route path="/chat/:id" element={<ChatScreen />} />
                     <Route path="/call/:id" element={<CallingScreen />} />
                     <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
                     <Route path="/feedback/:id" element={<FeedbackForm />} />
@@ -213,6 +207,16 @@ const AppRoutes: React.FC = () => {
                     <Route path="/sports" element={<SportsServiceList />} />
                     <Route path="/agriculture/:subcategory" element={<AgricultureList />} />
                     <Route path="/agriculture" element={<AgricultureList />} />
+                    <Route path="/art-services/:subcategory" element={<ArtServiceList />} />
+                    <Route path="/art-services" element={<ArtServiceList />} />
+                    <Route path="/daily-wages/:subcategory" element={<DailyWagesList />} />
+                    <Route path="/daily-wages" element={<DailyWagesList />} />
+                    <Route path="/wedding-services/:subcategory" element={<WeddingServiceList />} />
+                    <Route path="/wedding-services" element={<WeddingServiceList />} />
+                    <Route path="/corporate/:subcategory" element={<CorporativeServiceList />} />
+                    <Route path="/corporate" element={<CorporativeServiceList />} />
+                    <Route path="/plumber/:subcategory" element={<PlumberServiceList />} />
+                    <Route path="/plumber" element={<PlumberServiceList />} />
                     <Route
                         path="/add-skills"
                         element={

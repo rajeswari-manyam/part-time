@@ -171,7 +171,7 @@ const HospitalServicesList: React.FC = () => {
         // ✅ VET CLINIC MATCHING - handles all variations
         if (
             normalized.includes("vet") ||
-            normalized.includes("pet") && normalized.includes("clinic")
+            normalized.includes("pet")
         ) {
             console.log("✅ Matched to NearbyVetClinicCard");
             return NearbyVetClinicCard;

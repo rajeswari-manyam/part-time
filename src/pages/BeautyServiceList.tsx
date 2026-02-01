@@ -155,8 +155,7 @@ const fitnessKeywords = [
   "fitness centres",
   "fitness center",
   "fitness",
-  "gym",
-  "gyms",
+
 ];
 
 if (fitnessKeywords.some(keyword => normalized.includes(keyword))) {
@@ -241,7 +240,7 @@ if (fitnessKeywords.some(keyword => normalized.includes(keyword))) {
             "beauty",
             "parlour",
             "fitness",
-            "gym",
+          
             "makeup",
             "salon",
             "spa",

@@ -3,25 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
-// Import existing hotel/travel card components
-import NearbyHotelsCard from "../components/cards/Hotel/NearByHotel";
-import NearbyResortsCard from "../components/cards/Hotel/NearByResort";
-import NearbyLodgesCard from "../components/cards/Hotel/NearByLodge";
-import NearbyGuestHouseCard from "../components/cards/Hotel/NearByGuestHouse";
-import NearbyTravelCard from "../components/cards/Hotel/NearByTravel";
-import NearbyTaxiServiceCard from "../components/cards/Hotel/NearByTaxiService";
-import NearbyTrainServiceCard from "../components/cards/Hotel/NearByTrains";
-import NearbyBusServiceCard from "../components/cards/Hotel/NearByBuses";
-import NearbyVehicleCard from "../components/cards/Hotel/NearByBikeCard";
+// Import existing craft card components
+import CraftBusinessCard from "../components/cards/Art Service/NearByCraft";
+import CaricatureArtistListing from "../components/cards/Art Service/NearByCaricature";
+import PainterListing from "../components/cards/Art Service/NearByPrinter";
+import WallMuralListing from "../components/cards/Art Service/NearByWallMural";
+import NearByHandMadeGifts from "../components/cards/Art Service/NearByHandMadeGifts";
 
-export interface HotelType {
+export interface CraftServiceType {
     id: string;
     title: string;
     location: string;
     description: string;
     distance?: number;
     category: string;
-    hotelData?: {
+    craftData?: {
         status: boolean;
         pincode: string;
         icon: string;
@@ -31,9 +27,14 @@ export interface HotelType {
         geometry?: { location: { lat: number; lng: number } };
         phone?: string;
         photos?: string[];
-        price_per_night?: string;
-        amenities?: string[];
+        price_range?: string;
+        services?: string[];
         special_tags?: string[];
+        years_in_business?: number;
+        specialties?: string[];
+        verified?: boolean;
+        trending?: boolean;
+        popular?: boolean;
     };
 }
 
@@ -93,21 +94,21 @@ const ActionDropdown: React.FC<{
     );
 };
 
-const HotelServicesList: React.FC = () => {
+const CraftServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<HotelType[]>([]);
+    const [services, setServices] = useState<CraftServiceType[]>([]);
     const [loading] = useState(false);
     const [error] = useState("");
 
-    const handleView = (hotel: any) => {
-        navigate(`/hotel-services/details/${hotel.id}`);
+    const handleView = (craft: any) => {
+        navigate(`/craft-services/details/${craft.id}`);
     };
 
     const handleEdit = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        navigate(`/add-hotel-service-form/${id}`);
+        navigate(`/add-craft-service-form/${id}`);
     };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -124,11 +125,11 @@ const HotelServicesList: React.FC = () => {
     };
 
     const handleAddPost = () => {
-        navigate("/add-hotel-service-form");
+        navigate("/add-craft-service-form");
     };
 
     const getDisplayTitle = () => {
-        if (!subcategory) return "All Hotel & Travel Services";
+        if (!subcategory) return "All Craft Services";
         return subcategory
             .split("-")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -156,67 +157,60 @@ const HotelServicesList: React.FC = () => {
         if (!subcategory) return null;
 
         const normalized = normalizeSubcategory(subcategory);
+// ✅ CRAFT TRAINING MATCHING
+if (
+  normalized.includes("craft") && normalized.includes("training") || // "craft training"
+  normalized.includes("craft-training")
+) {
+  console.log("✅ Matched to CraftBusinessCard (Training)");
+  return CraftBusinessCard;
+}
 
-        // ✅ HOTELS MATCHING
-        if (normalized.includes("hotel") && !normalized.includes("resort")) {
-            console.log("✅ Matched to NearbyHotelsCard");
-            return NearbyHotelsCard;
-        }
 
-        // ✅ RESORTS MATCHING
-        if (normalized.includes("resort")) {
-            console.log("✅ Matched to NearbyResortsCard");
-            return NearbyResortsCard;
-        }
-
-        // ✅ LODGES MATCHING
-        if (normalized.includes("lodge")) {
-            console.log("✅ Matched to NearbyLodgesCard");
-            return NearbyLodgesCard;
-        }
-
-        // ✅ GUEST HOUSES MATCHING
+        // ✅ CARICATURE ARTISTS MATCHING
         if (
-            normalized.includes("guest") && normalized.includes("house") ||
-            normalized.includes("guesthouse")
+            normalized.includes("caricature") ||
+            normalized.includes("digital-caricature") ||
+            normalized.includes("sketch-artist")
         ) {
-            console.log("✅ Matched to NearbyGuestHouseCard");
-            return NearbyGuestHouseCard;
+            console.log("✅ Matched to CaricatureArtistListing");
+            return CaricatureArtistListing;
         }
 
-        // ✅ TRAVEL AGENCIES MATCHING
+        // ✅ PAINTING ARTISTS MATCHING
         if (
-            normalized.includes("travel") && (
-                normalized.includes("agenc") ||
-                normalized.includes("package") ||
-                normalized.includes("tour")
-            )
+            normalized.includes("painting") && normalized.includes("artist") ||
+            normalized.includes("painting-artist") ||
+            normalized.includes("sketch-painting") ||
+            normalized.includes("3d-painting") ||
+            normalized.includes("canvas-painting") ||
+            normalized.includes("portrait-artist")
         ) {
-            console.log("✅ Matched to NearbyTravelCard");
-            return NearbyTravelCard;
+            console.log("✅ Matched to PainterListing");
+            return PainterListing;
         }
 
-        // ✅ TAXI SERVICES MATCHING
-        if (normalized.includes("taxi")) {
-            console.log("✅ Matched to NearbyTaxiServiceCard");
-            return NearbyTaxiServiceCard;
+        // ✅ WALL MURALS MATCHING
+        if (
+            normalized.includes("wall") && normalized.includes("mural") ||
+            normalized.includes("wall-mural") ||
+            normalized.includes("wall-art") ||
+            normalized.includes("mural-painting")
+        ) {
+            console.log("✅ Matched to WallMuralListing");
+            return WallMuralListing;
         }
 
-        // ✅ TRAIN TICKET BOOKING MATCHING
-        if (normalized.includes("train")) {
-            console.log("✅ Matched to NearbyTrainServiceCard");
-            return NearbyTrainServiceCard;
-        }
-
-        // ✅ BUS TICKET BOOKING MATCHING
-        if (normalized.includes("bus")) {
-            console.log("✅ Matched to NearbyBusServiceCard");
-            return NearbyBusServiceCard;
-        }
-
-        if (normalized.includes("vehicle") && normalized.includes("rental")) {
-            console.log("✅ Matched to NearbyVehicleCard");
-            return NearbyVehicleCard;
+        // ✅ HANDMADE GIFTS MATCHING
+        if (
+            normalized.includes("handmade") && normalized.includes("gift") ||
+            normalized.includes("handmade-gift") ||
+            normalized.includes("gift-designer") ||
+            normalized.includes("craft-gift") ||
+            normalized.includes("custom-gift")
+        ) {
+            console.log("✅ Matched to NearByHandMadeGifts");
+            return NearByHandMadeGifts;
         }
 
         console.warn(`⚠️ No matching card component for: "${subcategory}"`);
@@ -231,17 +225,20 @@ const HotelServicesList: React.FC = () => {
 
         // Check if any of the keywords match
         const keywords = [
-            "hotel",
-            "resort",
-            "lodge",
-            "guest",
-            "travel",
-            "taxi",
-            "train",
-            "bus",
-            "bike",
-            "car",
-            "rental",
+            "craft",
+            "cutting",
+            "caricature",
+            "painting",
+            "artist",
+            "wall",
+            "mural",
+            "handmade",
+            "gift",
+            "sketch",
+            "3d",
+            "canvas",
+            "portrait",
+            "art",
         ];
 
         const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
@@ -249,6 +246,19 @@ const HotelServicesList: React.FC = () => {
         console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
 
         return hasMatch;
+    };
+
+    // Get appropriate icon based on subcategory
+    const getCategoryIcon = (): string => {
+        const normalized = normalizeSubcategory(subcategory);
+
+        if (normalized.includes("caricature")) return "🎨";
+        if (normalized.includes("painting")) return "🖌️";
+        if (normalized.includes("mural")) return "🖼️";
+        if (normalized.includes("gift")) return "🎁";
+        if (normalized.includes("craft") || normalized.includes("cutting")) return "✂️";
+
+        return "🎨";
     };
 
     // Render nearby cards which have dummy data built-in
@@ -265,7 +275,7 @@ const HotelServicesList: React.FC = () => {
                 {/* Nearby Card Components - renders built-in dummy data */}
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        🏨 Nearby {getDisplayTitle()}
+                        {getCategoryIcon()} Nearby {getDisplayTitle()}
                     </h2>
                     <CardComponent onViewDetails={handleView} />
                 </div>
@@ -276,7 +286,7 @@ const HotelServicesList: React.FC = () => {
                         <div className="my-8 flex items-center gap-4">
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                             <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                🏨 Your Listed Services ({services.length})
+                                {getCategoryIcon()} Your Listed Services ({services.length})
                             </span>
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                         </div>
@@ -303,23 +313,26 @@ const HotelServicesList: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-50/30 to-white">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading services...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading craft services...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+        <div className="min-h-screen bg-gradient-to-b from-amber-50/30 to-white">
             <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-                        {getDisplayTitle()}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <span className="text-4xl">{getCategoryIcon()}</span>
+                        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
+                            {getDisplayTitle()}
+                        </h1>
+                    </div>
                     <Button variant="gradient-blue" size="md" onClick={handleAddPost}>
                         + Add Post
                     </Button>
@@ -341,12 +354,12 @@ const HotelServicesList: React.FC = () => {
                     <>
                         {services.length === 0 ? (
                             <div className="text-center py-20">
-                                <div className="text-6xl mb-4">🏨</div>
+                                <div className="text-6xl mb-4">{getCategoryIcon()}</div>
                                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                                     No Services Found
                                 </h3>
                                 <p className="text-gray-600">
-                                    Be the first to add a service in this category!
+                                    Be the first to add a craft service in this category!
                                 </p>
                             </div>
                         ) : (
@@ -354,7 +367,7 @@ const HotelServicesList: React.FC = () => {
                                 {services.map((service) => (
                                     <div
                                         key={service.id}
-                                        className="relative group bg-white rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-lg transition cursor-pointer overflow-hidden"
+                                        className="relative group bg-white rounded-xl border border-gray-200 hover:border-amber-500 hover:shadow-lg transition cursor-pointer overflow-hidden"
                                         onClick={() => handleView(service)}
                                     >
                                         {/* Dropdown */}
@@ -368,14 +381,14 @@ const HotelServicesList: React.FC = () => {
 
                                         {/* Service Badge */}
                                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                            <span>{service.hotelData?.icon || "🏨"}</span>
+                                            <span>{service.craftData?.icon || getCategoryIcon()}</span>
                                             <span>{service.category}</span>
                                         </div>
 
                                         {/* Image Placeholder */}
-                                        <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col items-center justify-center text-gray-400">
+                                        <div className="w-full h-48 bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col items-center justify-center text-gray-400">
                                             <span className="text-5xl mb-2">
-                                                {service.hotelData?.icon || "🏨"}
+                                                {service.craftData?.icon || getCategoryIcon()}
                                             </span>
                                             <span className="text-sm">No Image</span>
                                         </div>
@@ -392,28 +405,63 @@ const HotelServicesList: React.FC = () => {
                                                 {service.description}
                                             </p>
 
-                                            {service.hotelData?.pincode && (
+                                            {service.craftData?.pincode && (
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <span className="text-gray-400">📍</span>
                                                     <span className="text-gray-700">
-                                                        Pincode: {service.hotelData.pincode}
+                                                        Pincode: {service.craftData.pincode}
                                                     </span>
                                                 </div>
                                             )}
 
-                                            {service.hotelData?.status !== undefined && (
+                                            {service.craftData?.rating && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-amber-500">⭐</span>
+                                                    <span className="font-semibold text-gray-700">
+                                                        {service.craftData.rating.toFixed(1)}
+                                                    </span>
+                                                    {service.craftData.user_ratings_total && (
+                                                        <span className="text-gray-500">
+                                                            ({service.craftData.user_ratings_total} reviews)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {service.craftData?.status !== undefined && (
                                                 <div className="flex items-center gap-2">
                                                     <span
-                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.hotelData.status
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-red-100 text-red-800"
+                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.craftData.status
+                                                                ? "bg-green-100 text-green-800"
+                                                                : "bg-red-100 text-red-800"
                                                             }`}
                                                     >
                                                         <span className="mr-1">
-                                                            {service.hotelData.status ? "✓" : "✗"}
+                                                            {service.craftData.status ? "✓" : "✗"}
                                                         </span>
-                                                        {service.hotelData.status ? "Open" : "Closed"}
+                                                        {service.craftData.status ? "Available" : "Busy"}
                                                     </span>
+                                                </div>
+                                            )}
+
+                                            {/* Tags */}
+                                            {(service.craftData?.verified || service.craftData?.trending || service.craftData?.popular) && (
+                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                    {service.craftData.verified && (
+                                                        <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                                                            ✓ Verified
+                                                        </span>
+                                                    )}
+                                                    {service.craftData.trending && (
+                                                        <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
+                                                            🔥 Trending
+                                                        </span>
+                                                    )}
+                                                    {service.craftData.popular && (
+                                                        <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded">
+                                                            ⭐ Popular
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -428,4 +476,4 @@ const HotelServicesList: React.FC = () => {
     );
 };
 
-export default HotelServicesList;
+export default CraftServicesList;

@@ -1,25 +1,36 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
-    ChevronLeft,
-    ChevronRight,
     MapPin,
     Phone,
     Navigation,
+    ChevronLeft,
+    ChevronRight,
+    Star,
+    Clock,
     PartyPopper,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
 
-export interface PlayAreaService {
-    place_id: string;
-    name: string;
-    vicinity: string;
-    photos: { photo_reference: string }[];
-    geometry: {
-        location: { lat: number; lng: number };
+interface PlayArea {
+    id: string;
+    title: string;
+    description?: string;
+    location?: string;
+    distance?: number | string;
+    category?: string;
+    jobData?: {
+        rating?: number;
+        user_ratings_total?: number;
+        open_now?: boolean;
+        geometry?: { location: { lat: number; lng: number } };
+        special_tags?: string[];
     };
-    special_tags: string[];
-    distance: number;
+}
+
+interface Props {
+    job?: PlayArea;
+    onViewDetails: (job: PlayArea) => void;
 }
 
 /* ================= PHONE NUMBERS ================= */
@@ -28,29 +39,6 @@ const PHONE_NUMBERS_MAP: Record<string, string> = {
     playarea_1: "07942698318",
     playarea_2: "08106885233",
 };
-
-/* ================= DUMMY DATA ================= */
-
-export const DUMMY_PLAY_AREAS: PlayAreaService[] = [
-    {
-        place_id: "playarea_1",
-        name: "Come2Play - Kids Play Area & Party Zone",
-        vicinity: "Attapur, Hyderabad",
-        photos: [{ photo_reference: "1" }],
-        geometry: { location: { lat: 17.385, lng: 78.44 } },
-        special_tags: ["Trending", "Party Zone", "Kids Friendly"],
-        distance: 1.6,
-    },
-    {
-        place_id: "playarea_2",
-        name: "BVK's Gaming Zone - Kids Soft Play",
-        vicinity: "LB Nagar, Hyderabad",
-        photos: [{ photo_reference: "2" }],
-        geometry: { location: { lat: 17.352, lng: 78.552 } },
-        special_tags: ["Gaming Zone", "Birthday Parties"],
-        distance: 3.9,
-    },
-];
 
 /* ================= IMAGES ================= */
 
@@ -69,83 +57,120 @@ const PLAYAREA_IMAGES_MAP: Record<string, string[]> = {
 
 const PLAYAREA_DESCRIPTIONS: Record<string, string> = {
     playarea_1:
-        "Trending kids play area with party zone, soft play equipment, and safe indoor activities. Ideal for birthdays and family fun.",
+        "Trending kids play area with party zone, soft play equipment, and safe indoor activities. Ideal for birthdays.",
     playarea_2:
-        "Popular gaming and soft play zone for kids with arcade games, birthday party packages, and family-friendly environment.",
+        "Popular gaming and soft play zone with arcade games and birthday party packages.",
 };
 
-/* ================= COMPONENT ================= */
+const PLAYAREA_SERVICES = [
+    "Kids Friendly",
+    "Birthday Parties",
+    "Indoor Games",
+    "Safe Play Zone",
+];
 
-interface Props {
-    job?: any;
-    onViewDetails: (job: any) => void;
-}
+/* ================= DUMMY DATA ================= */
+
+export const DUMMY_PLAY_AREAS: PlayArea[] = [
+    {
+        id: "playarea_1",
+        title: "Come2Play - Kids Play Area & Party Zone",
+        location: "Attapur, Hyderabad",
+        distance: 1.6,
+        category: "Kids Play Area",
+        description: PLAYAREA_DESCRIPTIONS.playarea_1,
+        jobData: {
+            rating: 4.7,
+            user_ratings_total: 142,
+            open_now: true,
+            geometry: { location: { lat: 17.385, lng: 78.44 } },
+            special_tags: ["Trending", "Party Zone"],
+        },
+    },
+    {
+        id: "playarea_2",
+        title: "BVK's Gaming Zone - Kids Soft Play",
+        location: "LB Nagar, Hyderabad",
+        distance: 3.9,
+        category: "Kids Play Area",
+        description: PLAYAREA_DESCRIPTIONS.playarea_2,
+        jobData: {
+            rating: 4.5,
+            user_ratings_total: 98,
+            open_now: true,
+            geometry: { location: { lat: 17.352, lng: 78.552 } },
+            special_tags: ["Gaming Zone"],
+        },
+    },
+];
+
+/* ================= SINGLE CARD ================= */
 
 const SinglePlayAreaCard: React.FC<Props> = ({ job, onViewDetails }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [imageError, setImageError] = useState(false);
 
-    const photos = PLAYAREA_IMAGES_MAP[job.id] || [];
+    const photos = PLAYAREA_IMAGES_MAP[job!.id] || [];
     const currentPhoto = photos[currentImageIndex];
 
-    const handleCall = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            const phone = PHONE_NUMBERS_MAP[job.id];
-            if (phone) window.location.href = `tel:${phone}`;
-        },
-        [job]
-    );
+    const handleNext = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((p) => (p + 1) % photos.length);
+    };
 
-    const handleDirections = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            const { lat, lng } = job.jobData.geometry.location;
+    const handlePrev = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((p) => (p - 1 + photos.length) % photos.length);
+    };
+
+    const handleCall = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const phone = PHONE_NUMBERS_MAP[job!.id];
+        if (phone) window.location.href = `tel:${phone}`;
+    };
+
+    const handleDirections = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const loc = job!.jobData?.geometry?.location;
+        if (loc) {
             window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+                `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`,
                 "_blank"
             );
-        },
-        [job]
-    );
+        }
+    };
 
     return (
         <div
-            onClick={() => onViewDetails(job)}
-            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer mb-4"
+            onClick={() => onViewDetails(job!)}
+            className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer h-full flex flex-col"
         >
-            {/* IMAGE */}
-            <div className="relative h-48 bg-gray-100">
-                {currentPhoto && !imageError ? (
+            {/* IMAGE CAROUSEL */}
+            <div className="relative h-48 bg-gray-200 shrink-0">
+                {currentPhoto ? (
                     <>
                         <img
                             src={currentPhoto}
+                            alt={job!.title}
                             className="w-full h-full object-cover"
-                            onError={() => setImageError(true)}
                         />
-
-                        {currentImageIndex > 0 && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentImageIndex((p) => p - 1);
-                                }}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
-                            >
-                                <ChevronLeft size={20} />
-                            </button>
-                        )}
-
-                        {currentImageIndex < photos.length - 1 && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCurrentImageIndex((p) => p + 1);
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
-                            >
-                                <ChevronRight size={20} />
-                            </button>
+                        {photos.length > 1 && (
+                            <>
+                                <button
+                                    onClick={handlePrev}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <button
+                                    onClick={handleNext}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                    {currentImageIndex + 1}/{photos.length}
+                                </div>
+                            </>
                         )}
                     </>
                 ) : (
@@ -156,57 +181,84 @@ const SinglePlayAreaCard: React.FC<Props> = ({ job, onViewDetails }) => {
             </div>
 
             {/* CONTENT */}
-            <div className="p-3.5">
-                <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 line-clamp-2">
-                    {job.title}
-                </h3>
+            <div className="p-4 space-y-2 flex flex-col flex-grow">
+                <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
+                    {job!.title}
+                </h2>
 
-                <div className="flex items-center text-gray-500 mb-1">
-                    <MapPin size={14} className="mr-1" />
-                    <span className="text-[13px] line-clamp-1">{job.location}</span>
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <MapPin size={16} />
+                    <span className="line-clamp-1">{job!.location}</span>
                 </div>
 
-                <p className="text-xs font-semibold text-pink-600 mb-2">
-                    {job.distance} km away
+                <p className="text-xs font-semibold text-pink-600">
+                    {job!.distance} km away
                 </p>
 
-                {/* TAGS */}
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                    {job.jobData.special_tags.map((tag: string, i: number) => (
-                        <span
-                            key={i}
-                            className="bg-pink-100 text-pink-700 text-[10px] font-semibold px-2 py-0.5 rounded"
+                <p className="text-sm text-gray-600 line-clamp-3 mb-auto">
+                    {job!.description}
+                </p>
+
+                {/* RATING + STATUS */}
+                <div className="flex items-center gap-3 text-sm pt-2">
+                    {job!.jobData?.rating && (
+                        <div className="flex items-center gap-1">
+                            <Star className="fill-yellow-400 text-yellow-400" size={14} />
+                            <span className="font-semibold">
+                                {job!.jobData.rating.toFixed(1)}
+                            </span>
+                            <span className="text-gray-500">
+                                ({job!.jobData.user_ratings_total})
+                            </span>
+                        </div>
+                    )}
+                    {job!.jobData?.open_now !== undefined && (
+                        <div
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded ${job!.jobData.open_now
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                                }`}
                         >
-                            {tag}
-                        </span>
-                    ))}
+                            <Clock size={12} />
+                            <span className="text-xs font-semibold">
+                                {job!.jobData.open_now ? "Open" : "Closed"}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-                {/* DESCRIPTION */}
-                <p className="text-[13px] text-gray-600 mb-3 line-clamp-3">
-                    {PLAYAREA_DESCRIPTIONS[job.id]}
-                </p>
-
-                {/* CATEGORY */}
-                <div className="inline-flex items-center gap-1 bg-pink-100 text-pink-600 text-[11px] font-semibold px-2 py-1 rounded-xl mb-3">
-                    <PartyPopper size={14} />
-                    Kids Play Area
+                {/* SERVICES */}
+                <div className="pt-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                        Highlights:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {PLAYAREA_SERVICES.slice(0, 3).map((s, i) => (
+                            <span
+                                key={i}
+                                className="bg-pink-50 text-pink-600 px-2 py-1 rounded text-xs font-semibold"
+                            >
+                                ✓ {s}
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
                 {/* ACTIONS */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-4 mt-auto">
                     <button
                         onClick={handleDirections}
-                        className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold py-2.5 rounded-lg"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border-2 border-indigo-600 rounded-lg font-semibold"
                     >
-                        <Navigation size={14} /> Directions
+                        <Navigation size={16} />
+                        Directions
                     </button>
-
                     <button
                         onClick={handleCall}
-                        className="flex-1 flex items-center justify-center gap-1 border-2 border-pink-600 bg-pink-50 text-pink-600 text-xs font-bold py-2.5 rounded-lg"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 text-pink-700 border-2 border-pink-600 rounded-lg font-semibold"
                     >
-                        <Phone size={14} /> Call
+                        <Phone size={16} />
+                        Call
                     </button>
                 </div>
             </div>
@@ -219,20 +271,11 @@ const SinglePlayAreaCard: React.FC<Props> = ({ job, onViewDetails }) => {
 const NearbyPlayAreaCard: React.FC<Props> = ({ job, onViewDetails }) => {
     if (!job) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {DUMMY_PLAY_AREAS.map((p) => (
                     <SinglePlayAreaCard
-                        key={p.place_id}
-                        job={{
-                            id: p.place_id,
-                            title: p.name,
-                            location: p.vicinity,
-                            distance: p.distance,
-                            jobData: {
-                                geometry: p.geometry,
-                                special_tags: p.special_tags,
-                            },
-                        }}
+                        key={p.id}
+                        job={p}
                         onViewDetails={onViewDetails}
                     />
                 ))}

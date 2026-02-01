@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
-    ChevronLeft,
-    ChevronRight,
     MapPin,
     Phone,
     Navigation,
     Star,
     Clock,
+    ChevronLeft,
+    ChevronRight,
     CheckCircle,
 } from "lucide-react";
 
@@ -24,6 +24,19 @@ export interface SportsClubService {
     opening_hours: { open_now: boolean };
     special_tags: string[];
     distance: number;
+}
+
+interface SportsJob {
+    id: string;
+    title: string;
+    location: string;
+    distance: number;
+    jobData: SportsClubService;
+}
+
+interface NearbySportsCardProps {
+    job?: SportsJob;
+    onViewDetails: (job: SportsJob) => void;
 }
 
 /* ================= CONSTANTS ================= */
@@ -87,59 +100,45 @@ const SPORTS_IMAGES_MAP: Record<string, string[]> = {
 
 const SPORTS_DESCRIPTIONS_MAP: Record<string, string> = {
     sports_1:
-        "Popular football academy with professional coaching, modern facilities, and structured training programs for all age groups.",
+        "Popular football academy with professional coaching and structured training programs.",
     sports_2:
-        "Trending taekwondo academy with certified trainers, disciplined environment, and competition-level training.",
+        "Certified taekwondo academy with disciplined environment and competition-level training.",
     sports_3:
-        "Indoor badminton arena with premium courts, flexible timings, and coaching for beginners to professionals.",
+        "Indoor badminton arena with premium courts and flexible training schedules.",
 };
 
 const SPORTS_SERVICES = [
     "Professional Coaching",
-    "Modern Facilities",
+    "Indoor Courts",
     "Group Training",
     "Personal Training",
-    "Indoor Courts",
-    "Tournament Support",
 ];
 
-/* ================= COMPONENT ================= */
+/* ================= SINGLE CARD ================= */
 
-interface NearbySportsCardProps {
-    job?: any;
-    onViewDetails: (job: any) => void;
-}
-
-const SingleSportsCard: React.FC<NearbySportsCardProps> = ({
-    job,
-    onViewDetails,
-}) => {
+const SingleSportsCard: React.FC<{
+    job: SportsJob;
+    onViewDetails: (job: SportsJob) => void;
+}> = ({ job, onViewDetails }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [imageError, setImageError] = useState(false);
 
-    const getPhotos = useCallback(() => {
-        const id = job?.id || "sports_1";
-        return SPORTS_IMAGES_MAP[id] || SPORTS_IMAGES_MAP["sports_1"];
-    }, [job]);
-
-    const photos = getPhotos();
+    const photos = SPORTS_IMAGES_MAP[job.id] || [];
     const currentPhoto = photos[currentImageIndex];
-
-    const handlePrev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrentImageIndex((p) => Math.max(0, p - 1));
-    };
 
     const handleNext = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setCurrentImageIndex((p) => Math.min(photos.length - 1, p + 1));
+        setCurrentImageIndex((p) => (p + 1) % photos.length);
+    };
+
+    const handlePrev = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentImageIndex((p) => (p - 1 + photos.length) % photos.length);
     };
 
     const handleCall = (e: React.MouseEvent) => {
         e.stopPropagation();
         const phone = PHONE_NUMBERS_MAP[job.id];
-        if (!phone) return alert("Phone number not available");
-        window.location.href = `tel:${phone}`;
+        if (phone) window.location.href = `tel:${phone}`;
     };
 
     const handleDirections = (e: React.MouseEvent) => {
@@ -151,140 +150,135 @@ const SingleSportsCard: React.FC<NearbySportsCardProps> = ({
         );
     };
 
-    if (!job) return null;
-
     return (
         <div
             onClick={() => onViewDetails(job)}
-            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer hover:scale-[0.99] mb-4"
+            className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer flex flex-col overflow-hidden"
         >
             {/* Image Carousel */}
-            <div className="relative h-48 bg-gray-100">
-                {!imageError ? (
-                    <img
-                        src={currentPhoto}
-                        className="w-full h-full object-cover"
-                        onError={() => setImageError(true)}
-                    />
-                ) : (
-                    <div className="flex items-center justify-center h-full text-6xl">
-                        ⚽
-                    </div>
-                )}
-
-                {photos.length > 1 && (
+            <div className="relative h-48 bg-gray-200 shrink-0">
+                {currentPhoto ? (
                     <>
-                        {currentImageIndex > 0 && (
-                            <button
-                                onClick={handlePrev}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full text-white"
-                            >
-                                <ChevronLeft size={18} />
-                            </button>
-                        )}
-                        {currentImageIndex < photos.length - 1 && (
-                            <button
-                                onClick={handleNext}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 p-2 rounded-full text-white"
-                            >
-                                <ChevronRight size={18} />
-                            </button>
+                        <img
+                            src={currentPhoto}
+                            alt={job.title}
+                            className="w-full h-full object-cover"
+                        />
+                        {photos.length > 1 && (
+                            <>
+                                <button
+                                    onClick={handlePrev}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <button
+                                    onClick={handleNext}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                    {currentImageIndex + 1}/{photos.length}
+                                </div>
+                            </>
                         )}
                     </>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-5xl">
+                        ⚽
+                    </div>
                 )}
             </div>
 
             {/* Content */}
-            <div className="p-3.5">
-                <h3 className="text-[17px] font-bold text-gray-900 mb-1.5 line-clamp-2">
+            <div className="p-4 space-y-2 flex flex-col flex-grow">
+                <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
                     {job.title}
-                </h3>
+                </h2>
 
-                <div className="flex items-center text-gray-500 mb-1 text-[13px]">
-                    <MapPin size={14} className="mr-1" />
-                    {job.location}
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <MapPin size={16} />
+                    <span className="line-clamp-1">{job.location}</span>
                 </div>
 
-                <p className="text-xs font-semibold text-cyan-600 mb-2">
+                <p className="text-xs font-semibold text-green-600">
                     {job.distance} km away
                 </p>
 
                 {/* Tags */}
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                    {job.jobData.special_tags.map((tag: string, i: number) => (
+                <div className="flex flex-wrap gap-1">
+                    {job.jobData.special_tags.map((tag, i) => (
                         <span
                             key={i}
-                            className="bg-cyan-100 text-cyan-700 text-[10px] font-semibold px-2 py-0.5 rounded"
+                            className="bg-cyan-100 text-cyan-700 text-xs font-semibold px-2 py-0.5 rounded"
                         >
                             {tag}
                         </span>
                     ))}
                 </div>
 
-                {/* Description */}
-                <p className="text-[13px] text-gray-600 mb-2.5 line-clamp-3">
+                <p className="text-sm text-gray-600 line-clamp-3 mb-auto">
                     {SPORTS_DESCRIPTIONS_MAP[job.id]}
                 </p>
 
-                {/* Category */}
-                <div className="inline-flex items-center gap-1 bg-cyan-100 text-cyan-700 text-[11px] font-semibold px-2 py-1 rounded-xl mb-2">
-                    🏏 Sports Club
-                </div>
-
                 {/* Rating & Status */}
-                <div className="flex items-center gap-2 mb-2.5">
-                    <Star size={13} className="text-yellow-400 fill-yellow-400" />
-                    <span className="text-[13px] font-semibold">
-                        {job.jobData.rating}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                        ({job.jobData.user_ratings_total})
-                    </span>
+                <div className="flex items-center gap-3 text-sm pt-1">
+                    <div className="flex items-center gap-1">
+                        <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                        <span className="font-semibold">
+                            {job.jobData.rating.toFixed(1)}
+                        </span>
+                        <span className="text-gray-500">
+                            ({job.jobData.user_ratings_total})
+                        </span>
+                    </div>
 
-                    <span
-                        className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded ${job.jobData.opening_hours.open_now
+                    <div
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded ${job.jobData.opening_hours.open_now
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
                             }`}
                     >
-                        <Clock size={11} />
-                        {job.jobData.opening_hours.open_now ? "Open Now" : "Closed"}
-                    </span>
+                        <Clock size={12} />
+                        <span className="text-xs font-semibold">
+                            {job.jobData.opening_hours.open_now ? "Open" : "Closed"}
+                        </span>
+                    </div>
                 </div>
 
                 {/* Services */}
-                <div className="mb-3">
-                    <p className="text-[10px] font-bold text-gray-500 mb-1">
-                        SERVICES:
+                <div className="pt-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">
+                        Services:
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
-                        {SPORTS_SERVICES.slice(0, 4).map((s, i) => (
+                    <div className="flex flex-wrap gap-2">
+                        {SPORTS_SERVICES.map((service, i) => (
                             <span
                                 key={i}
-                                className="inline-flex items-center gap-1 bg-cyan-100 text-cyan-700 text-[11px] px-2 py-1 rounded"
+                                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs"
                             >
-                                <CheckCircle size={11} />
-                                {s}
+                                <CheckCircle size={12} />
+                                {service}
                             </span>
                         ))}
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
+                {/* Buttons */}
+                <div className="flex gap-2 pt-4 mt-auto">
                     <button
                         onClick={handleDirections}
-                        className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold py-2.5 rounded-lg"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border-2 border-indigo-600 rounded-lg font-semibold"
                     >
-                        <Navigation size={14} />
+                        <Navigation size={16} />
                         Directions
                     </button>
-
                     <button
                         onClick={handleCall}
-                        className="flex-1 flex items-center justify-center gap-1 border-2 border-cyan-600 bg-cyan-50 text-cyan-700 text-xs font-bold py-2.5 rounded-lg"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-50 text-cyan-700 border-2 border-cyan-600 rounded-lg font-semibold"
                     >
-                        <Phone size={14} />
+                        <Phone size={16} />
                         Call
                     </button>
                 </div>
@@ -298,26 +292,30 @@ const SingleSportsCard: React.FC<NearbySportsCardProps> = ({
 const NearbySportsCard: React.FC<NearbySportsCardProps> = (props) => {
     if (!props.job) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-                {DUMMY_SPORTS_CLUBS.map((club) => (
-                    <SingleSportsCard
-                        key={club.place_id}
-                        job={{
-                            id: club.place_id,
-                            title: club.name,
-                            location: club.vicinity,
-                            distance: club.distance,
-                            jobData: club,
-                        }}
-                        onViewDetails={props.onViewDetails}
-                    />
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {props.job === undefined &&
+                    DUMMY_SPORTS_CLUBS.map((club) => (
+                        <SingleSportsCard
+                            key={club.place_id}
+                            job={{
+                                id: club.place_id,
+                                title: club.name,
+                                location: club.vicinity,
+                                distance: club.distance,
+                                jobData: club,
+                            }}
+                            onViewDetails={props.onViewDetails}
+                        />
+                    ))}
             </div>
         );
     }
 
     return (
-        <SingleSportsCard job={props.job} onViewDetails={props.onViewDetails} />
+        <SingleSportsCard
+            job={props.job}
+            onViewDetails={props.onViewDetails}
+        />
     );
 };
 

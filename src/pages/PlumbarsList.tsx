@@ -3,37 +3,47 @@ import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
-// Import existing hotel/travel card components
-import NearbyHotelsCard from "../components/cards/Hotel/NearByHotel";
-import NearbyResortsCard from "../components/cards/Hotel/NearByResort";
-import NearbyLodgesCard from "../components/cards/Hotel/NearByLodge";
-import NearbyGuestHouseCard from "../components/cards/Hotel/NearByGuestHouse";
-import NearbyTravelCard from "../components/cards/Hotel/NearByTravel";
-import NearbyTaxiServiceCard from "../components/cards/Hotel/NearByTaxiService";
-import NearbyTrainServiceCard from "../components/cards/Hotel/NearByTrains";
-import NearbyBusServiceCard from "../components/cards/Hotel/NearByBuses";
-import NearbyVehicleCard from "../components/cards/Hotel/NearByBikeCard";
+// Import plumber card components
+import PlumberCard from "../components/cards/Plumbers/NearByPlumbars";
+import ElectricianCard from "../components/cards/Plumbers/NearByElectricianCard";
+import PainterCard from "../components/cards/Plumbers/NearByPaintersCard";
+import CarpenterCard from "../components/cards/Plumbers/NearByCarpenterCard";
+import ACServiceCard from "../components/cards/Plumbers/NearByAcService";
 
-export interface HotelType {
+import FridgeServiceCard from "../components/cards/Plumbers/NearByFridgeRepair";
+import WashingMachineServiceCard from "../components/cards/Plumbers/NearByWashingMachineRepair";
+import GasStoveServiceCard from "../components/cards/Plumbers/NearByGasRepairServiceCard";
+import ROWaterPurifierServiceCard from "../components/cards/Plumbers/NearByWaterPurifier";
+import NearbySolarServiceCard from "../components/cards/Plumbers/NearBySolarService";
+
+export interface PlumberServiceType {
     id: string;
     title: string;
     location: string;
     description: string;
     distance?: number;
     category: string;
-    hotelData?: {
-        status: boolean;
-        pincode: string;
-        icon: string;
+    serviceData?: {
         rating?: number;
         user_ratings_total?: number;
         opening_hours?: { open_now: boolean };
         geometry?: { location: { lat: number; lng: number } };
         phone?: string;
         photos?: string[];
-        price_per_night?: string;
-        amenities?: string[];
-        special_tags?: string[];
+        verified?: boolean;
+        trending?: boolean;
+        response_time?: string;
+        is_verified?: boolean;
+        is_trending?: boolean;
+        is_popular?: boolean;
+        is_responsive?: boolean;
+        is_top_rated?: boolean;
+        is_trust?: boolean;
+        is_top_search?: boolean;
+        yearsInBusiness?: number;
+        startingPrice?: string;
+        suggestions?: number;
+        suggestion_text?: string;
     };
 }
 
@@ -93,21 +103,21 @@ const ActionDropdown: React.FC<{
     );
 };
 
-const HotelServicesList: React.FC = () => {
+const PlumberServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<HotelType[]>([]);
+    const [services, setServices] = useState<PlumberServiceType[]>([]);
     const [loading] = useState(false);
     const [error] = useState("");
 
-    const handleView = (hotel: any) => {
-        navigate(`/hotel-services/details/${hotel.id}`);
+    const handleView = (service: any) => {
+        navigate(`/plumber-services/details/${service.id}`);
     };
 
     const handleEdit = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        navigate(`/add-hotel-service-form/${id}`);
+        navigate(`/add-plumber-service-form/${id}`);
     };
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -124,11 +134,11 @@ const HotelServicesList: React.FC = () => {
     };
 
     const handleAddPost = () => {
-        navigate("/add-hotel-service-form");
+        navigate("/add-plumber-service-form");
     };
 
     const getDisplayTitle = () => {
-        if (!subcategory) return "All Hotel & Travel Services";
+        if (!subcategory) return "All Plumber & Home Repair Services";
         return subcategory
             .split("-")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -157,66 +167,99 @@ const HotelServicesList: React.FC = () => {
 
         const normalized = normalizeSubcategory(subcategory);
 
-        // ✅ HOTELS MATCHING
-        if (normalized.includes("hotel") && !normalized.includes("resort")) {
-            console.log("✅ Matched to NearbyHotelsCard");
-            return NearbyHotelsCard;
-        }
-
-        // ✅ RESORTS MATCHING
-        if (normalized.includes("resort")) {
-            console.log("✅ Matched to NearbyResortsCard");
-            return NearbyResortsCard;
-        }
-
-        // ✅ LODGES MATCHING
-        if (normalized.includes("lodge")) {
-            console.log("✅ Matched to NearbyLodgesCard");
-            return NearbyLodgesCard;
-        }
-
-        // ✅ GUEST HOUSES MATCHING
+        // ✅ PLUMBERS MATCHING
         if (
-            normalized.includes("guest") && normalized.includes("house") ||
-            normalized.includes("guesthouse")
+            normalized.includes("plumber") ||
+            normalized === "plumbing" ||
+            normalized === "plumbing-services"
         ) {
-            console.log("✅ Matched to NearbyGuestHouseCard");
-            return NearbyGuestHouseCard;
+            console.log("✅ Matched to PlumberCard");
+            return PlumberCard;
         }
 
-        // ✅ TRAVEL AGENCIES MATCHING
+        // ✅ ELECTRICIANS MATCHING
         if (
-            normalized.includes("travel") && (
-                normalized.includes("agenc") ||
-                normalized.includes("package") ||
-                normalized.includes("tour")
-            )
+            normalized.includes("electrician") ||
+            normalized === "electrical" ||
+            normalized === "electrical-services"
         ) {
-            console.log("✅ Matched to NearbyTravelCard");
-            return NearbyTravelCard;
+            console.log("✅ Matched to ElectricianCard");
+            return ElectricianCard;
         }
 
-        // ✅ TAXI SERVICES MATCHING
-        if (normalized.includes("taxi")) {
-            console.log("✅ Matched to NearbyTaxiServiceCard");
-            return NearbyTaxiServiceCard;
+        // ✅ PAINTERS MATCHING
+        if (
+            normalized.includes("painter") ||
+            normalized.includes("painting") ||
+            normalized === "painting-contractors"
+        ) {
+            console.log("✅ Matched to PainterCard");
+            return PainterCard;
         }
 
-        // ✅ TRAIN TICKET BOOKING MATCHING
-        if (normalized.includes("train")) {
-            console.log("✅ Matched to NearbyTrainServiceCard");
-            return NearbyTrainServiceCard;
+        // ✅ CARPENTERS MATCHING
+        if (normalized.includes("carpenter")) {
+            console.log("✅ Matched to CarpenterCard");
+            return CarpenterCard;
         }
 
-        // ✅ BUS TICKET BOOKING MATCHING
-        if (normalized.includes("bus")) {
-            console.log("✅ Matched to NearbyBusServiceCard");
-            return NearbyBusServiceCard;
+        // ✅ AC REPAIR MATCHING
+        if (
+            normalized.includes("ac") && normalized.includes("repair") ||
+            normalized === "ac-repair" ||
+            normalized === "ac-service"
+        ) {
+            console.log("✅ Matched to ACServiceCard");
+            return ACServiceCard;
         }
 
-        if (normalized.includes("vehicle") && normalized.includes("rental")) {
-            console.log("✅ Matched to NearbyVehicleCard");
-            return NearbyVehicleCard;
+        // ✅ FRIDGE REPAIR MATCHING
+        if (
+            normalized.includes("fridge") ||
+            normalized.includes("refrigerator") ||
+            normalized === "fridge-repair"
+        ) {
+            console.log("✅ Matched to FridgeServiceCard");
+            return FridgeServiceCard;
+        }
+
+        // ✅ WASHING MACHINE MATCHING
+        if (
+            normalized.includes("washing") && normalized.includes("machine") ||
+            normalized === "washing-machine-repair"
+        ) {
+            console.log("✅ Matched to WashingMachineServiceCard");
+            return WashingMachineServiceCard;
+        }
+
+        // ✅ GAS STOVE MATCHING
+        if (
+            normalized.includes("gas") && normalized.includes("stove") ||
+            normalized === "gas-stove-repair"
+        ) {
+            console.log("✅ Matched to GasStoveServiceCard");
+            return GasStoveServiceCard;
+        }
+
+        // ✅ WATER PURIFIER MATCHING
+        if (
+            normalized.includes("water") && normalized.includes("purifier") ||
+            normalized.includes("ro") ||
+            normalized === "ro-service" ||
+            normalized === "water-purifier-service"
+        ) {
+            console.log("✅ Matched to ROWaterPurifierServiceCard");
+            return ROWaterPurifierServiceCard;
+        }
+
+        // ✅ SOLAR PANEL MATCHING
+        if (
+            normalized.includes("solar") ||
+            normalized === "solar-panel-installation" ||
+            normalized === "solar-installation"
+        ) {
+            console.log("✅ Matched to NearbySolarServiceCard");
+            return NearbySolarServiceCard;
         }
 
         console.warn(`⚠️ No matching card component for: "${subcategory}"`);
@@ -231,17 +274,23 @@ const HotelServicesList: React.FC = () => {
 
         // Check if any of the keywords match
         const keywords = [
-            "hotel",
-            "resort",
-            "lodge",
-            "guest",
-            "travel",
-            "taxi",
-            "train",
-            "bus",
-            "bike",
-            "car",
-            "rental",
+            "plumber",
+            "electrician",
+            "painter",
+            "ac",
+            "fridge",
+            "refrigerator",
+            "washing",
+            "machine",
+            "gas",
+            "stove",
+            "water",
+            "purifier",
+            "ro",
+            "solar",
+            "carpenter",
+            "repair",
+            "service",
         ];
 
         const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
@@ -265,7 +314,7 @@ const HotelServicesList: React.FC = () => {
                 {/* Nearby Card Components - renders built-in dummy data */}
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        🏨 Nearby {getDisplayTitle()}
+                        🔧 Nearby {getDisplayTitle()}
                     </h2>
                     <CardComponent onViewDetails={handleView} />
                 </div>
@@ -276,7 +325,7 @@ const HotelServicesList: React.FC = () => {
                         <div className="my-8 flex items-center gap-4">
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                             <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                🏨 Your Listed Services ({services.length})
+                                🔧 Your Listed Services ({services.length})
                             </span>
                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                         </div>
@@ -284,7 +333,7 @@ const HotelServicesList: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {services.map((service) => (
                                 <div key={service.id} className="relative">
-                                    <CardComponent job={service} onViewDetails={handleView} />
+                                    <CardComponent plumber={service} onViewDetails={handleView} />
                                     <div className="absolute top-3 right-3 z-10">
                                         <ActionDropdown
                                             serviceId={service.id}
@@ -341,7 +390,7 @@ const HotelServicesList: React.FC = () => {
                     <>
                         {services.length === 0 ? (
                             <div className="text-center py-20">
-                                <div className="text-6xl mb-4">🏨</div>
+                                <div className="text-6xl mb-4">🔧</div>
                                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                                     No Services Found
                                 </h3>
@@ -368,15 +417,13 @@ const HotelServicesList: React.FC = () => {
 
                                         {/* Service Badge */}
                                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                            <span>{service.hotelData?.icon || "🏨"}</span>
+                                            <span>🔧</span>
                                             <span>{service.category}</span>
                                         </div>
 
                                         {/* Image Placeholder */}
                                         <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="text-5xl mb-2">
-                                                {service.hotelData?.icon || "🏨"}
-                                            </span>
+                                            <span className="text-5xl mb-2">🔧</span>
                                             <span className="text-sm">No Image</span>
                                         </div>
 
@@ -392,27 +439,41 @@ const HotelServicesList: React.FC = () => {
                                                 {service.description}
                                             </p>
 
-                                            {service.hotelData?.pincode && (
+                                            {service.distance && (
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <span className="text-gray-400">📍</span>
-                                                    <span className="text-gray-700">
-                                                        Pincode: {service.hotelData.pincode}
+                                                    <span className="text-blue-600 font-semibold">
+                                                        {service.distance} km away
                                                     </span>
                                                 </div>
                                             )}
 
-                                            {service.hotelData?.status !== undefined && (
+                                            {service.serviceData?.rating && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-yellow-500">⭐</span>
+                                                    <span className="font-semibold">
+                                                        {service.serviceData.rating}
+                                                    </span>
+                                                    {service.serviceData.user_ratings_total && (
+                                                        <span className="text-gray-500 text-sm">
+                                                            ({service.serviceData.user_ratings_total})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {service.serviceData?.opening_hours?.open_now !== undefined && (
                                                 <div className="flex items-center gap-2">
                                                     <span
-                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.hotelData.status
+                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.serviceData.opening_hours.open_now
                                                             ? "bg-green-100 text-green-800"
                                                             : "bg-red-100 text-red-800"
                                                             }`}
                                                     >
                                                         <span className="mr-1">
-                                                            {service.hotelData.status ? "✓" : "✗"}
+                                                            {service.serviceData.opening_hours.open_now ? "✓" : "✗"}
                                                         </span>
-                                                        {service.hotelData.status ? "Open" : "Closed"}
+                                                        {service.serviceData.opening_hours.open_now ? "Open Now" : "Closed"}
                                                     </span>
                                                 </div>
                                             )}
@@ -428,4 +489,4 @@ const HotelServicesList: React.FC = () => {
     );
 };
 
-export default HotelServicesList;
+export default PlumberServicesList;

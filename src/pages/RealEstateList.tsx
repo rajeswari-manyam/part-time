@@ -177,18 +177,18 @@ const RealEstateList: React.FC = () => {
     const shouldShowNearbyCards = () =>
         [
             "property-dealers",
-            "builders",
+            "builders developers",
             "architects",
             "interior-designers",
-            "rent",
-            "construction",
+            "rent lease listings",
+            "construction contractors",
         ].includes(subcategory || "");
 
     const renderNearbyCardsSection = () => {
         const cardMap: Record<string, React.ComponentType<any>> = {
             "property-dealers": NearbyPropertyDealersCard,
-            builders: NearbyBuildersCard,
-        
+            "builders developers": NearbyBuildersCard,
+          
         };
 
         const CardComponent = subcategory ? cardMap[subcategory] : null;

@@ -199,14 +199,12 @@ const FoodServicesList: React.FC = () => {
             "bakeries",
             "cafes",
             "ice-cream-parlours",
-            "juice-smoothie-shops",
+            "juice-shops",
             "restaurants",
             "street-food",
             "sweet-shops",
-            "mess-tiffin-services",
-            "tiffin-services",
-            "tiffin",
-            "mess",
+            "mess-services",
+            "food-delivery",
             "catering-services",
             "catering",
         ];
@@ -222,16 +220,14 @@ const FoodServicesList: React.FC = () => {
             "bakeries": NearbyBakersCard,
             "cafes": NearbyCafes,
             "ice-cream-parlours": NearbyIceCreamCard,
-            "juice-smoothie-shops": NearbyJuiceCard,
+            "juice-shops": NearbyJuiceCard,
             "restaurants": NearbyRestaurants,
             "street-food": NearbyStreetFoodCard,
             "sweet-shops": NearbySweetShopCard,
 
             // Tiffin services - all possible variations
-            "mess-tiffin-services": NearbyTiffinServiceCard,
-            "tiffin-services": NearbyTiffinServiceCard,
-            "tiffin": NearbyTiffinServiceCard,
-            "mess": NearbyTiffinServiceCard,
+            "mess-services": NearbyTiffinServiceCard,
+            "food-delivery": NearbyTiffinServiceCard,
 
             // Catering services - all possible variations  
             "catering-services": NearbyCateringService,
