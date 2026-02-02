@@ -21,6 +21,7 @@ import {
     EVENT_SUBCATEGORIES,
     COURIER_SUBCATEGORIES,
     INDUSTRIAL_CATEGORY_MAP,
+    isIndustrialSubcategory,
     SPORTS_SUBCATEGORIES,
     AGRICULTURE_SUBCATEGORIES,
     ART_SERVICE_SUBCATEGORIES,
@@ -28,6 +29,8 @@ import {
     WEDDING_SUBCATEGORIES,
     CORPORATE_SUBCATEGORIES,
     PLUMBERS_SUBCATEGORIES,
+    HOME_PERSONAL_CATEGORY_MAP,
+    HOME_PERSONAL_SUBCATEGORIES,
 } from "../utils/SubCategories";
 import { HOVER_BG, ACTIVE_TAB } from "../styles/colors";
 
@@ -95,9 +98,58 @@ const CategoryPage: React.FC = () => {
         console.log("🔍 Slug:", slug);
         console.log("🔍 Slug with dash:", slugWithDash);
 
-        // ✅ PRIORITY: Check if this is a wedding/traditional service subcategory FIRST
-        // This must come early to prevent false matches with PLACE_SUBCATEGORIES or WORKER_SUBCATEGORIES
-        if (WEDDING_SUBCATEGORIES.includes(slug) || WEDDING_SUBCATEGORIES.includes(slugWithDash)) {
+        // Helper function to check if subcategory matches HOME_PERSONAL services
+        const isHomePersonalService = (searchSlug: string): boolean => {
+            // First check direct match in HOME_PERSONAL_SUBCATEGORIES array
+            const directMatch = HOME_PERSONAL_SUBCATEGORIES.some(sub => {
+                const subNormalized = sub.toLowerCase().replace(/\s+/g, "-");
+                return searchSlug === subNormalized ||
+                    searchSlug.includes(subNormalized) ||
+                    subNormalized.includes(searchSlug);
+            });
+
+            if (directMatch) {
+                console.log(`✅ Direct match in HOME_PERSONAL_SUBCATEGORIES`);
+                return true;
+            }
+
+            // Then check variants in HOME_PERSONAL_CATEGORY_MAP
+            // The map uses dash-separated keys like "maid-services", "cook-services" etc.
+            for (const [mainCategory, variants] of Object.entries(HOME_PERSONAL_CATEGORY_MAP)) {
+                // Check if the search slug matches the main category key
+                const mainCategoryMatch = searchSlug === mainCategory ||
+                    searchSlug.includes(mainCategory) ||
+                    mainCategory.includes(searchSlug);
+
+                if (mainCategoryMatch) {
+                    console.log(`✅ Matched to home-personal main category key: ${mainCategory}`);
+                    return true;
+                }
+
+                // Check if the search slug matches any variant
+                const matchFound = variants.some(variant => {
+                    const variantNormalized = variant.toLowerCase().replace(/\s+/g, "-");
+                    return searchSlug === variantNormalized ||
+                        searchSlug.includes(variantNormalized) ||
+                        variantNormalized.includes(searchSlug);
+                });
+
+                if (matchFound) {
+                    console.log(`✅ Matched to home-personal category variant: ${mainCategory}`);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // ✅ PRIORITY 1: Check if this is a home & personal service subcategory
+        // This should come early to catch all variations
+        if (isHomePersonalService(slugWithDash) || isHomePersonalService(slug)) {
+            console.log("✅ Navigating to home-personal-services");
+            navigate(`/home-personal/${slugWithDash}`);
+        }
+        // ✅ PRIORITY 2: Check if this is a wedding/traditional service subcategory
+        else if (WEDDING_SUBCATEGORIES.includes(slug) || WEDDING_SUBCATEGORIES.includes(slugWithDash)) {
             console.log("✅ Navigating to wedding services");
             navigate(`/wedding-services/${slugWithDash}`);
         }
@@ -165,7 +217,7 @@ const CategoryPage: React.FC = () => {
             navigate(`/real-estate/${slugWithDash}`);
         }
         // Check if this is an industrial subcategory
-        else if (INDUSTRIAL_CATEGORY_MAP[slug] || INDUSTRIAL_CATEGORY_MAP[slugWithDash]) {
+        else if (isIndustrialSubcategory(slug) || isIndustrialSubcategory(slugWithDash)) {
             console.log("✅ Navigating to industrial services");
             navigate(`/industrial-services/${slugWithDash}`);
         }

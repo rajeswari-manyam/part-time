@@ -24,6 +24,7 @@ import SportsIcon from "../../assets/icons/Sports.png";
 import TechIcon from "../../assets/icons/Tech.png";
 import TravelIcon from "../../assets/icons/Travel.png";
 import WeddingIcon from "../../assets/icons/Wedding.png";
+import HomeIcon from "../../assets/icons/Home.png";
 
 export const categories: Category[] = [
     {
@@ -82,69 +83,69 @@ export const categories: Category[] = [
     },
     {
         id: "10",
+        name: "Home & Personal Services",
+        icon: HomeIcon,
+        link: "/home",
+    },
+    {
+        id: "11",
         name: "Business Services",
         icon: BusinessIcon,
         link: "/business",
     },
     {
-        id: "11",
+        id: "12",
         name: "Tech & Digital",
         icon: TechIcon,
         link: "/tech",
     },
     {
-        id: "12",
+        id: "13",
         name: "Pet Services",
         icon: PetIcon,
         link: "/pets",
     },
     {
-        id: "13",
+        id: "14",
         name: "Events & Entertainment",
         icon: EventsIcon,
         link: "/events",
     },
     {
-        id: "14",
+        id: "15",
         name: "Industrial Services",
         icon: IndustrialIcon,
         link: "/industrial",
     },
     {
-        id: "15",
+        id: "16",
         name: "Courier & Logistics",
         icon: CourierIcon,
         link: "/courier",
     },
     {
-        id: "16",
+        id: "17",
         name: "Daily Wage Labour",
         icon: DailyWagesIcon,
         link: "/labour",
     },
     {
-        id: "17",
+        id: "18",
         name: "Agriculture & Farming",
         icon: AgricultureIcon,
         link: "/agriculture",
     },
     {
-        id: "18",
+        id: "19",
         name: "Corporate Services",
         icon: CorporativeIcon,
         link: "/corporate",
     },
     {
-        id: "19",
+        id: "20",
         name: "Creative & Art",
         icon: CreativeIcon,
         link: "/creative",
-    },
-    {
-        id: "20",
-        name: "Wedding Services",
-        icon: WeddingIcon,
-        link: "/wedding",
     },
     {
         id: "21",

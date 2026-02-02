@@ -5,7 +5,7 @@ import { MapPin, ArrowLeft } from "lucide-react";
 import {
     getAutomotiveById,
     AutomotiveService,
-} from "../services/CategoriesApi.service";
+} from "../services/AutomotiveServcie.service";
 import Button from "../components/ui/Buttons";
 import typography, { combineTypography } from "../styles/typography";
 

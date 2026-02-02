@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createAutomotive, updateAutomotive, getAutomotiveById, CreateAutomotiveData } from '../services/CategoriesApi.service';
+import { createAutomotive, updateAutomotive, getAutomotiveById, CreateAutomotiveData } from '../services/AutomotiveServcie.service';
 import Button from "../components/ui/Buttons";
 import { typography } from "../styles/typography";
 
@@ -399,9 +399,9 @@ const AutomotiveForm = () => {
 
                     {/* Location */}
                     <div className="space-y-4">
-                      
-                        
-                      
+
+
+
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -452,7 +452,7 @@ const AutomotiveForm = () => {
                                 />
                             </div>
                         </div>
-                            <div className="flex items-center justify-end border-b pb-2">
+                        <div className="flex items-center justify-end border-b pb-2">
                             <Button
                                 variant="success"
                                 size="md"
@@ -468,14 +468,14 @@ const AutomotiveForm = () => {
                                     <>📍 Use Current Location</>
                                 )}
                             </Button>
-                                  {formData.latitude && formData.longitude && (
-                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
-                                <span className="font-semibold text-green-700">✓ Location detected:</span>
-                                <span className="text-green-600 ml-2">
-                                    {formData.latitude}, {formData.longitude}
-                                </span>
-                            </div>
-                        )}
+                            {formData.latitude && formData.longitude && (
+                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+                                    <span className="font-semibold text-green-700">✓ Location detected:</span>
+                                    <span className="text-green-600 ml-2">
+                                        {formData.latitude}, {formData.longitude}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         <p className={`${typography.body.xs} text-gray-500 italic`}>
                             💡 Tip: Click "Use Current Location" to auto-detect your location, or enter your address manually.

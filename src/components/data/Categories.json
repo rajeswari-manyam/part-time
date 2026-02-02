@@ -356,10 +356,7 @@
           "name": "Builders Developers",
           "icon": "🏗️"
         },
-        {
-          "name": "Architect Services",
-          "icon": "📐"
-        },
+      
         {
           "name": "Interior Designers",
           "icon": "🛋️"
@@ -550,14 +547,7 @@
           "name": "Laundry Services",
           "icon": "🧺"
         },
-        {
-          "name": "Dry Cleaning",
-          "icon": "👔"
-        },
-        {
-          "name": "House Cleaning",
-          "icon": "🏠"
-        },
+        
         {
           "name": "House Keeping Services",
           "icon": "🧽"
@@ -565,10 +555,6 @@
         {
           "name": "Water Can Supply",
           "icon": "🚰"
-        },
-        {
-          "name": "Gas Delivery",
-          "icon": "🔥"
         }
       ]
     },

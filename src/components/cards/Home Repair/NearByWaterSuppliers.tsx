@@ -30,7 +30,62 @@ const PHONE_NUMBERS: Record<string, string> = {
 };
 
 const SUPPLIERS: Supplier[] = [
-  // same data as your original SUPPLIERS array
+  {
+    id: "supplier_1",
+    name: "Aqua Pure Water Supply",
+    description: "Premium quality mineral water supply for homes and offices. prompt delivery guaranteed.",
+    location: "Koramangala, Bangalore",
+    distance: 1.2,
+    rating: 4.8,
+    totalRatings: 156,
+    isTrending: true,
+    isVerified: true,
+    services: ["20L Cans", "1L Bottles", "Water Dispensers"],
+    photos: [
+      "https://images.unsplash.com/photo-1543165796-5426273eaab3?w=800",
+      "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=800"
+    ]
+  },
+  {
+    id: "supplier_2",
+    name: "Gangotri Water Services",
+    description: "Reliable water can delivery service. We supply ISI marked water cans.",
+    location: "HSR Layout, Bangalore",
+    distance: 3.5,
+    rating: 4.5,
+    totalRatings: 89,
+    isVerified: true,
+    services: ["20L Cans", "Bulk Orders", "Party Orders"],
+    photos: [
+      "https://images.unsplash.com/photo-1616118132534-381148898bb4?w=800"
+    ]
+  },
+  {
+    id: "supplier_3",
+    name: "Fresh Drops Water",
+    description: "Hygienic and treated water supply. Monthly subscription available.",
+    location: "Indiranagar, Bangalore",
+    distance: 5.0,
+    rating: 4.2,
+    totalRatings: 45,
+    services: ["20L Cans", "Water Softeners"],
+    photos: [
+      "https://images.unsplash.com/photo-1564419320461-6870880221ad?w=800"
+    ]
+  },
+  {
+    id: "supplier_4",
+    name: "Blue Mount Suppliers",
+    description: "Clean drinking water delivery at your doorstep within 2 hours.",
+    location: "Whitefield, Bangalore",
+    distance: 8.2,
+    rating: 4.0,
+    totalRatings: 32,
+    services: ["20L Cans", "Cooler Rental"],
+    photos: [
+      "https://images.unsplash.com/photo-1603561937984-25c792945d94?w=800"
+    ]
+  }
 ];
 
 /* ================= SINGLE CARD ================= */
@@ -50,6 +105,13 @@ const SingleSupplierCard: React.FC<SupplierCardProps> = ({ supplier, onViewDetai
     e.stopPropagation();
     const phone = PHONE_NUMBERS[supplier.id];
     if (phone) window.location.href = `tel:${phone}`;
+  };
+
+  const handleDirections = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Use location string for directions since specific geometry is not available
+    const destination = encodeURIComponent(supplier.location);
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, "_blank");
   };
 
   const visibleServices = supplier.services.slice(0, 4);
@@ -159,10 +221,10 @@ const SingleSupplierCard: React.FC<SupplierCardProps> = ({ supplier, onViewDetai
           </button>
 
           <button
-            onClick={() => onViewDetails(supplier)}
+            onClick={handleDirections}
             className="flex-1 flex items-center justify-center gap-1 border-2 border-green-600 bg-green-50 text-green-700 font-bold text-xs py-2.5 rounded-lg"
           >
-            Get Deal
+            <MapPin size={14} /> Get Location
           </button>
         </div>
       </div>

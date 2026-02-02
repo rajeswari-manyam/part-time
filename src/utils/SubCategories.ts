@@ -229,23 +229,130 @@ export const AUTOMOTIVE_SUBCATEGORIES = [
   "automobile spare parts",
   "towing services",
 ];
+// ========================================
+// ✅ HOME & PERSONAL SERVICES - CORRECTED
+// ========================================
 
-// ========================================
-// CATEGORY 10: HOME & PERSONAL SERVICES
-// ========================================
+export const HOME_PERSONAL_CATEGORY_MAP: Record<string, string[]> = {
+  "maid-services": [
+    "maid services",          // UI label from JSON
+    "maid",
+    "maids",
+    "house maid",
+    "domestic maid",
+    "domestic help",
+    "home maid",
+    "full time maid",
+    "part time maid",
+  ],
+
+  "cook-services": [
+    "cook services",          // UI label from JSON
+    "cook",
+    "cooks",
+    "home cook",
+    "personal cook",
+    "veg cook",
+    "non veg cook",
+    "chef",
+    "home chef",
+  ],
+
+  "babysitters": [
+    "babysitters",            // UI label from JSON
+    "babysitter",
+    "baby sitter",
+    "baby care",
+    "child care",
+    "nanny",
+    "nannies",
+  ],
+
+  "elderly-care": [
+    "elderly care",           // UI label from JSON
+    "old age care",
+    "senior care",
+    "caretaker",
+    "patient care",
+    "home nursing",
+  ],
+
+  "laundry-services": [
+    "laundry services",       // UI label from JSON
+    "laundry",
+    "dry cleaning",
+    "washing clothes",
+    "cloth washing",
+    "ironing",
+    "ironing services",
+    "steam press",
+  ],
+
+  "house-keeping-services": [
+    "house keeping services", // UI label from JSON
+    "house keeping",
+    "housekeeping",
+    "home cleaning",
+    "house cleaning",
+    "deep cleaning",
+    "cleaning services",
+  ],
+
+  "water-can-supply": [
+    "water can supply",       // UI label from JSON
+    "water supply",
+    "drinking water supply",
+    "mineral water",
+    "water can",
+    "water cans",
+    "water bottle supply",
+    "20 litre water",
+  ],
+};
+
+// ✅ CRITICAL: This array MUST match your JSON subcategories exactly (lowercase)
 export const HOME_PERSONAL_SUBCATEGORIES = [
-  "maid services",
-  "cook services",
-  "babysitters",
-  "elderly care",
-  "laundry services",
-  "dry cleaning",
-  "house cleaning",
-  "house keeping services",
-  "water can supply",
-  "gas delivery",
+  "maid services",          // ← Matches JSON: "Maid Services"
+  "cook services",          // ← Matches JSON: "Cook Services"
+  "babysitters",            // ← Matches JSON: "Babysitters"
+  "elderly care",           // ← Matches JSON: "Elderly Care"
+  "laundry services",       // ← Matches JSON: "Laundry Services"
+  "house keeping services", // ← Matches JSON: "House Keeping Services"
+  "water can supply",       // ← Matches JSON: "Water Can Supply"
 ];
 
+// ========================================
+// TESTING: Add this helper to verify
+// ========================================
+export const testHomePersonalMatching = () => {
+  const testCases = [
+    "Maid Services",
+    "Cook Services",
+    "Babysitters",
+    "Elderly Care",
+    "Laundry Services",
+    "House Keeping Services",
+    "Water Can Supply",
+  ];
+
+  console.log("🧪 Testing HOME_PERSONAL matching:");
+  testCases.forEach(testCase => {
+    const slug = testCase.toLowerCase().trim();
+    const slugWithDash = slug.replace(/\s+/g, "-");
+    
+    // Check array match
+    const arrayMatch = HOME_PERSONAL_SUBCATEGORIES.includes(slug);
+    
+    // Check map keys match
+    const mapKeyMatch = Object.keys(HOME_PERSONAL_CATEGORY_MAP).includes(slugWithDash);
+    
+    console.log(`  "${testCase}":`);
+    console.log(`    - slug: "${slug}"`);
+    console.log(`    - slugWithDash: "${slugWithDash}"`);
+    console.log(`    - Array match: ${arrayMatch ? "✅" : "❌"}`);
+    console.log(`    - Map key match: ${mapKeyMatch ? "✅" : "❌"}`);
+  });
+};
 // ========================================
 // CATEGORY 11: BUSINESS & PROFESSIONAL SERVICES
 // ========================================

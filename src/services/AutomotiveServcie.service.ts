@@ -235,3 +235,36 @@ export const deleteAutomotive = async (id: string): Promise<any> => {
         throw error;
     }
 };
+// Get nearby automotive services
+export const getNearbyAutomotive = async (
+    latitude: number,
+    longitude: number,
+  distance: number
+): Promise<AutomotiveResponse> => {
+  if (!distance || distance <= 0) {
+    throw new Error("Please provide a valid distance in km");
+  }
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getNearbyAutomotive?lat=${latitude}&lng=${longitude}&radius=${distance}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Nearby API Error:', errorText);
+            throw new Error('Failed to fetch nearby automotive services');
+        }
+
+        const result: AutomotiveResponse = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Error fetching nearby automotive services:', error);
+        throw error;
+    }
+};

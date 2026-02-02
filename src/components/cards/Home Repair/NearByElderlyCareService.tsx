@@ -41,9 +41,53 @@ const PHONE_MAP: Record<string, string> = {
   service_4: "09035048696",
 };
 
+/* ================= DUMMY DATA ================= */
+export const DUMMY_ELDER_CARE: ElderCareService[] = [
+  {
+    id: "service_1",
+    name: "Golden Years Care",
+    description: "Compassionate elderly care services including nursing, companionship, and daily assistance.",
+    location: "Jayanagar, Bangalore",
+    distance: 2.1,
+    rating: 4.8,
+    totalRatings: 112,
+    isVerified: true,
+    isResponsive: true,
+    services: ["24/7 Nursing", "Assisted Living", "Physiotherapy"],
+    photos: ["https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800"],
+    geometry: { lat: 12.925, lng: 77.5938 }
+  },
+  {
+    id: "service_2",
+    name: "Senior Comfort Home",
+    description: "Dedicated to providing a safe and comfortable environment for seniors.",
+    location: "JP Nagar, Bangalore",
+    distance: 4.5,
+    rating: 4.5,
+    totalRatings: 85,
+    isVerified: true,
+    services: ["Dementia Care", "Rehabilitation", "Meal Services"],
+    photos: ["https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=800"],
+    geometry: { lat: 12.906, lng: 77.594 }
+  },
+  {
+    id: "service_3",
+    name: "Happy Hearts Elder Aidx",
+    description: "Professional caregivers for seniors at home.",
+    location: "BTM Layout, Bangalore",
+    distance: 6.2,
+    rating: 4.3,
+    totalRatings: 56,
+    isResponsive: true,
+    services: ["Home Visits", "Medical Assistance", "Emergency Support"],
+    photos: ["https://images.unsplash.com/photo-1516307073050-425b03512b9a?w=800"],
+    geometry: { lat: 12.916, lng: 77.610 }
+  }
+];
+
 /* ================= CARD ================= */
 
-const ElderCareCafeCard: React.FC<Props> = ({ service, onViewDetails }) => {
+const ElderCareCardItem: React.FC<Props> = ({ service, onViewDetails }) => {
   const [index, setIndex] = useState(0);
   const photos = service.photos || [];
 
@@ -196,22 +240,39 @@ const ElderCareCafeCard: React.FC<Props> = ({ service, onViewDetails }) => {
   );
 };
 
-/* ================= LIST ================= */
+/* ================= LIST/MAIN ================= */
 
-const ElderlyCareCafeScreen: React.FC<{ services: ElderCareService[] }> = ({
-  services,
-}) => {
+interface ElderCareCardProps {
+  job?: ElderCareService; // Alias for service passed from Home&PersonalServiceList
+  services?: ElderCareService[]; // Optional, for backward compatibility or direct usage
+  onViewDetails?: (service: ElderCareService) => void;
+}
+
+const ElderCareScreen: React.FC<ElderCareCardProps> = ({ job, services, onViewDetails }) => {
+  // Case 1: Single service/job provided (User's list)
+  if (job) {
+    return (
+      <ElderCareCardItem
+        service={job}
+        onViewDetails={onViewDetails || (() => { })}
+      />
+    );
+  }
+
+  // Case 2: List of services (Default Nearby view)
+  const displayServices = services || DUMMY_ELDER_CARE;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {services.map((s) => (
-        <ElderCareCafeCard
+      {displayServices.map((s) => (
+        <ElderCareCardItem
           key={s.id}
           service={s}
-          onViewDetails={(v) => console.log(v.name)}
+          onViewDetails={onViewDetails || ((v) => console.log(v.name))}
         />
       ))}
     </div>
   );
 };
 
-export default ElderlyCareCafeScreen;
+export default ElderCareScreen;

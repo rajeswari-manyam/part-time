@@ -9,6 +9,7 @@ import {
     CheckCircle,
     TrendingUp,
     Shield,
+    Navigation,
 } from "lucide-react";
 
 /* ================= TYPES ================= */
@@ -172,6 +173,12 @@ const SingleHousekeepingCard: React.FC<{
         if (phone) window.location.href = `tel:${phone}`;
     };
 
+    const handleDirections = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const dest = encodeURIComponent(service.location || "");
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, "_blank");
+    };
+
     return (
         <div
             onClick={() => onViewDetails(service)}
@@ -271,7 +278,6 @@ const SingleHousekeepingCard: React.FC<{
                     ))}
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-2 pt-3">
                     <button
                         onClick={handleCall}
@@ -281,13 +287,11 @@ const SingleHousekeepingCard: React.FC<{
                         Call
                     </button>
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onViewDetails(service);
-                        }}
-                        className="flex-1 bg-blue-600 text-white rounded-lg py-2 font-semibold"
+                        onClick={handleDirections}
+                        className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-700 border-2 border-blue-600 rounded-lg py-2 font-semibold"
                     >
-                        Send Enquiry
+                        <Navigation size={16} />
+                        Get Location
                     </button>
                 </div>
             </div>

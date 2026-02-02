@@ -85,7 +85,7 @@
         { "name": "Property Dealers", "icon": "🏠" },
         { "name": "Rent Lease Listings", "icon": "🔑" },
         { "name": "Builders Developers", "icon": "🏗️" },
-        { "name": "Architect Services", "icon": "📐" },
+       
         { "name": "Interior Designers", "icon": "🛋️" },
         { "name": "Construction Contractors", "icon": "👷" },
         { "name": "Home Cleaning Services", "icon": "🧽" },
@@ -146,11 +146,10 @@
         { "name": "Babysitters", "icon": "👶" },
         { "name": "Elderly Care", "icon": "👴" },
         { "name": "Laundry Services", "icon": "🧺" },
-        { "name": "Dry Cleaning", "icon": "👔" },
-        { "name": "House Cleaning", "icon": "🏠" },
+      
         { "name": "House Keeping Services", "icon": "🧽" },
-        { "name": "Water Can Supply", "icon": "🚰" },
-        { "name": "Gas Delivery", "icon": "🔥" }
+        { "name": "Water Can Supply", "icon": "🚰" }
+     
       ]
     },
     {

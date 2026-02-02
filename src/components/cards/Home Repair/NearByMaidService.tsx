@@ -125,6 +125,15 @@ const SingleMaidCard: React.FC<NearbyMaidCardProps> = ({ job, onViewDetails }) =
     [job]
   );
 
+  const handleDirections = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const destination = encodeURIComponent(job?.location || "");
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, "_blank");
+    },
+    [job]
+  );
+
   if (!job) return null;
 
   return (
@@ -237,11 +246,11 @@ const SingleMaidCard: React.FC<NearbyMaidCardProps> = ({ job, onViewDetails }) =
           </button>
 
           <button
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 flex items-center justify-center gap-1 border-2 border-blue-600 text-blue-600 bg-blue-50 rounded-lg py-2 text-sm font-bold"
+            onClick={handleDirections}
+            className="flex-1 flex items-center justify-center gap-1 border-2 border-indigo-600 text-indigo-600 bg-indigo-50 rounded-lg py-2 text-sm font-bold"
           >
-            <MessageCircle size={14} />
-            Price
+            <MapPin size={14} />
+            Get Location
           </button>
         </div>
       </div>

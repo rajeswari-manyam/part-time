@@ -1,20 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
 import Button from "../components/ui/Buttons";
 import { MoreVertical } from "lucide-react";
 
-// Nearby cards (already have dummy data)
+/* ---------------- Nearby Cards ---------------- */
+
 import NearbyPropertyDealersCard from "../components/cards/RealEstate/NearProperty";
 import NearbyBuildersCard from "../components/cards/RealEstate/NearByBuilders";
-import NearbyArchitectsCard from "../components/cards/RealEstate/Nearbyarchitects";
 import NearbyInteriorDesignersCard from "../components/cards/RealEstate/NearByInteriorDesigns";
 import NearbyRentLeaseCard from "../components/cards/RealEstate/NearByrental";
 import NearbyConstructionContractorsCard from "../components/cards/RealEstate/NearByConstructorContractors";
 
 /* ---------------- TYPES ---------------- */
 
-export interface JobType {
+export interface RealEstateType {
     id: string;
     title: string;
     location: string;
@@ -33,60 +32,6 @@ export interface JobType {
     };
 }
 
-/* ---------------- DUMMY DATA ---------------- */
-
-const DUMMY_SERVICES: JobType[] = [
-    {
-        id: "1",
-        title: "Luxury Apartment",
-        location: "Anna Nagar, Chennai",
-        description: "Residential Apartment",
-        category: "Property",
-        jobData: {
-            status: true,
-            pincode: "600040",
-            icon: "🏢",
-            propertyType: "Apartment",
-            price: "₹85 Lakhs",
-            area: "1200 sqft",
-            bedrooms: 3,
-            bathrooms: 2,
-        },
-    },
-    {
-        id: "2",
-        title: "Independent Villa",
-        location: "Whitefield, Bangalore",
-        description: "Premium Villa",
-        category: "Builders",
-        jobData: {
-            status: true,
-            pincode: "560066",
-            icon: "🏠",
-            propertyType: "Villa",
-            price: "₹2.5 Cr",
-            area: "2400 sqft",
-            bedrooms: 4,
-            bathrooms: 3,
-        },
-    },
-    {
-        id: "3",
-        title: "Commercial Office Space",
-        location: "Hitech City, Hyderabad",
-        description: "Office Space",
-        category: "Commercial",
-        jobData: {
-            status: false,
-            pincode: "500081",
-            icon: "🏬",
-            propertyType: "Office",
-            price: "₹1.2 Cr",
-            area: "1800 sqft",
-        },
-    },
-];
-
 /* ---------------- ACTION DROPDOWN ---------------- */
 
 const ActionDropdown: React.FC<{
@@ -94,35 +39,38 @@ const ActionDropdown: React.FC<{
     onEdit: (id: string, e: React.MouseEvent) => void;
     onDelete: (id: string, e: React.MouseEvent) => void;
 }> = ({ serviceId, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [open, setOpen] = useState(false);
 
     return (
         <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
+                onClick={() => setOpen(!open)}
                 className="p-2 bg-white/80 rounded-full shadow"
             >
                 <MoreVertical size={18} />
             </button>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-20 min-w-[140px]">
-                    <button
-                        onClick={(e) => onEdit(serviceId, e)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50"
-                    >
-                        ✏️ Edit
-                    </button>
-                    <button
-                        onClick={(e) => onDelete(serviceId, e)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600"
-                    >
-                        🗑️ Delete
-                    </button>
-                </div>
+            {open && (
+                <>
+                    <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-20 min-w-[140px]">
+                        <button
+                            onClick={(e) => onEdit(serviceId, e)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50"
+                        >
+                            ✏️ Edit
+                        </button>
+                        <button
+                            onClick={(e) => onDelete(serviceId, e)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600"
+                        >
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );
@@ -134,28 +82,12 @@ const RealEstateList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<JobType[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [services, setServices] = useState<RealEstateType[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        setLoading(true);
+    /* ---------------- HANDLERS ---------------- */
 
-        // simulate API delay
-        setTimeout(() => {
-            if (subcategory) {
-                setServices(
-                    DUMMY_SERVICES.filter((s) =>
-                        s.category.toLowerCase().includes(subcategory.replace("-", " "))
-                    )
-                );
-            } else {
-                setServices(DUMMY_SERVICES);
-            }
-            setLoading(false);
-        }, 500);
-    }, [subcategory]);
-
-    const handleView = (job: JobType) => {
+    const handleView = (job: RealEstateType) => {
         navigate(`/real-estate/details/${job.id}`);
     };
 
@@ -174,28 +106,89 @@ const RealEstateList: React.FC = () => {
         navigate("/add-real-estate-form");
     };
 
+    /* ---------------- UTILITIES ---------------- */
+
+    const getDisplayTitle = () => {
+        if (!subcategory) return "All Real Estate Services";
+        return subcategory
+            .split("-")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ");
+    };
+
+    const normalizeSubcategory = (sub?: string) =>
+        sub?.toLowerCase().replace(/-/g, " ") || "";
+
+    /* ---------------- CARD MATCHING ---------------- */
+
+    const getNearbyCardComponent = (
+        sub?: string
+    ): React.ComponentType<any> | null => {
+        const normalized = normalizeSubcategory(sub);
+
+        if (normalized.includes("property")) return NearbyPropertyDealersCard;
+        if (normalized.includes("builder")) return NearbyBuildersCard;
+        if (normalized.includes("interior")) return NearbyInteriorDesignersCard;
+        if (normalized.includes("rent") || normalized.includes("lease"))
+            return NearbyRentLeaseCard;
+        if (normalized.includes("construction"))
+            return NearbyConstructionContractorsCard;
+
+        return null;
+    };
+
     const shouldShowNearbyCards = () =>
-        [
-            "property-dealers",
-            "builders developers",
-            "architects",
-            "interior-designers",
-            "rent lease listings",
-            "construction contractors",
-        ].includes(subcategory || "");
+        Boolean(getNearbyCardComponent(subcategory));
 
-    const renderNearbyCardsSection = () => {
-        const cardMap: Record<string, React.ComponentType<any>> = {
-            "property-dealers": NearbyPropertyDealersCard,
-            "builders developers": NearbyBuildersCard,
-          
-        };
+    /* ---------------- RENDER NEARBY SECTION ---------------- */
 
-        const CardComponent = subcategory ? cardMap[subcategory] : null;
+    const renderNearbySection = () => {
+        const CardComponent = getNearbyCardComponent(subcategory);
         if (!CardComponent) return null;
 
-        return <CardComponent onViewDetails={handleView} />;
+        return (
+            <div className="space-y-8">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                        🏠 Nearby {getDisplayTitle()}
+                    </h2>
+                    <CardComponent onViewDetails={handleView} />
+                </div>
+
+                {services.length > 0 && (
+                    <>
+                        <div className="my-8 flex items-center gap-4">
+                            <div className="flex-1 h-px bg-gray-300" />
+                            <span className="text-sm font-semibold px-4 py-2 bg-white border rounded-full">
+                                🏠 Your Listings ({services.length})
+                            </span>
+                            <div className="flex-1 h-px bg-gray-300" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {services.map((service) => (
+                                <div key={service.id} className="relative">
+                                    <CardComponent
+                                        job={service}
+                                        onViewDetails={handleView}
+                                    />
+                                    <div className="absolute top-3 right-3 z-10">
+                                        <ActionDropdown
+                                            serviceId={service.id}
+                                            onEdit={handleEdit}
+                                            onDelete={handleDelete}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+        );
     };
+
+    /* ---------------- UI ---------------- */
 
     if (loading) {
         return (
@@ -208,61 +201,27 @@ const RealEstateList: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-
                 {/* Header */}
                 <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold">Real Estate Listings</h1>
+                    <h1 className="text-3xl font-bold">{getDisplayTitle()}</h1>
                     <Button variant="gradient-blue" onClick={handleAddPost}>
                         + Add Listing
                     </Button>
                 </div>
 
-                {shouldShowNearbyCards() && renderNearbyCardsSection()}
-
-                {/* Listings */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {services.map((service) => (
-                        <div
-                            key={service.id}
-                            className="relative bg-white rounded-xl border hover:shadow-lg transition cursor-pointer"
-                            onClick={() => handleView(service)}
-                        >
-                            <div className="absolute top-3 right-3">
-                                <ActionDropdown
-                                    serviceId={service.id}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </div>
-
-                            <div className="h-44 bg-blue-50 flex items-center justify-center text-5xl">
-                                {service.jobData?.icon}
-                            </div>
-
-                            <div className="p-4 space-y-2">
-                                <h2 className="font-bold text-lg">{service.title}</h2>
-                                <p className="text-sm text-gray-600">{service.location}</p>
-                                <p className="text-sm text-gray-600">{service.description}</p>
-
-                                {service.jobData?.price && (
-                                    <p className="text-blue-600 font-bold">
-                                        {service.jobData.price}
-                                    </p>
-                                )}
-
-                                <span
-                                    className={`inline-block text-xs px-2 py-1 rounded-full ${service.jobData?.status
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-red-100 text-red-800"
-                                        }`}
-                                >
-                                    {service.jobData?.status ? "Available" : "Sold / Rented"}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
+                {shouldShowNearbyCards() ? (
+                    renderNearbySection()
+                ) : (
+                    <div className="text-center py-20">
+                        <div className="text-6xl mb-4">🏠</div>
+                        <h3 className="text-xl font-bold">
+                            No Listings Found
+                        </h3>
+                        <p className="text-gray-600">
+                            Be the first to add a listing in this category!
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

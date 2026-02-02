@@ -85,6 +85,7 @@ import DailyWagesList from "./pages/DailyWagesList";
 import WeddingServiceList from "./pages/WeddingServiceList";
 import CorporativeServiceList from "./pages/CorporativeServiceList";
 import PlumberServiceList from "./pages/PlumbarsList";
+import HomePersonalServiceList from "./pages/Home&PersonalServiceList";
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -217,6 +218,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/corporate" element={<CorporativeServiceList />} />
                     <Route path="/plumber/:subcategory" element={<PlumberServiceList />} />
                     <Route path="/plumber" element={<PlumberServiceList />} />
+                    <Route path="/home-personal/:subcategory" element={<HomePersonalServiceList />} />
+                    <Route path="/home-personal" element={<HomePersonalServiceList />} />
                     <Route
                         path="/add-skills"
                         element={
