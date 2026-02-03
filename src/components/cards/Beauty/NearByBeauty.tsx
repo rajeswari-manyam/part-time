@@ -240,7 +240,7 @@ const SingleBeautyCard: React.FC<{ job: JobType; onViewDetails: (job: JobType) =
           {getLocation()}
         </div>
         {getDistance() && <p className="text-xs font-semibold text-green-600 mb-2">{getDistance()}</p>}
-        
+
         {/* Amenities */}
         <div className="flex flex-wrap gap-1 mb-2">
           {amenities.map((a: string, idx: number) => (
@@ -262,9 +262,8 @@ const SingleBeautyCard: React.FC<{ job: JobType; onViewDetails: (job: JobType) =
               )}
             </div>
             {job.jobData?.opening_hours?.open_now !== undefined && (
-              <div className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${
-                job.jobData.opening_hours.open_now ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}>
+              <div className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${job.jobData.opening_hours.open_now ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}>
                 <Clock size={11} />
                 <span>{job.jobData.opening_hours.open_now ? "Open" : "Closed"}</span>
               </div>
@@ -280,9 +279,8 @@ const SingleBeautyCard: React.FC<{ job: JobType; onViewDetails: (job: JobType) =
           <button
             onClick={handleCall}
             disabled={!hasPhoneNumber}
-            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg ${
-              hasPhoneNumber ? "border-green-600 bg-green-50 text-green-600 hover:bg-green-100" : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg ${hasPhoneNumber ? "border-green-600 bg-green-50 text-green-600 hover:bg-green-100" : "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+              }`}
           >
             <Phone size={14} /> Call
           </button>

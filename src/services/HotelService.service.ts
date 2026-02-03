@@ -16,6 +16,7 @@ export interface Hotel {
     city?: string;
     state?: string;
     pincode?: string;
+    images?: string[];
     latitude?: number;
     longitude?: number;
     ratings?: number;
@@ -80,41 +81,48 @@ export const getNearbyHotels = async (
         return { success: false, count: 0, data: [] };
     }
 };
-
 /**
- * Create a new hotel/travel service
+ * Create hotel with images (multipart/form-data)
  */
-export const createHotel = async (hotel: Hotel): Promise<any> => {
-    try {
-        const myHeaders = new Headers();
-        myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+export const createHotelWithImages = async (
+  hotel: Hotel,
+  images?: File[]
+): Promise<any> => {
+  try {
+    const formData = new FormData();
 
-        const urlencoded = new URLSearchParams();
-        Object.entries(hotel).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                urlencoded.append(key, String(value));
-            }
-        });
+    // append hotel fields
+    Object.entries(hotel).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && key !== "images") {
+        formData.append(key, String(value));
+      }
+    });
 
-        const requestOptions: RequestInit = {
-            method: "POST",
-            headers: myHeaders,
-            body: urlencoded,
-            redirect: "follow",
-        };
-
-        const response = await fetch(`${API_BASE_URL}/createHotelTravel`, requestOptions);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error("Error creating hotel:", error);
-        return { success: false, message: "Failed to create hotel" };
+    // append images
+    if (images && images.length > 0) {
+      images.forEach((file) => {
+        formData.append("images", file); // backend field name must be "images"
+      });
     }
+
+    const response = await fetch(
+      `${API_BASE_URL}/createHotelTravel`,
+      {
+        method: "POST",
+        body: formData,
+        redirect: "follow",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating hotel with images:", error);
+    return { success: false, message: "Failed to create hotel" };
+  }
 };
 
 /**
@@ -189,6 +197,8 @@ export const deleteHotel = async (hotelId: string): Promise<any> => {
     return { success: false, message: "Failed to delete hotel" };
   }
 };
+
+
 /**
  * Fetch hotels created by a specific user
  * @param userId string

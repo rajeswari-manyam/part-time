@@ -243,3 +243,50 @@ export const deleteBusinessService = async (
     return { success: false, message: "Failed to delete service" };
   }
 };
+// ---- Fetch business services by user ----
+export interface UserBusinessResponse {
+  success: boolean;
+  count: number;
+  data: BusinessWorker[];
+  message?: string;
+}
+
+export const getUserBusinessServices = async (
+  userId: string,
+  serviceType?: string,
+  title?: string
+): Promise<UserBusinessResponse> => {
+  try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
+    const params = new URLSearchParams({ userId });
+
+    if (serviceType) params.append("serviceType", serviceType);
+    if (title) params.append("title", title);
+
+    const response = await fetch(
+      `${API_BASE_URL}/getUserBusiness?${params.toString()}`,
+      {
+        method: "GET",
+        redirect: "follow",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: UserBusinessResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user business services:", error);
+    return {
+      success: false,
+      count: 0,
+      data: [],
+      message: "Failed to fetch user business services",
+    };
+  }
+};

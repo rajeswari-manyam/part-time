@@ -246,3 +246,55 @@ export const deleteEventService = async (
     };
   }
 };
+/* ===================== GET USER EVENTS ===================== */
+
+export interface GetUserEventsResponse {
+  success: boolean;
+  count: number;
+  data: EventWorker[];
+}
+
+/**
+ * Fetch user events by userId, category, and name
+ */
+export const getUserEvents = async (
+  userId: string,
+  category?: string,
+  name?: string
+): Promise<GetUserEventsResponse> => {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  try {
+    const queryParams = new URLSearchParams();
+
+    queryParams.append("userId", userId);
+
+    if (category) {
+      queryParams.append("category", category);
+    }
+
+    if (name) {
+      queryParams.append("name", name);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/getUserEvents?${queryParams.toString()}`,
+      { method: "GET" }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user events:", error);
+    return {
+      success: false,
+      count: 0,
+      data: []
+    };
+  }
+};

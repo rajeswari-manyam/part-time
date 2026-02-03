@@ -208,21 +208,59 @@ export const updateDigitalService = async (
   }
 };
 
-export const deleteDigitalService = async (id: string): Promise<any> => {
+
+export const deleteDigitalService = async (
+  id: string,
+  category: string,
+  serviceName: string
+): Promise<any> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/deleteDigitalService/${id}`, {
-      method: "DELETE",
-      redirect: "follow",
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/getUserBusiness?category=${encodeURIComponent(
+        category
+      )}&serviceName=${encodeURIComponent(serviceName)}&_id=${id}`,
+      {
+        method: "DELETE",
+        redirect: "follow",
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
-    return result;
+    const result = await response.text();
+    return JSON.parse(result);
   } catch (error) {
     console.error(`Error deleting digital service with ID ${id}:`, error);
     return { success: false, message: "Failed to delete service" };
   }
 };
+
+export const getUserDigitalServices = async (userId: string): Promise<DigitalWorkerResponse> => {
+  try {
+    // Note: Assuming 'Tech & Digital Services' or similar category string is required. 
+    // If the endpoint returns all businesses for the user, we might need to filter client-side.
+    // However, the delete instructions imply querying by category is supported/required.
+    // Here we request all user businesses, filtering might happen on the backend or we filter here.
+    // For now, let's assume we fetch all and filter in the component or rely on backend.
+    // Or closer to other services:
+    const response = await fetch(`${API_BASE_URL}/getUserBusiness?userId=${userId}&category=Tech & Digital Services`, {
+      method: "GET",
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      // If 404 or similar, maybe just return empty
+      if (response.status === 404) return { success: true, count: 0, data: [] };
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: DigitalWorkerResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Error fetching digital services for user ${userId}:`, error);
+    return { success: false, count: 0, data: [] };
+  }
+};
+

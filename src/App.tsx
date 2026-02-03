@@ -86,6 +86,13 @@ import WeddingServiceList from "./pages/WeddingServiceList";
 import CorporativeServiceList from "./pages/CorporativeServiceList";
 import PlumberServiceList from "./pages/PlumbarsList";
 import HomePersonalServiceList from "./pages/Home&PersonalServiceList";
+import HotelForm from "./pages/HotelForm";
+import BeautyServiceForm from "./pages/BeautySevriceForm";
+import BeautyServiceList from "./pages/BeautyServiceList";
+import HospitalServicesList from "./pages/HospitalServiceList";
+import HospitalForm from "./pages/HospitalForm";
+
+
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -133,9 +140,6 @@ const AppRoutes: React.FC = () => {
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
 
-
-                    {/* <Route path="/add-automotive" element={<AddAutomotive />} />
-                    <Route path="/edit-automotive/:id" element={<AutomotiveEdit />} /> */}
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
                     <Route
                         path="/automotive/details/:id"
@@ -168,25 +172,27 @@ const AppRoutes: React.FC = () => {
                     <Route path="/raise-ticket" element={<RaiseTicketUI />} />
                     <Route path="/view-tickets" element={<ViewTicketsUI />} />
                     <Route path="/my-bookings" element={<MyBookings />} />
-                    <Route path="/" element={<HomePage />} />
-                   // In your router
+
                     {/* ================= FOOD SERVICE ROUTES ================= */}
                     <Route path="/food-services/:subcategory" element={<FoodService />} />
                     <Route path="/food-services/all" element={<FoodService />} />
                     <Route path="/add-food-service-form" element={<FoodServiceForm />} />
                     <Route path="/add-food-service-form/:id" element={<FoodServiceForm />} />
 
-                    <Route path="/food-services/:subcategory" element={<FoodService />} />
+                    {/* ================= HOTEL SERVICE ROUTES ================= */}
+                    <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
+                    <Route path="/add-hotel-service-form" element={<HotelForm />} />
+                    <Route path="/add-hospital-service-form" element={<HospitalForm />} />
+                    <Route path="/add-beauty-service-form" element={<BeautyServiceForm />} />
+                    {/* ================= HOSPITAL ROUTES ================= */}
                     <Route path="/hospital-services/:subcategory" element={<HospitalServiceList />} />
 
-                    <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
                     <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
                     <Route path="/beauty-services" element={<BeautyServicesList />} />
                     <Route path="/real-estate/:subcategory" element={<RealEstateList />} />
                     <Route path="/real-estate" element={<RealEstateList />} />
                     <Route path="/shopping/:subcategory" element={<ShoppingList />} />
-
                     <Route path="/shopping" element={<ShoppingList />} />
                     <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
                     <Route path="/automotive" element={<AutomotiveList />} />
@@ -220,6 +226,10 @@ const AppRoutes: React.FC = () => {
                     <Route path="/plumber" element={<PlumberServiceList />} />
                     <Route path="/home-personal/:subcategory" element={<HomePersonalServiceList />} />
                     <Route path="/home-personal" element={<HomePersonalServiceList />} />
+                    <Route path="/beauty/:subcategory" element={<BeautyServiceList />} />
+                    <Route path="/beauty" element={<BeautyServiceList />} />
+                    <Route path="/hospital-services/:subcategory" element={<HospitalServicesList />} />
+                    <Route path="/hospital-services" element={<HospitalServicesList />} />
                     <Route
                         path="/add-skills"
                         element={

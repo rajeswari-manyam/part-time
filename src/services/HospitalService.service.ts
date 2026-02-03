@@ -2,12 +2,23 @@
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+/* =======================
+   INTERFACES
+======================= */
+
 export interface Hospital {
   id?: string;
   name?: string;
-  address?: string;
+  hospitalType?: string;       // added hospital type
+  departments?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   latitude?: number;
   longitude?: number;
+  services?: string;
+  images?: string[];            // added images
   rating?: number;
   [key: string]: any;
 }
@@ -30,6 +41,7 @@ export interface CreateHospitalPayload {
   latitude: string | number;
   longitude: string | number;
   services: string;
+  images?: File[];              // optional images
 }
 
 export interface CreateHospitalResponse {
@@ -38,30 +50,27 @@ export interface CreateHospitalResponse {
   data?: Hospital;
 }
 
+/* =======================
+   API METHODS
+======================= */
+
 /**
  * Fetch nearby hospitals
- * @param latitude number
- * @param longitude number
- * @param distance number in km
- * @returns Promise<HospitalResponse>
  */
 export const getNearbyHospitals = async (
   latitude: number,
   longitude: number,
   distance: number
 ): Promise<HospitalResponse> => {
-  if (!distance || distance <= 0) {
-    throw new Error("Please provide a valid distance in km");
-  }
+  if (!distance || distance <= 0) throw new Error("Please provide a valid distance in km");
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/getNearbyHealthcare?latitude=${latitude}&longitude=${longitude}&distance=${distance}`,
       { method: "GET", redirect: "follow" }
     );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: HospitalResponse = await response.json();
     return data;
@@ -72,31 +81,29 @@ export const getNearbyHospitals = async (
 };
 
 /**
- * Create a new hospital
- * @param payload CreateHospitalPayload
- * @returns Promise<CreateHospitalResponse>
+ * Create a new hospital (supports images)
  */
 export const createHospital = async (
   payload: CreateHospitalPayload
 ): Promise<CreateHospitalResponse> => {
   try {
-    const formData = new URLSearchParams();
+    const formData = new FormData();
+
     Object.entries(payload).forEach(([key, value]) => {
-      formData.append(key, value.toString());
+      if (key === "images" && Array.isArray(value)) {
+        value.forEach((file) => formData.append("images", file));
+      } else {
+        formData.append(key, value.toString());
+      }
     });
 
     const response = await fetch(`${API_BASE_URL}/createHealthcare`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
       body: formData,
       redirect: "follow",
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: CreateHospitalResponse = await response.json();
     return data;
@@ -105,6 +112,77 @@ export const createHospital = async (
     return { success: false, message: "Failed to create hospital" };
   }
 };
+
+/**
+ * Update hospital (supports images)
+ */
+export interface UpdateHospitalPayload {
+  hospitalName?: string;
+  hospitalType?: string;
+  departments?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+  services?: string;
+  images?: File[];
+}
+
+export const updateHospital = async (
+  hospitalId: string,
+  payload: UpdateHospitalPayload
+): Promise<CreateHospitalResponse> => {
+  try {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === "images" && Array.isArray(value)) {
+          value.forEach((file) => formData.append("images", file));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    const response = await fetch(`${API_BASE_URL}/updatehealthcare/${hospitalId}`, {
+      method: "PUT",
+      body: formData,
+      redirect: "follow",
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const data: CreateHospitalResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Error updating hospital with ID ${hospitalId}:`, error);
+    return { success: false, message: "Failed to update hospital" };
+  }
+};
+
+/**
+ * Delete hospital
+ */
+export const deleteHospital = async (hospitalId: string): Promise<CreateHospitalResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/deletehealthcare/${hospitalId}`, {
+      method: "DELETE",
+      redirect: "follow",
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const data: CreateHospitalResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Error deleting hospital with ID ${hospitalId}:`, error);
+    return { success: false, message: "Failed to delete hospital" };
+  }
+};
+
 /**
  * Fetch all hospitals
  */
@@ -115,9 +193,7 @@ export const getAllHospitals = async (): Promise<HospitalResponse> => {
       redirect: "follow",
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: HospitalResponse = await response.json();
     return data;
@@ -137,9 +213,7 @@ export const getHospitalById = async (hospitalId: string): Promise<CreateHospita
       redirect: "follow",
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: CreateHospitalResponse = await response.json();
     return data;
@@ -148,70 +222,7 @@ export const getHospitalById = async (hospitalId: string): Promise<CreateHospita
     return { success: false, message: "Failed to fetch hospital" };
   }
 };
-export interface UpdateHospitalPayload {
-  hospitalName?: string;
-  hospitalType?: string;
-  departments?: string;
-  area?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  latitude?: string | number;
-  longitude?: string | number;
-  services?: string;
-}
 
-export const updateHospital = async (
-  hospitalId: string,
-  payload: UpdateHospitalPayload
-): Promise<CreateHospitalResponse> => {
-  try {
-    const formData = new URLSearchParams();
-
-    // Only append defined values
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
-      }
-    });
-
-    const response = await fetch(`${API_BASE_URL}/updatehealthcare/${hospitalId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData,
-      redirect: "follow",
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const data: CreateHospitalResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error updating hospital with ID ${hospitalId}:`, error);
-    return { success: false, message: "Failed to update hospital" };
-  }
-};
-/**
- * Delete hospital by ID
- */
-export const deleteHospital = async (hospitalId: string): Promise<CreateHospitalResponse> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/deletehealthcare/${hospitalId}`, {
-      method: "DELETE",
-      redirect: "follow",
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const data: CreateHospitalResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error deleting hospital with ID ${hospitalId}:`, error);
-    return { success: false, message: "Failed to delete hospital" };
-  }
-};
 /**
  * Fetch hospitals by user ID
  */

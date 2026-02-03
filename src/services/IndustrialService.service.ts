@@ -308,3 +308,60 @@ export const deleteIndustrialService = async (
     };
   }
 };
+/* ===================== GET USER INDUSTRIAL SERVICES ===================== */
+
+/**
+ * Fetch industrial services for a user with optional filters
+ */
+export const getUserIndustrialServices = async (
+  params: {
+    userId: string;
+    category?: string;
+    subCategory?: string;
+    serviceName?: string;
+  }
+): Promise<IndustrialWorkerResponse> => {
+  if (!params.userId) {
+    throw new Error("User ID is required");
+  }
+
+  try {
+    const queryParams = new URLSearchParams();
+
+    queryParams.append("userId", params.userId);
+
+    if (params.category) {
+      queryParams.append("category", params.category);
+    }
+
+    if (params.subCategory) {
+      queryParams.append("subCategory", params.subCategory);
+    }
+
+    if (params.serviceName) {
+      queryParams.append("serviceName", params.serviceName);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/getUserIndustrial?${queryParams.toString()}`,
+      {
+        method: "GET",
+        redirect: "follow",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user industrial services:", error);
+    return {
+      success: false,
+      count: 0,
+      data: [],
+      message: "Failed to fetch user industrial services",
+    };
+  }
+};

@@ -41,10 +41,7 @@ export interface JobType {
   jobData?: any;
 }
 
-interface NearbySpaServiceCardProps {
-  job: JobType;
-  onViewDetails: (job: JobType) => void;
-}
+
 
 /* ================= CONSTANTS ================= */
 
@@ -107,11 +104,18 @@ export const DUMMY_SPA_SERVICES = [
 
 /* ================= COMPONENT ================= */
 
-const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onViewDetails }) => {
+/* ================= COMPONENT ================= */
+
+interface SingleSpaCardProps {
+  job: JobType;
+  onViewDetails: (job: JobType) => void;
+}
+
+const SingleSpaServiceCard: React.FC<SingleSpaCardProps> = ({ job, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
 
-  // Get all available photos - Using useCallback like NearbyHotelsCard
+  // Get all available photos
   const getPhotos = useCallback(() => {
     const jobId = job.id || 'spa_1';
     return SPA_IMAGES_MAP[jobId] || SPA_IMAGES_MAP['spa_1'];
@@ -121,7 +125,7 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
   const hasPhotos = photos.length > 0;
   const currentPhoto = hasPhotos ? photos[currentImageIndex] : null;
 
-  // Navigate to previous image - Using useCallback like NearbyHotelsCard
+  // Navigate to previous image
   const handlePrevImage = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -132,7 +136,7 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
     [hasPhotos, currentImageIndex]
   );
 
-  // Navigate to next image - Using useCallback like NearbyHotelsCard
+  // Navigate to next image
   const handleNextImage = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -143,47 +147,47 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
     [hasPhotos, currentImageIndex, photos.length]
   );
 
-  // Get name - Using useCallback like NearbyHotelsCard
+  // Get name
   const getName = useCallback((): string => {
     return job.title || 'Spa & Massage Center';
   }, [job.title]);
 
-  // Get location - Using useCallback like NearbyHotelsCard
+  // Get location
   const getLocation = useCallback((): string => {
     return job.location || job.description || 'Location';
   }, [job.location, job.description]);
 
-  // Get distance - Using useCallback like NearbyHotelsCard
+  // Get distance
   const getDistance = useCallback((): string => {
     const jobData = job.jobData as any;
     if (jobData?.distance_text) {
       return jobData.distance_text;
     }
     if (job.distance) {
-      return `${job.distance} km`;
+      return typeof job.distance === "number" ? `${job.distance.toFixed(1)} km` : `${job.distance}`;
     }
     return '';
   }, [job.jobData, job.distance]);
 
-  // Get description - Using useCallback like NearbyHotelsCard
+  // Get description
   const getDescription = useCallback((): string => {
     const jobId = job.id || 'spa_1';
     return SPA_DESCRIPTIONS_MAP[jobId] || job.description || 'Professional spa and massage services';
   }, [job.id, job.description]);
 
-  // Get rating - Using useCallback like NearbyHotelsCard
+  // Get rating
   const getRating = useCallback((): number | null => {
     const jobData = job.jobData as any;
     return jobData?.rating || null;
   }, [job.jobData]);
 
-  // Get user ratings total - Using useCallback like NearbyHotelsCard
+  // Get user ratings total
   const getUserRatingsTotal = useCallback((): number | null => {
     const jobData = job.jobData as any;
     return jobData?.user_ratings_total || null;
   }, [job.jobData]);
 
-  // Get opening status - Using useCallback like NearbyHotelsCard
+  // Get opening status
   const getOpeningStatus = useCallback((): string | null => {
     const jobData = job.jobData as any;
     const isOpen = jobData?.opening_hours?.open_now;
@@ -193,31 +197,31 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
     return isOpen ? 'Open Now' : 'Closed';
   }, [job.jobData]);
 
-  // Get special tags - Using useCallback like NearbyHotelsCard
+  // Get special tags
   const getSpecialTags = useCallback((): string[] => {
     const jobData = job.jobData as any;
     return jobData?.special_tags || [];
   }, [job.jobData]);
 
-  // Get services/amenities - Using useCallback like NearbyHotelsCard
+  // Get services/amenities
   const getServices = useCallback((): string[] => {
     const jobData = job.jobData as any;
     return jobData?.amenities || ['Body Massage', 'Spa Services', 'Aromatherapy', 'Stress Relief'];
   }, [job.jobData]);
 
-  // Get categories - Using useCallback like NearbyHotelsCard
+  // Get categories
   const getCategories = useCallback((): string[] => {
     const jobData = job.jobData as any;
     return jobData?.categories || ['Spa', 'Massage Center'];
   }, [job.jobData]);
 
-  // Get phone number - Using useCallback like NearbyHotelsCard
+  // Get phone number
   const getPhoneNumber = useCallback((): string | null => {
     const jobId = job.id || '';
     return PHONE_NUMBERS_MAP[jobId] || null;
   }, [job.id]);
 
-  // Handle call button press - Using useCallback like NearbyHotelsCard
+  // Handle call button press
   const handleCall = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -236,26 +240,26 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
     [getPhoneNumber, getName]
   );
 
-  // Handle directions button press - Using useCallback like NearbyHotelsCard
+  // Handle directions button press
   const handleDirections = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       const jobData = job.jobData as any;
-      const lat = jobData?.geometry?.location?.lat;
-      const lng = jobData?.geometry?.location?.lng;
+      const lat = jobData?.geometry?.location?.lat || jobData?.latitude;
+      const lng = jobData?.geometry?.location?.lng || jobData?.longitude;
 
       if (!lat || !lng) {
         alert('Unable to get location coordinates for directions.');
         return;
       }
 
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${job.id || ''}`;
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
       window.open(googleMapsUrl, '_blank');
     },
-    [job.jobData, job.id]
+    [job.jobData]
   );
 
-  // Handle image loading error - Using useCallback like NearbyHotelsCard
+  // Handle image loading error
   const handleImageError = useCallback(() => {
     console.warn('⚠️ Failed to load image for spa:', job?.id || 'unknown');
     setImageError(true);
@@ -417,11 +421,10 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
 
           {openingStatus && (
             <div
-              className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${
-                openingStatus.includes('Open')
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-700'
-              }`}
+              className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes('Open')
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+                }`}
             >
               <Clock size={11} />
               <span>{openingStatus}</span>
@@ -465,17 +468,53 @@ const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, onView
           <button
             onClick={handleCall}
             disabled={!hasPhoneNumber}
-            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${
-              hasPhoneNumber
-                ? 'border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                : 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
+              ? 'border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+              : 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
           >
             <Phone size={14} />
             <span>Call</span>
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface NearbySpaServiceCardProps {
+  job?: JobType;
+  nearbyData?: any[];
+  onViewDetails: (job: JobType) => void;
+}
+
+const NearbySpaServiceCard: React.FC<NearbySpaServiceCardProps> = ({ job, nearbyData, onViewDetails }) => {
+  if (job) {
+    return <SingleSpaServiceCard job={job} onViewDetails={onViewDetails} />;
+  }
+
+  // If no job is provided, render a list based on nearbyData or dummy data
+  const dataToRender = nearbyData && nearbyData.length > 0
+    ? nearbyData.map((item) => ({
+      id: item._id || item.id,
+      title: item.name || "Spa Service",
+      location: item.area || item.vicinity || "Hyderabad",
+      description: item.description,
+      distance: item.distance,
+      category: item.category,
+      jobData: item,
+    }))
+    : DUMMY_SPA_SERVICES;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+      {dataToRender.map((spaItem) => (
+        <SingleSpaServiceCard
+          key={spaItem.id}
+          job={spaItem as JobType}
+          onViewDetails={onViewDetails}
+        />
+      ))}
     </div>
   );
 };

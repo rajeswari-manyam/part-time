@@ -58,7 +58,7 @@ const AutomotiveForm = () => {
             try {
                 const res = await getAutomotiveById(editId);
                 const data = res.data;
-                const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://13.204.29.0:3001';
+                const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
 
                 setFormData({
                     userId: data.userId,
