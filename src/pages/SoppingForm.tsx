@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBeautyWorker, updateBeautyWorker, getBeautyWorkerById, BeautyWorker } from '../services/Beauty.Service.service';
+import { createShoppingStore, updateShoppingRetail, getShoppingRetailById, ShoppingStore } from '../services/ShoppingService.service';
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
@@ -9,34 +9,18 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-// ── Pull beauty/wellness subcategories from JSON (categoryId 5) ─────────────
-const getBeautyWellnessSubcategories = () => {
-    const beautyCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 5);
-    return beautyCategory ? beautyCategory.items.map(item => item.name) : [];
-};
-
-// ── Map subcategory to category for form ─────────────────────────────────────
-const getCategoryFromSubcategory = (subcategory: string): string => {
-    const lower = subcategory.toLowerCase();
-    if (lower.includes('spa') || lower.includes('massage')) return 'Spa Therapist';
-    if (lower.includes('fitness') || lower.includes('gym')) return 'Fitness Trainer';
-    if (lower.includes('makeup')) return 'Makeup Artist';
-    if (lower.includes('salon') || lower.includes('hair')) return 'Hair Stylist';
-    if (lower.includes('yoga')) return 'Yoga Instructor';
-    if (lower.includes('tattoo')) return 'Tattoo Artist';
-    if (lower.includes('mehendi') || lower.includes('mehndi')) return 'Mehendi Artist';
-    if (lower.includes('nail')) return 'Nail Technician';
-    if (lower.includes('skin')) return 'Skincare Specialist';
-    if (lower.includes('beauty') || lower.includes('parlour')) return 'Beautician';
-    return 'Beautician';
+// ── Pull shopping/retail subcategories from JSON (categoryId 9) ────────────────
+const getShoppingRetailSubcategories = () => {
+    const shoppingCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 7);
+    return shoppingCategory ? shoppingCategory.items.map(item => item.name) : [];
 };
 
 // ============================================================================
 // SHARED INPUT CLASSES - Mobile First
 // ============================================================================
 const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-rose-500 focus:border-rose-500 ` +
+    `w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-xl ` +
+    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -44,7 +28,7 @@ const inputBase =
 // REUSABLE LABEL
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
+    <label className={`block ${typography.form.label} text-gray-800 mb-1.5 sm:mb-2 text-sm sm:text-base font-medium`}>
         {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
@@ -53,10 +37,10 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 // SECTION CARD WRAPPER
 // ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 space-y-3 sm:space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
+                <h3 className={`${typography.card.subtitle} text-gray-900 text-sm sm:text-base`}>{title}</h3>
                 {action}
             </div>
         )}
@@ -90,7 +74,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const BeautyServiceForm = () => {
+const ShoppingForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -111,27 +95,22 @@ const BeautyServiceForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const beautyCategories = getBeautyWellnessSubcategories();
-    const defaultSubcategory = getSubcategoryFromUrl() || beautyCategories[0] || 'Beauty Parlour';
-    const defaultCategory = getCategoryFromSubcategory(defaultSubcategory);
+    const storeTypes = getShoppingRetailSubcategories();
+    const defaultType = getSubcategoryFromUrl() || storeTypes[0] || 'Supermarkets';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        name: '',
-        category: defaultCategory,
+        storeName: '',
+        storeType: defaultType,
         email: '',
         phone: '',
-        bio: '',
-        services: '' as string,
-        serviceCharge: '',
+        description: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        experience: '',
-        availability: availabilityOptions[0],
     });
 
     // ── images ───────────────────────────────────────────────────────────────
@@ -141,7 +120,6 @@ const BeautyServiceForm = () => {
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -149,53 +127,36 @@ const BeautyServiceForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getBeautyWorkerById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getShoppingRetailById(editId);
+                if (!response.success || !response.data) throw new Error('Store not found');
 
-                // Convert services array to comma-separated string
-                const servicesString = Array.isArray(data.services)
-                    ? data.services.join(', ')
-                    : data.services || '';
-// Around line 160-178, update the availability handling:
-setFormData(prev => ({
-    ...prev,
-    userId: data.userId || '',
-    name: data.name || '',
-    category: data.category || defaultCategory,
-    email: data.email || '',
-    phone: data.phone || '',
-    bio: data.bio || '',
-    services: servicesString,
-    serviceCharge: data.serviceCharge?.toString() || '',
-    area: data.area || '',
-    city: data.city || '',
-    state: data.state || '',
-    pincode: data.pincode || '',
-    latitude: data.latitude?.toString() || '',
-    longitude: data.longitude?.toString() || '',
-    experience: data.experience?.toString() || '',
-    // Convert boolean to string if needed
-    availability: typeof data.availability === 'boolean' 
-        ? (data.availability ? 'Full Time' : availabilityOptions[0])
-        : (data.availability || availabilityOptions[0]),
-}));
+                const data = response.data;
+                setFormData(prev => ({
+                    ...prev,
+                    userId: data.userId || '',
+                    storeName: data.storeName || '',
+                    storeType: data.storeType || defaultType,
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    description: data.description || '',
+                    area: data.area || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    pincode: data.pincode || '',
+                    latitude: data.latitude?.toString() || '',
+                    longitude: data.longitude?.toString() || '',
+                }));
 
-// Around line 183, update the availability check:
-// Set availability toggle state
-setIsCurrentlyAvailable(
-    typeof data.availability === 'boolean' 
-        ? data.availability 
-        : (data.availability === 'Full Time' || data.availability === 'On Demand')
-);
+                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
                 console.error(err);
-                setError('Failed to load service data');
+                setError('Failed to load store data');
             } finally {
                 setLoadingData(false);
             }
         };
         fetchData();
-    }, [editId, defaultCategory]);
+    }, [editId]);
 
     // ── Auto-detect coordinates when area is entered ────────────────────────
     useEffect(() => {
@@ -218,7 +179,7 @@ setIsCurrentlyAvailable(
 
         const timer = setTimeout(detectCoordinates, 1000);
         return () => clearTimeout(timer);
-    }, [formData.area, formData.city, formData.state, formData.pincode, formData.latitude, formData.longitude]);
+    }, [formData.area, formData.city, formData.state, formData.pincode]);
 
     // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -326,35 +287,24 @@ setIsCurrentlyAvailable(
         setSuccessMessage('');
 
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.services || formData.services.trim() === '')
-                throw new Error('Please enter at least one service');
+            if (!formData.storeName || !formData.phone || !formData.email)
+                throw new Error('Please fill in all required fields (Store Name, Phone, Email)');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // Convert comma-separated services to array
-            const servicesArray = formData.services
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
-
-            const payload: any = {
+            const payload: ShoppingStore = {
                 ...formData,
-                services: servicesArray,
-                serviceCharge: parseFloat(formData.serviceCharge) || 0,
                 latitude: parseFloat(formData.latitude),
                 longitude: parseFloat(formData.longitude),
-                experience: parseInt(formData.experience) || 0,
             };
 
             if (isEditMode && editId) {
-                await updateBeautyWorker(editId, payload);
-                setSuccessMessage('Service updated successfully!');
+                await updateShoppingRetail(editId, payload);
+                setSuccessMessage('Store updated successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createBeautyWorker(payload);
-                setSuccessMessage('Service created successfully!');
+                await createShoppingStore(payload);
+                setSuccessMessage('Store created successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
@@ -371,7 +321,7 @@ setIsCurrentlyAvailable(
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -384,52 +334,53 @@ setIsCurrentlyAvailable(
     return (
         <div className="min-h-screen bg-gray-50">
             {/* ── Header - Fixed ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+                <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+                        className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-100 rounded-full transition flex-shrink-0"
+                        aria-label="Go back"
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Beauty Service' : 'Add Beauty Service'}
+                    <div className="flex-1 min-w-0">
+                        <h1 className={`${typography.heading.h5} text-gray-900 truncate`}>
+                            {isEditMode ? 'Update Store' : 'Add New Store'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your beauty service listing' : 'Create new beauty service listing'}
+                        <p className={`${typography.body.small} text-gray-500 hidden sm:block`}>
+                            {isEditMode ? 'Update your store listing' : 'Create new store listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
             {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
 
                 {/* ── Alerts ── */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                    <div className={`p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error} text-sm sm:text-base`}>
                         {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                    <div className={`p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
                         {successMessage}
                     </div>
                 )}
 
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
+                {/* ─── 1. STORE NAME ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Business/Professional Name</FieldLabel>
+                        <FieldLabel required>Store Name</FieldLabel>
                         <input
                             type="text"
-                            name="name"
-                            value={formData.name}
+                            name="storeName"
+                            value={formData.storeName}
                             onChange={handleInputChange}
-                            placeholder="Glam Beauty Salon"
+                            placeholder="Enter your store name"
                             className={inputBase}
                         />
                     </div>
@@ -461,13 +412,13 @@ setIsCurrentlyAvailable(
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. CATEGORY & SERVICES ────────────────────────── */}
+                {/* ─── 3. STORE TYPE ────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Service Category</FieldLabel>
+                        <FieldLabel required>Store Type</FieldLabel>
                         <select
-                            name="category"
-                            value={formData.category}
+                            name="storeType"
+                            value={formData.storeType}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -478,121 +429,24 @@ setIsCurrentlyAvailable(
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            <option value="Beautician">Beautician</option>
-                            <option value="Hair Stylist">Hair Stylist</option>
-                            <option value="Makeup Artist">Makeup Artist</option>
-                            <option value="Spa Therapist">Spa Therapist</option>
-                            <option value="Massage Therapist">Massage Therapist</option>
-                            <option value="Nail Technician">Nail Technician</option>
-                            <option value="Skincare Specialist">Skincare Specialist</option>
-                            <option value="Fitness Trainer">Fitness Trainer</option>
-                            <option value="Yoga Instructor">Yoga Instructor</option>
-                            <option value="Tattoo Artist">Tattoo Artist</option>
-                            <option value="Mehendi Artist">Mehendi Artist</option>
-                            <option value="Beauty Parlour">Beauty Parlour</option>
+                            {storeTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
 
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Services Offered</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={formData.services}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter services separated by commas
-                        </p>
-
-                        {/* Service Chips Preview */}
-                        {formData.services && formData.services.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.services.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. PROFESSIONAL DETAILS ───────────────────────── */}
-                <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>Experience (years)</FieldLabel>
-                            <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years"
-                                min="0"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>Service Charge (₹)</FieldLabel>
-                            <input
-                                type="number"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
-                                onChange={handleInputChange}
-                                placeholder="Amount"
-                                min="0"
-                                className={inputBase}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
-                        >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                            />
-                        </button>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 5. BIO ──────────────────────────────────────── */}
-                <SectionCard title="Bio">
+                {/* ─── 4. DESCRIPTION ──────────────────────────────────────── */}
+                <SectionCard title="Store Description">
                     <textarea
-                        name="bio"
-                        value={formData.bio}
+                        name="description"
+                        value={formData.description}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
+                        placeholder="Tell us about your store..."
                         className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
 
-                {/* ─── 6. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 5. LOCATION DETAILS ────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -668,25 +522,25 @@ setIsCurrentlyAvailable(
                     </div>
 
                     {/* Location Tip */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 sm:p-3">
+                        <p className={`${typography.body.small} text-blue-800 text-xs sm:text-sm`}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
 
                     {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-2.5 sm:p-3">
+                            <p className={`${typography.body.small} text-green-800 text-xs sm:text-sm`}>
                                 <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                                <span className="ml-1 break-all">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────── */}
-                <SectionCard title="Portfolio Photos (Optional)">
+                {/* ─── 6. STORE PHOTOS ────────────────────────────── */}
+                <SectionCard title="Store Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
                             type="file"
@@ -696,21 +550,21 @@ setIsCurrentlyAvailable(
                             className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                        <div className={`border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-rose-300 hover:border-rose-400 hover:bg-rose-50'
+                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
                             }`}>
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-rose-600" />
+                            <div className="flex flex-col items-center gap-2 sm:gap-3">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                    <p className={`${typography.form.input} font-medium text-gray-700 text-sm sm:text-base`}>
                                         {selectedImages.length + existingImages.length >= 5
                                             ? 'Maximum limit reached'
-                                            : 'Tap to upload portfolio photos'}
+                                            : 'Tap to upload store photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1 text-xs sm:text-sm`}>Maximum 5 images</p>
                                 </div>
                             </div>
                         </div>
@@ -718,22 +572,22 @@ setIsCurrentlyAvailable(
 
                     {/* Image Previews */}
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 sm:mt-4">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img
                                         src={url}
                                         alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-gray-200"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-1.5 py-0.5 sm:px-2 rounded-full text-[10px] sm:text-xs`}>
                                         Saved
                                     </span>
                                 </div>
@@ -743,16 +597,16 @@ setIsCurrentlyAvailable(
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-rose-400"
+                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-blue-400"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-green-600 text-white ${typography.fontSize.xs} px-1.5 py-0.5 sm:px-2 rounded-full text-[10px] sm:text-xs`}>
                                         New
                                     </span>
                                 </div>
@@ -762,24 +616,24 @@ setIsCurrentlyAvailable(
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-4 sm:pb-0">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-rose-400 cursor-not-allowed'
-                            : 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800'
-                            } shadow-sm ${typography.body.base}`}
+                        className={`w-full sm:flex-1 px-6 py-3 sm:py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                            } shadow-sm ${typography.body.base} text-sm sm:text-base`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                            : (isEditMode ? 'Update Store' : 'Create Store')}
                     </button>
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} text-sm sm:text-base`}
                     >
                         Cancel
                     </button>
@@ -789,4 +643,4 @@ setIsCurrentlyAvailable(
     );
 };
 
-export default BeautyServiceForm;
+export default ShoppingForm;

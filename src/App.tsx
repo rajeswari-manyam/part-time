@@ -92,6 +92,9 @@ import BeautyServiceList from "./pages/BeautyServiceList";
 import HospitalServicesList from "./pages/HospitalServiceList";
 import HospitalForm from "./pages/HospitalForm";
 
+import SportsServiceForm from "./pages/SportsServiceForm";
+import ShoppingForm from "./pages/SoppingForm";
+
 
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -186,7 +189,10 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-beauty-service-form" element={<BeautyServiceForm />} />
                     {/* ================= HOSPITAL ROUTES ================= */}
                     <Route path="/hospital-services/:subcategory" element={<HospitalServiceList />} />
-
+                    <Route path="/add-sports-service-form" element={<SportsServiceForm />} />
+                    <Route path="/add-shopping-form" element={<ShoppingForm />} />
+                   
+                   
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
                     <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
                     <Route path="/beauty-services" element={<BeautyServicesList />} />
@@ -230,6 +236,12 @@ const AppRoutes: React.FC = () => {
                     <Route path="/beauty" element={<BeautyServiceList />} />
                     <Route path="/hospital-services/:subcategory" element={<HospitalServicesList />} />
                     <Route path="/hospital-services" element={<HospitalServicesList />} />
+                    <Route path="/sports-services/:subcategory" element={<SportsServiceList />} />
+                    <Route path="/sports-services" element={<SportsServiceList />} />
+                    <Route path="/shopping/:subcategory" element={<ShoppingList />} />
+                    <Route path="/shopping" element={<ShoppingList />} />
+                    
+                   
                     <Route
                         path="/add-skills"
                         element={

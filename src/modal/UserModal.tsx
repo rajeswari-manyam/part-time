@@ -1,6 +1,8 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import Button from "../components/ui/Buttons";
+import { API_BASE_URL } from "../services/api.service";  // ✅ ADD THIS IMPORT
+
 interface UserModalProps {
     phoneNumber: string;
     userId: string;
@@ -73,7 +75,8 @@ const UserModal: React.FC<UserModalProps> = ({
                 console.log("⚠️ No location available, updating name only");
             }
 
-            const response = await fetch(`http://13.204.29.0:3001/updateUserById/${userId}`, {
+            // ✅ FIXED: Use API_BASE_URL instead of hardcoded IP
+            const response = await fetch(`${API_BASE_URL}/updateUserById/${userId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -121,7 +124,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
-            <div className="bg-[#1A5F9E] px-6 py-8 text-center">
+                <div className="bg-[#1A5F9E] px-6 py-8 text-center">
 
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">😊</span>
@@ -160,7 +163,7 @@ const UserModal: React.FC<UserModalProps> = ({
                         )}
                     </div>
 
-            <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
+                    <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
 
                         <p className="text-xs text-gray-500 mb-1">Registered Phone</p>
                         <p className="text-sm font-semibold text-gray-900">
@@ -189,7 +192,7 @@ const UserModal: React.FC<UserModalProps> = ({
                         <Button
                             type="submit"
                             disabled={isSubmitting || !name.trim()}
-                          className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
+                            className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
 
 
                         >
@@ -200,7 +203,7 @@ const UserModal: React.FC<UserModalProps> = ({
                             type="button"
                             onClick={handleSkip}
                             disabled={isSubmitting}
-                          className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
+                            className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
 
                         >
                             Skip for now

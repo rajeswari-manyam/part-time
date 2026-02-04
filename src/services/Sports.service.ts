@@ -218,3 +218,18 @@ export const deleteSportsActivity = async (id: string): Promise<{ success: boole
     return { success: false, message: "Failed to delete sports activity" };
   }
 };
+// src/services/Sports.service.ts
+
+
+export const getUserSportsActivities = async ({ userId }: { userId: string }) => {
+  const response = await fetch(
+    `${API_BASE_URL}/getSportsByUserId/${userId}`,
+    { method: "GET" }
+  );
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};

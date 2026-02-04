@@ -99,18 +99,40 @@ const BeautyServicesList: React.FC = () => {
         return () => { mountedRef.current = false; };
     }, []);
 
-    // -- core API call (works with OR without coordinates) -----------------
-    const callAPI = useCallback(async (lat: number, lng: number) => {
+    // -- fetch nearby beauty workers with automatic location ----------------
+    const fetchNearbyBeautyWorkers = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        setLocationError("");
+
         try {
-            const distance = 10;
-            console.log("Calling getNearbyBeautyWorkers:", { lat, lng, distance });
-            const response = await getNearbyBeautyWorkers(lat, lng, distance);
-            console.log("API response:", response);
+            // Get current location
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error("Geolocation not supported"));
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000 // Cache for 5 minutes
+                });
+            });
+
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ latitude, longitude });
+
+            const distance = 10; // 10 km radius
+
+            console.log("Fetching nearby beauty workers with coordinates:", { latitude, longitude, distance });
+            const response = await getNearbyBeautyWorkers(latitude, longitude, distance);
+            console.log("Nearby beauty workers API response:", response);
 
             if (!mountedRef.current) return;
 
             if (response.success) {
                 const allServices: BeautyWorker[] = response.data || [];
+                console.log("All services fetched:", allServices);
 
                 if (subcategory) {
                     const targetCategories = getCategoriesFromSubcategory(subcategory);
@@ -132,83 +154,21 @@ const BeautyServicesList: React.FC = () => {
                 setNearbyServices([]);
             }
         } catch (err: any) {
-            console.error("API call failed:", err);
+            console.error("fetchNearbyBeautyWorkers error:", err);
             if (mountedRef.current) {
-                setError(err.message || "Failed to fetch services. Please try again.");
+                setLocationError(
+                    err.message === "User denied Geolocation"
+                        ? "Location access denied. Please enable location services to see nearby services."
+                        : err.message || "Failed to get location. Please enable location services."
+                );
+                setNearbyServices([]);
+            }
+        } finally {
+            if (mountedRef.current) {
+                setLoading(false);
             }
         }
     }, [subcategory]);
-
-    // -- geolocation + fetch orchestrator -----------------------------------
-    // Strategy:
-    //   1. Try geolocation with a hard 8s setTimeout fallback.
-    //   2. Success -> call API with real coords.
-    //   3. Fail/timeout -> show warning banner, call API with fallback (0,0).
-    //   4. setLoading(false) runs in ALL paths. Page NEVER stays stuck.
-    const fetchNearbyBeautyWorkers = useCallback(async () => {
-        setLoading(true);
-        setError("");
-        setLocationError("");
-
-        let coords: { latitude: number; longitude: number } | null = null;
-
-        try {
-            coords = await new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    reject(new Error("TIMEOUT"));
-                }, 8000);
-
-                if (!navigator.geolocation) {
-                    clearTimeout(timeoutId);
-                    reject(new Error("NOT_SUPPORTED"));
-                    return;
-                }
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        clearTimeout(timeoutId);
-                        resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-                    },
-                    (err) => {
-                        clearTimeout(timeoutId);
-                        reject(err);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 6000,
-                        maximumAge: 300000
-                    }
-                );
-            });
-        } catch (geoErr: any) {
-            console.warn("Geolocation failed:", geoErr);
-            if (!mountedRef.current) return;
-
-            if (geoErr.code === 1 || (geoErr.message && geoErr.message.toLowerCase().includes("denied"))) {
-                setLocationError("Location access denied. Please enable location services in your browser/device settings.");
-            } else if (geoErr.message === "TIMEOUT" || geoErr.code === 3) {
-                setLocationError("Location request timed out. Please check your settings and try again.");
-            } else if (geoErr.message === "NOT_SUPPORTED") {
-                setLocationError("Your browser does not support geolocation.");
-            } else {
-                setLocationError("Could not determine your location. Enable location services and retry.");
-            }
-        }
-
-        // Call API regardless of whether we got coordinates
-        if (coords) {
-            setUserLocation(coords);
-            await callAPI(coords.latitude, coords.longitude);
-        } else {
-            console.log("Calling API without valid coordinates (fallback 0,0)");
-            await callAPI(0, 0);
-        }
-
-        // Always stop the spinner
-        if (mountedRef.current) {
-            setLoading(false);
-        }
-    }, [callAPI]);
 
     useEffect(() => {
         console.log("Component mounted/updated. Subcategory:", subcategory);
@@ -218,13 +178,13 @@ const BeautyServicesList: React.FC = () => {
     // -- navigation helpers -------------------------------------------------
     const handleView = (id: string) => {
         console.log("Viewing beauty service details:", id);
-        navigate("/beauty-services/details/" + id);
+        navigate(`/beauty-services/details/${id}`);
     };
 
     const handleAddPost = () => {
         console.log("Adding new post. Subcategory:", subcategory);
         navigate(subcategory
-            ? "/add-beauty-service-form?subcategory=" + subcategory
+            ? `/add-beauty-service-form?subcategory=${subcategory}`
             : "/add-beauty-service-form"
         );
     };
@@ -241,13 +201,17 @@ const BeautyServicesList: React.FC = () => {
     const getCardComponent = (): React.ComponentType<any> | null => {
         if (subcategory) {
             const key = resolveCardKey(subcategory);
+            console.log("Card key from subcategory:", key);
             if (key && CARD_MAP[key]) return CARD_MAP[key];
         }
         if (nearbyServices.length > 0 && nearbyServices[0].category) {
             const normalized = nearbyServices[0].category.toLowerCase().replace(/\s+/g, "-");
             const key = resolveCardKey(normalized);
+            console.log("Card key from first service category:", key);
             if (key && CARD_MAP[key]) return CARD_MAP[key];
         }
+        // Default to beauty-parlour card if no specific match
+        console.log("Using default beauty-parlour card component");
         return CARD_MAP["beauty-parlour"];
     };
 
@@ -258,7 +222,7 @@ const BeautyServicesList: React.FC = () => {
     // ============================================================================
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 flex items-center justify-center">
+            <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
                     <div className="relative w-20 h-20 mx-auto mb-6">
                         <div className="absolute inset-0 border-4 border-rose-200 rounded-full animate-ping"></div>
@@ -274,22 +238,22 @@ const BeautyServicesList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
-            <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div className="min-h-screen bg-white">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
 
                 {/* HEADER */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-4xl font-light text-gray-800 tracking-tight mb-2">
+                        <h1 className={`${typography.heading.h3} text-gray-800 tracking-tight mb-2`}>
                             {getDisplayTitle()}
                         </h1>
-                        <p className="text-sm text-gray-500 font-light tracking-wide">
+                        <p className={`${typography.body.small} text-gray-500 font-light tracking-wide`}>
                             Discover talented professionals near you
                         </p>
                     </div>
                     <Button
                         variant="primary"
-                        size="lg"
+                        size="md"
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center"
                     >
@@ -302,7 +266,7 @@ const BeautyServicesList: React.FC = () => {
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 flex items-center gap-3">
                         <span className="text-xl">⚠️</span>
-                        <span>{error}</span>
+                        <span className={typography.body.small}>{error}</span>
                         <button
                             onClick={fetchNearbyBeautyWorkers}
                             className="ml-auto text-sm text-red-600 underline hover:text-red-800 cursor-pointer"
@@ -318,10 +282,10 @@ const BeautyServicesList: React.FC = () => {
                         <div className="flex items-start gap-3">
                             <span className="text-2xl">📍</span>
                             <div className="flex-1">
-                                <p className="text-sm text-yellow-800 font-semibold mb-1">
+                                <p className={`${typography.body.small} text-yellow-800 font-semibold mb-1`}>
                                     Location Access Required
                                 </p>
-                                <p className="text-xs text-yellow-700">
+                                <p className={`${typography.body.xs} text-yellow-700`}>
                                     {locationError}
                                 </p>
                             </div>
@@ -338,48 +302,26 @@ const BeautyServicesList: React.FC = () => {
                 {/* SERVICES LIST */}
                 {CardComponent && (
                     <div>
-                        <h2 className="text-2xl font-light text-gray-800 mb-6 flex items-center gap-2">
+                        <h2 className={`${typography.heading.h4} text-gray-800 mb-4 sm:mb-6 flex items-center gap-2`}>
                             <span className="shrink-0">💆</span>
                             <span className="truncate">Nearby {getDisplayTitle()}</span>
                             {nearbyServices.length > 0 && (
-                                <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-sm font-light ml-2">
+                                <span className={`${typography.misc.badge} px-3 py-1 bg-rose-100 text-rose-700 rounded-full ml-2`}>
                                     {nearbyServices.length}
                                 </span>
                             )}
                         </h2>
 
-                        {/* EMPTY STATE */}
-                        {nearbyServices.length === 0 ? (
-                            <div className="bg-white/80 backdrop-blur-md border border-rose-100 rounded-2xl shadow-md p-10 text-center">
-                                <p className="text-5xl mb-4">💆‍♀️</p>
-                                <p className="text-lg text-gray-600 font-light mb-1">
-                                    No {getDisplayTitle().toLowerCase()} services found nearby
-                                </p>
-                                <p className="text-sm text-gray-400 mb-5">
-                                    {locationError
-                                        ? "Enable location services to see nearby results, or be the first to list!"
-                                        : "Be the first to list a service in your area!"}
-                                </p>
-                                <Button
-                                    variant="primary"
-                                    size="md"
-                                    onClick={handleAddPost}
-                                    className="justify-center"
-                                >
-                                    <span className="mr-1">✨</span> Add Post
-                                </Button>
-                            </div>
-                        ) : (
-                            /* CARDS */
-                            <CardComponent
-                                onViewDetails={(service: any) => {
-                                    const id = service.id || service._id;
-                                    handleView(id);
-                                }}
-                                nearbyData={nearbyServices}
-                                userLocation={userLocation}
-                            />
-                        )}
+                        {/* Always render the CardComponent - it will handle its own dummy data */}
+                        <CardComponent
+                            onViewDetails={(service: any) => {
+                                const id = service.id || service._id;
+                                console.log("Card view details clicked:", id);
+                                handleView(id);
+                            }}
+                            nearbyData={nearbyServices.length > 0 ? nearbyServices : undefined}
+                            userLocation={userLocation}
+                        />
                     </div>
                 )}
             </div>

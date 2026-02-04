@@ -197,9 +197,9 @@ export const updateBeautyWorker = async (
  * @param id string - Worker ID
  * @returns Promise<any>
  */
-export const deleteBeautyWorkerById = async (id: string): Promise<any> => {
+export const deleteById = async (id: string): Promise<any> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/deletebeautyworkerById/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/deleteById?id=${id}`, {
       method: "DELETE",
       redirect: "follow",
     });

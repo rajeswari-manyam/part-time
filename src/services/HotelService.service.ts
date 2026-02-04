@@ -198,18 +198,24 @@ export const deleteHotel = async (hotelId: string): Promise<any> => {
   }
 };
 
-
 /**
  * Fetch hotels created by a specific user
- * @param userId string
- * @returns Promise<HotelResponse>
  */
 export const getUserHotels = async (userId: string): Promise<HotelResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/getUserHotels?userId=${userId}`, {
-      method: "GET",
-      redirect: "follow",
-    });
+    if (!userId) {
+      return { success: false, count: 0, data: [] };
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/getUserHotels?userId=${encodeURIComponent(userId)}`,
+      {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -218,7 +224,8 @@ export const getUserHotels = async (userId: string): Promise<HotelResponse> => {
     const data: HotelResponse = await response.json();
     return data;
   } catch (error) {
-    console.error(`Error fetching hotels for user ${userId}:`, error);
+    console.error("Error fetching user hotels:", error);
     return { success: false, count: 0, data: [] };
   }
 };
+

@@ -105,7 +105,7 @@ export const DUMMY_MEHENDI_ARTISTS = [
 
 /* ================= COMPONENT ================= */
 
-const NearbyMehendiCard: React.FC<NearbyMehendiCardProps> = ({ job, onViewDetails }) => {
+const SingleMehendiCard: React.FC<NearbyMehendiCardProps> = ({ job, onViewDetails }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imageError, setImageError] = useState(false);
 
@@ -409,8 +409,8 @@ const NearbyMehendiCard: React.FC<NearbyMehendiCardProps> = ({ job, onViewDetail
                     {openingStatus && (
                         <div
                             className={`flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded ${openingStatus.includes('Available')
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-red-100 text-red-700'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
                                 }`}
                         >
                             <Clock size={11} />
@@ -456,8 +456,8 @@ const NearbyMehendiCard: React.FC<NearbyMehendiCardProps> = ({ job, onViewDetail
                         onClick={handleCall}
                         disabled={!hasPhoneNumber}
                         className={`flex-1 flex items-center justify-center gap-1 border-2 font-bold text-xs py-2.5 rounded-lg transition-all active:scale-95 ${hasPhoneNumber
-                                ? 'border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                                : 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            : 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
                     >
                         <Phone size={14} />
@@ -467,6 +467,32 @@ const NearbyMehendiCard: React.FC<NearbyMehendiCardProps> = ({ job, onViewDetail
             </div>
         </div>
     );
+};
+
+interface NearbyMehendiContainerProps {
+    job?: JobType;
+    nearbyData?: any[]; // Allow processing passed data if needed in future
+    onViewDetails: (job: JobType) => void;
+}
+
+const NearbyMehendiCard: React.FC<NearbyMehendiContainerProps> = (props) => {
+    // If no job is passed, render a list of dummy mehendi artists
+    if (!props.job) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {DUMMY_MEHENDI_ARTISTS.map((artist) => (
+                    <SingleMehendiCard
+                        key={artist.id}
+                        job={artist}
+                        onViewDetails={props.onViewDetails}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    // Otherwise render the single card
+    return <SingleMehendiCard job={props.job} onViewDetails={props.onViewDetails} />;
 };
 
 export default NearbyMehendiCard;

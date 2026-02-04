@@ -249,3 +249,66 @@ export const getUserStores = async (
     };
   }
 };
+/* =========================
+   UPDATE SHOPPING RETAIL
+========================= */
+
+export interface UpdateShoppingResponse {
+  success: boolean;
+  message: string;
+  data?: ShoppingStore;
+}
+
+export const updateShoppingRetail = async (
+  storeId: string,
+  payload: ShoppingStore | FormData
+): Promise<UpdateShoppingResponse> => {
+  if (!storeId) {
+    throw new Error("Store ID is required");
+  }
+
+  try {
+    let body: BodyInit;
+
+    // If FormData is passed directly (for images)
+    if (payload instanceof FormData) {
+      body = payload;
+    } else {
+      // Convert object payload to FormData
+      const formData = new FormData();
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            value.forEach((v) => formData.append(key, v));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      body = formData;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/updateShoppingRetail/${storeId}`,
+      {
+        method: "PUT",
+        body,
+        redirect: "follow",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating shopping retail:", error);
+    return {
+      success: false,
+      message: "Failed to update shopping retail",
+    };
+  }
+};

@@ -1,302 +1,272 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getNearbySportsWorkers, SportsWorker } from "../services/Sports.service";
 import Button from "../components/ui/Buttons";
-import { MoreVertical } from "lucide-react";
+import typography from "../styles/typography";
 
-// ================= SPORTS CARD IMPORTS =================
+// ── Nearby card components
 import NearbyPlayAreaCard from "../components/cards/Sports/NearByPlayArear";
 import NearbySportsCard from "../components/cards/Sports/NearBySports";
 import NearbyFitnessCard from "../components/cards/Beauty/NearByFittness";
 import NearbyStadiumCard from "../components/cards/Sports/NearByStadium";
 
-/* ================= TYPES ================= */
+// ============================================================================
+// SUBCATEGORY → CARD COMPONENT MAP
+// ============================================================================
+type CardKey = "gym" | "sports" | "play" | "stadium";
 
-export interface SportsServiceType {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  distance?: number;
-  category: string;
-  jobData?: {
-    status: boolean;
-    pincode: string;
-    icon: string;
-    rating?: number;
-    user_ratings_total?: number;
-    opening_hours?: { open_now: boolean };
-    geometry?: { location: { lat: number; lng: number } };
-    phone?: string;
-    photos?: string[];
-    price_range?: string;
-    services?: string[];
-    special_tags?: string[];
-  };
-}
-
-/* ================= ACTION DROPDOWN ================= */
-
-const ActionDropdown: React.FC<{
-  serviceId: string;
-  onEdit: (id: string, e: React.MouseEvent) => void;
-  onDelete: (id: string, e: React.MouseEvent) => void;
-}> = ({ serviceId, onEdit, onDelete }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="p-2 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-full transition shadow-sm"
-      >
-        <MoreVertical size={18} className="text-gray-700" />
-      </button>
-
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-20">
-            <button
-              onClick={(e) => {
-                onEdit(serviceId, e);
-                setIsOpen(false);
-              }}
-              className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 text-blue-600"
-            >
-              ✏️ Edit
-            </button>
-            <div className="border-t border-gray-100" />
-            <button
-              onClick={(e) => {
-                onDelete(serviceId, e);
-                setIsOpen(false);
-              }}
-              className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 text-red-600"
-            >
-              🗑️ Delete
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
+const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
+    gym: NearbyFitnessCard,
+    sports: NearbySportsCard,
+    play: NearbyPlayAreaCard,
+    stadium: NearbyStadiumCard,
 };
 
-/* ================= MAIN COMPONENT ================= */
-
-const SportsServicesList: React.FC = () => {
-  const { subcategory } = useParams<{ subcategory?: string }>();
-  const navigate = useNavigate();
-
-  const [services, setServices] = useState<SportsServiceType[]>([]);
-  const [loading] = useState(false);
-  const [error] = useState("");
-
-  /* ================= HANDLERS ================= */
-
-  const handleView = (service: any) => {
-    navigate(`/sports-services/details/${service.id}`);
-  };
-
-  const handleEdit = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigate(`/add-sports-service-form/${id}`);
-  };
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this service?")) return;
-    setServices((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  const handleAddPost = () => {
-    navigate("/add-sports-service-form");
-  };
-
-  /* ================= HELPERS ================= */
-
-  const getDisplayTitle = () => {
-    if (!subcategory) return "All Sports Services";
-    return subcategory
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  };
-
-  const normalizeSubcategory = (sub?: string) =>
-    sub ? sub.toLowerCase() : "";
-
-  const getCardComponentForSubcategory = (
-    sub?: string
-  ): React.ComponentType<any> | null => {
-    const normalized = normalizeSubcategory(sub);
-
-    if (normalized.includes("gym") || normalized.includes("fitness"))
-      return NearbyFitnessCard;
-
-    if (
-      normalized.includes("sports") &&
-      (normalized.includes("club") || normalized.includes("academy"))
-    )
-      return NearbySportsCard;
-
-    if (
-      normalized.includes("play") ||
-      normalized.includes("indoor") ||
-      normalized.includes("kids")
-    )
-      return NearbyPlayAreaCard;
-
-    if (normalized.includes("stadium") || normalized.includes("ground"))
-      return NearbyStadiumCard;
-
+// ============================================================================
+// HELPERS
+// ============================================================================
+const getCardKeyFromSubCategory = (subCategory: string | undefined): CardKey | null => {
+    if (!subCategory) return null;
+    const n = subCategory.toLowerCase();
+    
+    if (n.includes("gym") || n.includes("fitness") || n.includes("yoga")) return "gym";
+    if (n.includes("stadium") || n.includes("ground")) return "stadium";
+    if (n.includes("play") || n.includes("indoor") || n.includes("kids")) return "play";
+    if (n.includes("sports") || n.includes("club") || n.includes("academy") || 
+        n.includes("cricket") || n.includes("football") || n.includes("basketball") ||
+        n.includes("tennis") || n.includes("badminton") || n.includes("swimming")) return "sports";
+    
     return null;
-  };
+};
 
-  const shouldShowNearbyCards = () => {
-    if (!subcategory) return false;
-    const keywords = [
-      "gym",
-      "fitness",
-      "sports",
-      "club",
-      "academy",
-      "play",
-      "indoor",
-      "stadium",
-      "ground",
-    ];
-    return keywords.some((k) =>
-      normalizeSubcategory(subcategory).includes(k)
-    );
-  };
+const resolveCardKey = (sub: string | undefined): CardKey | null => {
+    return getCardKeyFromSubCategory(sub);
+};
 
-  const renderNearbyCardsSection = () => {
-    const CardComponent = getCardComponentForSubcategory(subcategory);
-    if (!CardComponent) return null;
+const getSubCategoryFromUrl = (subcategory: string | undefined): string | undefined => {
+    if (!subcategory) return undefined;
+    return subcategory
+        .split("-")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+};
 
-    return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            🏆 Nearby {getDisplayTitle()}
-          </h2>
-          <CardComponent onViewDetails={handleView} />
-        </div>
+const normalizeSubCategory = (subCategory: string): string =>
+    subCategory.toLowerCase().trim().replace(/\s+/g, " ");
 
-        {services.length > 0 && (
-          <>
-            <div className="my-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-gray-300" />
-              <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border">
-                💪 Your Listed Services ({services.length})
-              </span>
-              <div className="flex-1 h-px bg-gray-300" />
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+const SportsServicesList: React.FC = () => {
+    const { subcategory } = useParams<{ subcategory?: string }>();
+    const navigate = useNavigate();
+
+    // ── state ────────────────────────────────────────────────────────────────
+    const [nearbyServices, setNearbyServices] = useState<SportsWorker[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [locationError, setLocationError] = useState("");
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+    // ── fetch nearby sports services with automatic location ─────────────────
+    const fetchNearbySports = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        setLocationError("");
+
+        try {
+            // Get current location
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error("Geolocation not supported"));
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000 // Cache for 5 minutes
+                });
+            });
+
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ latitude, longitude });
+
+            const distance = 10; // 10 km radius
+
+            console.log("Fetching nearby sports services with coordinates:", { latitude, longitude, distance });
+            const response = await getNearbySportsWorkers(latitude, longitude, distance);
+            console.log("Nearby sports API response:", response);
+
+            if (response.success) {
+                const allServices = response.data || [];
+                console.log("All sports services fetched:", allServices);
+
+                if (subcategory) {
+                    const targetSubCategory = getSubCategoryFromUrl(subcategory);
+                    if (targetSubCategory) {
+                        const normalizedTarget = normalizeSubCategory(targetSubCategory);
+                        const filtered = allServices.filter(s =>
+                            s.subCategory && normalizeSubCategory(s.subCategory) === normalizedTarget
+                        );
+                        console.log(`Filtered services for ${targetSubCategory}:`, filtered);
+                        setNearbyServices(filtered);
+                    } else {
+                        setNearbyServices(allServices);
+                    }
+                } else {
+                    setNearbyServices(allServices);
+                }
+            } else {
+                console.warn("API returned success=false:", response);
+                setNearbyServices([]);
+            }
+        } catch (err: any) {
+            console.error("fetchNearbySports error:", err);
+            setLocationError(
+                err.message === "User denied Geolocation"
+                    ? "Location access denied. Please enable location services to see nearby services."
+                    : err.message || "Failed to get location. Please enable location services."
+            );
+            setNearbyServices([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [subcategory]);
+
+    useEffect(() => {
+        console.log("Component mounted/updated. Subcategory:", subcategory);
+        fetchNearbySports();
+    }, [fetchNearbySports]);
+
+    // ── navigation handlers ──────────────────────────────────────────────────
+    const handleView = (id: string) => {
+        console.log("Viewing sports service details:", id);
+        navigate(`/sports-services/details/${id}`);
+    };
+
+    const handleAddPost = () => {
+        console.log("Adding new post. Subcategory:", subcategory);
+        navigate(subcategory
+            ? `/add-sports-service-form?subcategory=${subcategory}`
+            : "/add-sports-service-form"
+        );
+    };
+
+    // ── display helpers ──────────────────────────────────────────────────────
+    const getDisplayTitle = () =>
+        subcategory
+            ? subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+            : "All Sports & Fitness Services";
+
+    const getCardComponent = (): React.ComponentType<any> | null => {
+        if (subcategory) {
+            const key = resolveCardKey(subcategory);
+            console.log("Card key from subcategory:", key);
+            if (key && CARD_MAP[key]) return CARD_MAP[key];
+        }
+        if (nearbyServices.length > 0 && nearbyServices[0].subCategory) {
+            const key = getCardKeyFromSubCategory(nearbyServices[0].subCategory);
+            console.log("Card key from first service subCategory:", key);
+            if (key && CARD_MAP[key]) return CARD_MAP[key];
+        }
+        // Default to sports card if no specific match
+        console.log("Using default sports card component");
+        return CARD_MAP.sports;
+    };
+
+    const CardComponent = getCardComponent();
+
+    // ============================================================================
+    // LOADING
+    // ============================================================================
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <p className={`${typography.body.small} text-gray-600`}>Loading sports services...</p>
+                </div>
             </div>
+        );
+    }
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => (
-                <div key={service.id} className="relative">
-                  <CardComponent job={service} onViewDetails={handleView} />
-                  <div className="absolute top-3 right-3 z-10">
-                    <ActionDropdown
-                      serviceId={service.id}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  /* ================= RENDER ================= */
-
-  if (loading) {
+    // ============================================================================
+    // MAIN RENDER
+    // ============================================================================
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
+        <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-            {getDisplayTitle()}
-          </h1>
-          <Button variant="gradient-blue" size="md" onClick={handleAddPost}>
-            + Add Post
-          </Button>
+            {/* ─── PAGE CONTENT ───────────────────────────────────────── */}
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+
+                {/* ─── HEADER ── title  +  "+ Add Post" ─────────────── */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
+                        {getDisplayTitle()}
+                    </h1>
+
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto justify-center"
+                    >
+                        + Add Post
+                    </Button>
+                </div>
+
+                {/* ─── ERROR ──────────────────────────────────────── */}
+                {error && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg">
+                        <p className={`${typography.body.small} text-red-700 font-medium`}>{error}</p>
+                    </div>
+                )}
+
+                {/* ─── LOCATION ERROR ──────────────────────────────────────── */}
+                {locationError && (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 sm:p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl">📍</span>
+                            <div>
+                                <p className={`${typography.body.small} text-yellow-800 font-semibold mb-1`}>
+                                    Location Access Required
+                                </p>
+                                <p className={`${typography.body.xs} text-yellow-700`}>
+                                    {locationError}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ─── NEARBY SECTION ─────────────────────────────── */}
+                {CardComponent && (
+                    <div>
+                        <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
+                            <span className="shrink-0">🏃</span>
+                            <span className="truncate">Nearby {getDisplayTitle()}</span>
+                            {nearbyServices.length > 0 && (
+                                <span className={`${typography.misc.badge} bg-blue-100 text-blue-700 px-2 py-1 rounded-full ml-2`}>
+                                    {nearbyServices.length}
+                                </span>
+                            )}
+                        </h2>
+
+                        {/* Always render the CardComponent - it will handle its own dummy data */}
+                        <CardComponent
+                            onViewDetails={(service: any) => {
+                                const id = service.id || service._id;
+                                console.log("Card view details clicked:", id);
+                                handleView(id);
+                            }}
+                            nearbyData={nearbyServices.length > 0 ? nearbyServices : undefined}
+                            userLocation={userLocation}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {shouldShowNearbyCards() ? (
-          renderNearbyCardsSection()
-        ) : services.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🏆</div>
-            <h3 className="text-xl font-bold text-gray-800">
-              No Services Found
-            </h3>
-            <p className="text-gray-600">
-              Be the first to add a sports service!
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <div
-                key={service.id}
-                className="relative bg-white rounded-xl border hover:shadow-lg cursor-pointer"
-                onClick={() => handleView(service)}
-              >
-                <div className="absolute top-3 right-3 z-10">
-                  <ActionDropdown
-                    serviceId={service.id}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                </div>
-
-                <div className="h-48 bg-blue-50 flex items-center justify-center text-5xl">
-                  {service.jobData?.icon || "🏃"}
-                </div>
-
-                <div className="p-4 space-y-2">
-                  <h2 className="font-bold">{service.title}</h2>
-                  <p className="text-sm text-gray-600">
-                    {service.location}
-                  </p>
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {service.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 };
 
 export default SportsServicesList;

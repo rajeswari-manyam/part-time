@@ -9,7 +9,7 @@ import {
 import Button from '../components/ui/Buttons';
 import typography from '../styles/typography';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin, Building2, Stethoscope, Briefcase } from 'lucide-react';
+import { X, Upload, MapPin } from 'lucide-react';
 
 // ── Pull hospital subcategories from JSON (categoryId 2) ────────────────────
 const getHospitalSubcategories = () => {
@@ -22,45 +22,35 @@ const getHospitalSubcategories = () => {
 };
 
 // ============================================================================
-// SHARED INPUT CLASS WITH ENHANCED STYLING
+// SHARED INPUT CLASSES - Mobile First
 // ============================================================================
 const inputBase =
-    'w-full px-4 py-3 border border-gray-300 rounded-xl ' +
-    'focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ' +
-    'placeholder-gray-400 transition-all duration-200 ' +
-    'hover:border-gray-400 ' +
-    typography.form.input;
-
-const textareaBase =
-    'w-full px-4 py-3 border border-gray-300 rounded-xl ' +
-    'focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ' +
-    'placeholder-gray-400 transition-all duration-200 resize-y ' +
-    'hover:border-gray-400 min-h-[100px] ' +
-    typography.form.input;
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
+    `focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `${typography.form.input} bg-white`;
 
 // ============================================================================
-// REUSABLE LABEL WITH ICON SUPPORT
+// REUSABLE LABEL
 // ============================================================================
-const FieldLabel: React.FC<{
-    children: React.ReactNode;
-    required?: boolean;
-    icon?: React.ReactNode;
-}> = ({ children, required, icon }) => (
-    <label className={`flex items-center gap-2 ${typography.form.label} text-gray-700 font-semibold mb-2`}>
-        {icon && <span className="text-emerald-600">{icon}</span>}
-        {children}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
+        {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
 // ============================================================================
-// SECTION DIVIDER
+// SECTION CARD WRAPPER
 // ============================================================================
-const SectionDivider: React.FC<{ title: string; icon?: React.ReactNode }> = ({ title, icon }) => (
-    <div className="flex items-center gap-3 pt-4 pb-2">
-        {icon && <span className="text-emerald-600 text-xl">{icon}</span>}
-        <h2 className={`${typography.heading.h4} text-gray-800 font-bold`}>{title}</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent ml-3"></div>
+const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+        {title && (
+            <div className="flex items-center justify-between mb-1">
+                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
+                {action}
+            </div>
+        )}
+        {children}
     </div>
 );
 
@@ -96,7 +86,6 @@ const HospitalForm = () => {
         hospitalName: '',
         hospitalType: defaultType,
         departments: '',
-        description: '',
         area: '',
         city: '',
         state: '',
@@ -310,477 +299,375 @@ const HospitalForm = () => {
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-                <div className="text-center bg-white p-8 rounded-2xl shadow-xl">
-                    <div className="relative">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-emerald-600 mx-auto mb-4" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-emerald-600" />
-                        </div>
-                    </div>
-                    <p className={`${typography.body.base} text-gray-600 font-medium`}>Loading hospital data...</p>
-                    <p className={`${typography.body.small} text-gray-400 mt-2`}>Please wait</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4" />
+                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
         );
     }
 
     // ============================================================================
-    // RENDER
+    // RENDER - Mobile First Design
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/20 to-gray-50 px-3 sm:px-4 py-6 sm:py-8">
-            <div className="max-w-5xl mx-auto">
-
-                {/* ── Header with Gradient ── */}
-                <div className="mb-6 sm:mb-8">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-xl shadow-lg">
-                                <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                            </div>
-                            <div>
-                                <h1 className={`${typography.heading.h2} text-gray-800 font-bold leading-tight`}>
-                                    {isEditMode ? 'Update Hospital' : 'Add New Hospital'}
-                                </h1>
-                                <p className={`${typography.body.small} text-gray-500 mt-0.5`}>
-                                    {isEditMode ? 'Update your hospital information' : 'Register your healthcare facility'}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleCancel}
-                            className={`flex items-center gap-2 px-4 py-2.5 ${typography.body.small} text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 shadow-sm hover:shadow`}
-                        >
-                            ← Back
-                        </button>
+        <div className="min-h-screen bg-gray-50">
+            {/* ── Header - Fixed ── */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-2xl mx-auto flex items-center gap-3">
+                    <button
+                        onClick={handleCancel}
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div className="flex-1">
+                        <h1 className={`${typography.heading.h5} text-gray-900`}>
+                            {isEditMode ? 'Update Hospital' : 'Add New Hospital'}
+                        </h1>
+                        <p className={`${typography.body.small} text-gray-500`}>
+                            {isEditMode ? 'Update your hospital information' : 'Register your healthcare facility'}
+                        </p>
                     </div>
                 </div>
+            </div>
 
-                {/* ── Alerts with Enhanced Styling ── */}
+            {/* ── Content ── */}
+            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+                {/* ── Alerts ── */}
                 {error && (
-                    <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center mt-0.5">
-                                <span className="text-red-600 text-xs font-bold">!</span>
-                            </div>
-                            <p className={`${typography.body.small} text-red-700 flex-1`}>{error}</p>
-                        </div>
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                        {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg shadow-sm animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                                <span className="text-green-600 text-xs font-bold">✓</span>
-                            </div>
-                            <p className={`${typography.body.small} text-green-700 flex-1`}>{successMessage}</p>
-                        </div>
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        {successMessage}
                     </div>
                 )}
 
-                {/* ── Main Form Card with Sections ── */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="p-5 sm:p-8 space-y-8">
+                {/* ─── 1. BASIC INFORMATION ──────────────────────────── */}
+                <SectionCard>
+                    <div>
+                        <FieldLabel required>Hospital Name</FieldLabel>
+                        <input
+                            type="text"
+                            name="hospitalName"
+                            value={formData.hospitalName}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Apollo Hospitals"
+                            className={inputBase}
+                        />
+                    </div>
+                </SectionCard>
 
-                        {/* ─── SECTION 1: BASIC INFO ───────────────────────── */}
-                        <div>
-                            <SectionDivider title="Basic Information" icon={<Building2 className="w-5 h-5" />} />
+                {/* ─── 2. HOSPITAL TYPE ───────────────────────────────── */}
+                <SectionCard>
+                    <div>
+                        <FieldLabel required>Hospital Type</FieldLabel>
+                        <select
+                            name="hospitalType"
+                            value={formData.hospitalType}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'}
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5em 1.5em',
+                                paddingRight: '2.5rem'
+                            }}
+                        >
+                            {hospitalTypes.map((t) => (
+                                <option key={t} value={t}>
+                                    {t}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </SectionCard>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
-                                <div className="space-y-2">
-                                    <FieldLabel required icon={<Building2 className="w-4 h-4" />}>
-                                        Hospital Name
-                                    </FieldLabel>
-                                    <input
-                                        type="text"
-                                        name="hospitalName"
-                                        value={formData.hospitalName}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., Apollo Hospitals"
-                                        className={inputBase}
-                                    />
-                                </div>
+                {/* ─── 3. DEPARTMENTS ──────────────────────────────────── */}
+                <SectionCard title="Departments">
+                    <div>
+                        <FieldLabel required>Available Departments</FieldLabel>
+                        <textarea
+                            name="departments"
+                            value={formData.departments}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="Cardiology, Orthopaedics, Neurology, Dermatology, Pediatrics"
+                            className={inputBase + ' resize-none'}
+                        />
+                        <p className={`${typography.misc.caption} mt-2`}>
+                            💡 Separate each department with a comma
+                        </p>
+                    </div>
 
-                                <div className="space-y-2">
-                                    <FieldLabel required icon={<Stethoscope className="w-4 h-4" />}>
-                                        Hospital Type
-                                    </FieldLabel>
-                                    <select
-                                        name="hospitalType"
-                                        value={formData.hospitalType}
-                                        onChange={handleInputChange}
-                                        className={inputBase + ' bg-white cursor-pointer'}
-                                    >
-                                        {hospitalTypes.map((t) => (
-                                            <option key={t} value={t}>
-                                                {t}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ─── SECTION 2: DEPARTMENTS ──────────────────────── */}
-                        <div>
-                            <SectionDivider title="Departments" icon={<Briefcase className="w-5 h-5" />} />
-
-                            <div className="mt-6 space-y-2">
-                                <FieldLabel required>Available Departments</FieldLabel>
-                                <textarea
-                                    name="departments"
-                                    value={formData.departments}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Cardiology, Orthopaedics, Neurology, Dermatology, Pediatrics"
-                                    className={textareaBase}
-                                />
-                                <div className="flex items-start gap-2 mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                                    <span className="text-blue-600 mt-0.5">💡</span>
-                                    <p className={`${typography.misc.caption} text-blue-700`}>
-                                        Separate each department with a comma. This helps patients find the right specialists.
-                                    </p>
-                                </div>
-
-                                {/* Department chips preview with enhanced styling */}
-                                {formData.departments && formData.departments.trim() && (
-                                    <div className="mt-4 p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-100">
-                                        <p className={`${typography.misc.caption} text-emerald-800 font-semibold mb-3 flex items-center gap-2`}>
-                                            <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                                            Preview: {formData.departments.split(',').filter(d => d.trim()).length} departments
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.departments.split(',').map((d, i) => {
-                                                const trimmed = d.trim();
-                                                if (!trimmed) return null;
-                                                return (
-                                                    <span
-                                                        key={i}
-                                                        className="group bg-white hover:bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg shadow-sm border border-emerald-200 transition-all duration-200 hover:shadow-md hover:scale-105"
-                                                    >
-                                                        <span className="flex items-center gap-2">
-                                                            <span className="text-emerald-500 group-hover:scale-110 transition-transform">🏥</span>
-                                                            <span className={`${typography.misc.badge} font-medium`}>{trimmed}</span>
-                                                        </span>
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ─── SECTION 3: SERVICES ─────────────────────────── */}
-                        <div>
-                            <SectionDivider title="Services & Facilities" icon={<Stethoscope className="w-5 h-5" />} />
-
-                            <div className="mt-6 space-y-2">
-                                <FieldLabel required>Available Services</FieldLabel>
-                                <textarea
-                                    name="services"
-                                    value={formData.services}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Emergency Care, ICU, Lab Tests, X-Ray, CT Scan, MRI, Surgery, Dialysis, Pharmacy"
-                                    className={textareaBase}
-                                />
-                                <div className="flex items-start gap-2 mt-2 p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                                    <span className="text-purple-600 mt-0.5">💡</span>
-                                    <p className={`${typography.misc.caption} text-purple-700`}>
-                                        List all medical services and facilities available at your hospital, separated by commas.
-                                    </p>
-                                </div>
-
-                                {/* Service chips preview with enhanced styling */}
-                                {formData.services && formData.services.trim() && (
-                                    <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                                        <p className={`${typography.misc.caption} text-blue-800 font-semibold mb-3 flex items-center gap-2`}>
-                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                            Preview: {formData.services.split(',').filter(s => s.trim()).length} services
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.services.split(',').map((s, i) => {
-                                                const trimmed = s.trim();
-                                                if (!trimmed) return null;
-                                                return (
-                                                    <span
-                                                        key={i}
-                                                        className="group bg-white hover:bg-blue-50 text-blue-700 px-3 py-2 rounded-lg shadow-sm border border-blue-200 transition-all duration-200 hover:shadow-md hover:scale-105"
-                                                    >
-                                                        <span className="flex items-center gap-2">
-                                                            <span className="text-blue-500 group-hover:scale-110 transition-transform">✓</span>
-                                                            <span className={`${typography.misc.badge} font-medium`}>{trimmed}</span>
-                                                        </span>
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* ─── SECTION 4: LOCATION ─────────────────────────── */}
-                        <div>
-                            <SectionDivider title="Location Details" icon={<MapPin className="w-5 h-5" />} />
-
-                            <div className="mt-6 space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div className="space-y-2">
-                                        <FieldLabel>Area / Locality</FieldLabel>
-                                        <input
-                                            type="text"
-                                            name="area"
-                                            value={formData.area}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g., Banjara Hills"
-                                            className={inputBase}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <FieldLabel>City</FieldLabel>
-                                        <input
-                                            type="text"
-                                            name="city"
-                                            value={formData.city}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g., Hyderabad"
-                                            className={inputBase}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div className="space-y-2">
-                                        <FieldLabel>State</FieldLabel>
-                                        <input
-                                            type="text"
-                                            name="state"
-                                            value={formData.state}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g., Telangana"
-                                            className={inputBase}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <FieldLabel>Pincode</FieldLabel>
-                                        <input
-                                            type="text"
-                                            name="pincode"
-                                            value={formData.pincode}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g., 500016"
-                                            className={inputBase}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Enhanced Location Button & Status */}
-                                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-5 rounded-xl border border-emerald-200">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                                        <Button
-                                            variant="success"
-                                            size="md"
-                                            onClick={getCurrentLocation}
-                                            disabled={locationLoading}
-                                            className="flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    {/* Department chips preview */}
+                    {formData.departments && formData.departments.trim() && (
+                        <div className="mt-3">
+                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                Selected Departments ({formData.departments.split(',').filter(d => d.trim()).length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.departments.split(',').map((d, i) => {
+                                    const trimmed = d.trim();
+                                    if (!trimmed) return null;
+                                    return (
+                                        <span
+                                            key={i}
+                                            className={`inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
                                         >
-                                            {locationLoading ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                                    <span>Detecting Location...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <MapPin className="w-4 h-4" />
-                                                    <span>Use Current Location</span>
-                                                </>
-                                            )}
-                                        </Button>
+                                            <span className="text-emerald-500">🏥</span>
+                                            {trimmed}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </SectionCard>
 
-                                        {formData.latitude && formData.longitude && (
-                                            <div className="flex-1 p-3 bg-white border border-emerald-300 rounded-lg shadow-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                    <span className="font-semibold text-green-700 text-sm">Location Captured:</span>
-                                                </div>
-                                                <p className="text-green-600 text-xs mt-1 font-mono">
-                                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
+                {/* ─── 4. SERVICES ─────────────────────────────────────── */}
+                <SectionCard title="Services & Facilities">
+                    <div>
+                        <FieldLabel required>Available Services</FieldLabel>
+                        <textarea
+                            name="services"
+                            value={formData.services}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="Emergency Care, ICU, Lab Tests, X-Ray, CT Scan, MRI, Surgery, Dialysis, Pharmacy"
+                            className={inputBase + ' resize-none'}
+                        />
+                        <p className={`${typography.misc.caption} mt-2`}>
+                            💡 List all medical services and facilities, separated by commas
+                        </p>
+                    </div>
 
-                                    <div className="flex items-start gap-2 mt-4 p-3 bg-white/70 rounded-lg">
-                                        <span className="text-emerald-600 mt-0.5">📍</span>
-                                        <p className={`${typography.misc.caption} text-emerald-800`}>
-                                            Click the button to automatically detect your location, or enter your address manually above.
-                                        </p>
-                                    </div>
+                    {/* Service chips preview */}
+                    {formData.services && formData.services.trim() && (
+                        <div className="mt-3">
+                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                Selected Services ({formData.services.split(',').filter(s => s.trim()).length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.services.split(',').map((s, i) => {
+                                    const trimmed = s.trim();
+                                    if (!trimmed) return null;
+                                    return (
+                                        <span
+                                            key={i}
+                                            className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                        >
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            {trimmed}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </SectionCard>
+
+                {/* ─── 5. LOCATION DETAILS ─────────────────────────────── */}
+                <SectionCard
+                    title="Location Details"
+                    action={
+                        <Button
+                            variant="success"
+                            size="sm"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="!py-1.5 !px-3"
+                        >
+                            {locationLoading ? (
+                                <>
+                                    <span className="animate-spin mr-1">⌛</span>
+                                    Detecting...
+                                </>
+                            ) : (
+                                <>
+                                    <MapPin className="w-4 h-4 inline mr-1.5" />
+                                    Auto Detect
+                                </>
+                            )}
+                        </Button>
+                    }
+                >
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Banjara Hills"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Hyderabad"
+                                className={inputBase}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Telangana"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={formData.pincode}
+                                onChange={handleInputChange}
+                                placeholder="e.g., 500016"
+                                className={inputBase}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Location Tip */}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-emerald-800`}>
+                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                        </p>
+                    </div>
+
+                    {/* Coordinates Display */}
+                    {formData.latitude && formData.longitude && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-green-800`}>
+                                <span className="font-semibold">✓ Location detected:</span>
+                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                            </p>
+                        </div>
+                    )}
+                </SectionCard>
+
+                {/* ─── 6. HOSPITAL IMAGES ──────────────────────────────── */}
+                <SectionCard title="Hospital Images (Optional)">
+                    <label className="cursor-pointer block">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            disabled={selectedImages.length + existingImages.length >= 5}
+                        />
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                            : 'border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50'
+                            }`}>
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                        {selectedImages.length + existingImages.length >= 5
+                                            ? 'Maximum limit reached'
+                                            : 'Tap to upload hospital images'}
+                                    </p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
                                 </div>
                             </div>
                         </div>
+                    </label>
 
-                        {/* ─── SECTION 5: IMAGES ───────────────────────────── */}
-                        <div>
-                            <SectionDivider title="Hospital Images" icon={<Upload className="w-5 h-5" />} />
-
-                            <div className="mt-6 space-y-4">
-                                <FieldLabel>Upload Images (Optional)</FieldLabel>
-
-                                <label className="cursor-pointer block">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handleImageSelect}
-                                        className="hidden"
-                                        disabled={selectedImages.length + existingImages.length >= 5}
+                    {/* Image Previews */}
+                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                        <div className="grid grid-cols-3 gap-3 mt-4">
+                            {existingImages.map((url, i) => (
+                                <div key={`ex-${i}`} className="relative aspect-square">
+                                    <img
+                                        src={url}
+                                        alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                     />
-                                    <div
-                                        className={`group relative flex flex-col items-center justify-center gap-3 px-6 py-8 border-2 border-dashed rounded-xl transition-all duration-300 ${selectedImages.length + existingImages.length >= 5
-                                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            : 'border-gray-300 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-lg'
-                                            }`}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
                                     >
-                                        <div className={`p-4 rounded-full transition-all duration-300 ${selectedImages.length + existingImages.length >= 5
-                                            ? 'bg-gray-200'
-                                            : 'bg-emerald-100 group-hover:bg-emerald-200 group-hover:scale-110'
-                                            }`}>
-                                            <Upload className={`w-8 h-8 ${selectedImages.length + existingImages.length >= 5
-                                                ? 'text-gray-400'
-                                                : 'text-emerald-600'
-                                                }`} />
-                                        </div>
-
-                                        <div className="text-center">
-                                            <p className={`${typography.body.base} font-semibold ${selectedImages.length + existingImages.length >= 5
-                                                ? 'text-gray-500'
-                                                : 'text-gray-700 group-hover:text-emerald-700'
-                                                }`}>
-                                                {selectedImages.length + existingImages.length >= 5
-                                                    ? 'Maximum 5 images reached'
-                                                    : 'Click to upload hospital images'}
-                                            </p>
-                                            <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                                Max 5 images • 5 MB each • JPG, PNG, WEBP
-                                            </p>
-                                        </div>
-
-                                        {(selectedImages.length + existingImages.length > 0) && (
-                                            <div className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
-                                                {selectedImages.length + existingImages.length} / 5
-                                            </div>
-                                        )}
-                                    </div>
-                                </label>
-
-                                {/* Enhanced Image Previews */}
-                                {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-6">
-                                        {existingImages.map((url, i) => (
-                                            <div key={`ex-${i}`} className="relative group">
-                                                <div className="relative overflow-hidden rounded-xl border-2 border-blue-200 shadow-md group-hover:shadow-xl transition-all duration-300">
-                                                    <img
-                                                        src={url}
-                                                        alt={`Saved ${i + 1}`}
-                                                        className="w-full h-32 sm:h-36 object-cover group-hover:scale-110 transition-transform duration-300"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveExistingImage(i)}
-                                                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                    <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md shadow-md font-semibold">
-                                                        Saved
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {imagePreviews.map((preview, i) => (
-                                            <div key={`new-${i}`} className="relative group">
-                                                <div className="relative overflow-hidden rounded-xl border-2 border-emerald-400 shadow-md group-hover:shadow-xl transition-all duration-300">
-                                                    <img
-                                                        src={preview}
-                                                        alt={`Preview ${i + 1}`}
-                                                        className="w-full h-32 sm:h-36 object-cover group-hover:scale-110 transition-transform duration-300"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveNewImage(i)}
-                                                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-md shadow-md font-semibold flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                                                        New
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* ─── FOOTER: SUBMIT BUTTONS ───────────────────────── */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 sm:px-8 py-6 border-t border-gray-200">
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                fullWidth
-                                onClick={handleSubmit}
-                                disabled={loading}
-                                className="shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
-                            >
-                                {loading ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                                        {isEditMode ? 'Updating Hospital...' : 'Creating Hospital...'}
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        Saved
                                     </span>
-                                ) : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        {isEditMode ? (
-                                            <>
-                                                <Building2 className="w-5 h-5" />
-                                                Update Hospital
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Building2 className="w-5 h-5" />
-                                                Create Hospital
-                                            </>
-                                        )}
+                                </div>
+                            ))}
+                            {imagePreviews.map((preview, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square">
+                                    <img
+                                        src={preview}
+                                        alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-emerald-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
                                     </span>
-                                )}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="lg"
-                                onClick={handleCancel}
-                                className="w-full sm:w-auto sm:px-10 font-semibold"
-                            >
-                                Cancel
-                            </Button>
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                </div>
+                    )}
+                </SectionCard>
 
-                {/* Footer Note */}
-                <div className="mt-6 text-center">
-                    <p className={`${typography.body.small} text-gray-500`}>
-                        All fields marked with <span className="text-red-500">*</span> are required
-                    </p>
+                {/* ── Action Buttons ── */}
+                <div className="flex gap-4 pt-2">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                            ? 'bg-emerald-400 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
+                            } shadow-sm ${typography.body.base}`}
+                    >
+                        {loading
+                            ? (isEditMode ? 'Updating...' : 'Creating...')
+                            : (isEditMode ? 'Update Hospital' : 'Create Hospital')}
+                    </button>
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>

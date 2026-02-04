@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBeautyWorker, updateBeautyWorker, getBeautyWorkerById, BeautyWorker } from '../services/Beauty.Service.service';
+import {
+    addSportsActivity,
+    updateSportsActivity,
+    getSportsActivityById,
+    SportsWorker
+} from "../services/Sports.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
@@ -9,26 +14,48 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-// ── Pull beauty/wellness subcategories from JSON (categoryId 5) ─────────────
-const getBeautyWellnessSubcategories = () => {
-    const beautyCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 5);
-    return beautyCategory ? beautyCategory.items.map(item => item.name) : [];
+// ── Charge Type options ──────────────────────────────────────────────────────
+const chargeTypeOptions = ['Hour', 'Day', 'Session', 'Month', 'Package'];
+
+// ── Pull sports subcategories from JSON (categoryId 6) ──────────────────────
+const getSportsSubcategories = () => {
+    const sportsCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 17);
+    return sportsCategory ? sportsCategory.items.map(item => item.name) : [];
 };
 
-// ── Map subcategory to category for form ─────────────────────────────────────
-const getCategoryFromSubcategory = (subcategory: string): string => {
-    const lower = subcategory.toLowerCase();
-    if (lower.includes('spa') || lower.includes('massage')) return 'Spa Therapist';
-    if (lower.includes('fitness') || lower.includes('gym')) return 'Fitness Trainer';
-    if (lower.includes('makeup')) return 'Makeup Artist';
-    if (lower.includes('salon') || lower.includes('hair')) return 'Hair Stylist';
-    if (lower.includes('yoga')) return 'Yoga Instructor';
-    if (lower.includes('tattoo')) return 'Tattoo Artist';
-    if (lower.includes('mehendi') || lower.includes('mehndi')) return 'Mehendi Artist';
-    if (lower.includes('nail')) return 'Nail Technician';
-    if (lower.includes('skin')) return 'Skincare Specialist';
-    if (lower.includes('beauty') || lower.includes('parlour')) return 'Beautician';
-    return 'Beautician';
+// ── Common sports services by category ───────────────────────────────────────
+const getCommonServices = (subCategory: string): string[] => {
+    const normalized = subCategory.toLowerCase();
+
+    if (normalized.includes('gym') || normalized.includes('fitness')) {
+        return ['Personal Training', 'Group Classes', 'Weight Training', 'Cardio', 'Strength Training', 'Diet Consultation'];
+    }
+    if (normalized.includes('yoga')) {
+        return ['Hatha Yoga', 'Vinyasa', 'Ashtanga', 'Power Yoga', 'Meditation', 'Pranayama'];
+    }
+    if (normalized.includes('swimming')) {
+        return ['Swimming Lessons', 'Adult Classes', 'Kids Classes', 'Competitive Training', 'Water Aerobics'];
+    }
+    if (normalized.includes('cricket')) {
+        return ['Batting Coaching', 'Bowling Coaching', 'Fielding', 'Match Practice', 'Fitness Training'];
+    }
+    if (normalized.includes('football') || normalized.includes('soccer')) {
+        return ['Dribbling', 'Shooting', 'Passing', 'Defense', 'Goalkeeping', 'Match Tactics'];
+    }
+    if (normalized.includes('basketball')) {
+        return ['Shooting Skills', 'Dribbling', 'Defense', 'Team Play', 'Conditioning'];
+    }
+    if (normalized.includes('tennis')) {
+        return ['Forehand', 'Backhand', 'Serve', 'Volleys', 'Match Play'];
+    }
+    if (normalized.includes('badminton')) {
+        return ['Basic Strokes', 'Smash', 'Drop Shot', 'Serve', 'Footwork', 'Match Practice'];
+    }
+    if (normalized.includes('stadium') || normalized.includes('ground')) {
+        return ['Field Booking', 'Event Hosting', 'Tournament Organization', 'Equipment Rental'];
+    }
+
+    return ['Training', 'Coaching', 'Practice Sessions', 'Competition Prep'];
 };
 
 // ============================================================================
@@ -36,7 +63,7 @@ const getCategoryFromSubcategory = (subcategory: string): string => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-rose-500 focus:border-rose-500 ` +
+    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -70,7 +97,6 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
         const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
         const response = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
         );
@@ -90,7 +116,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const BeautyServiceForm = () => {
+const SportsForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -111,27 +137,26 @@ const BeautyServiceForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const beautyCategories = getBeautyWellnessSubcategories();
-    const defaultSubcategory = getSubcategoryFromUrl() || beautyCategories[0] || 'Beauty Parlour';
-    const defaultCategory = getCategoryFromSubcategory(defaultSubcategory);
+    const sportsTypes = getSportsSubcategories();
+    const defaultType = getSubcategoryFromUrl() || sportsTypes[0] || 'Gym & Fitness';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        name: '',
-        category: defaultCategory,
-        email: '',
-        phone: '',
-        bio: '',
-        services: '' as string,
+        serviceName: '',
+        subCategory: defaultType,
+        description: '',
+        services: [] as string[],
+        experience: '',
         serviceCharge: '',
+        chargeType: chargeTypeOptions[0],
+        bio: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        experience: '',
-        availability: availabilityOptions[0],
+        availability: true,
     });
 
     // ── images ───────────────────────────────────────────────────────────────
@@ -139,9 +164,12 @@ const BeautyServiceForm = () => {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
 
+    // ── services ─────────────────────────────────────────────────────────────
+    const [customService, setCustomService] = useState('');
+    const [commonServices] = useState<string[]>(getCommonServices(defaultType));
+
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -149,44 +177,31 @@ const BeautyServiceForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getBeautyWorkerById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getSportsActivityById(editId);
+                if (!response.success || !response.data) throw new Error('Service not found');
 
-                // Convert services array to comma-separated string
-                const servicesString = Array.isArray(data.services)
-                    ? data.services.join(', ')
-                    : data.services || '';
-// Around line 160-178, update the availability handling:
-setFormData(prev => ({
-    ...prev,
-    userId: data.userId || '',
-    name: data.name || '',
-    category: data.category || defaultCategory,
-    email: data.email || '',
-    phone: data.phone || '',
-    bio: data.bio || '',
-    services: servicesString,
-    serviceCharge: data.serviceCharge?.toString() || '',
-    area: data.area || '',
-    city: data.city || '',
-    state: data.state || '',
-    pincode: data.pincode || '',
-    latitude: data.latitude?.toString() || '',
-    longitude: data.longitude?.toString() || '',
-    experience: data.experience?.toString() || '',
-    // Convert boolean to string if needed
-    availability: typeof data.availability === 'boolean' 
-        ? (data.availability ? 'Full Time' : availabilityOptions[0])
-        : (data.availability || availabilityOptions[0]),
-}));
+                const data = response.data;
+                setFormData(prev => ({
+                    ...prev,
+                    userId: data.userId || '',
+                    serviceName: data.serviceName || '',
+                    subCategory: data.subCategory || defaultType,
+                    description: data.description || '',
+                    services: data.services || [],
+                    experience: data.experience?.toString() || '',
+                    serviceCharge: data.serviceCharge?.toString() || '',
+                    chargeType: data.chargeType || chargeTypeOptions[0],
+                    bio: data.bio || '',
+                    area: data.area || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    pincode: data.pincode || '',
+                    latitude: data.latitude?.toString() || '',
+                    longitude: data.longitude?.toString() || '',
+                    availability: data.availability !== false,
+                }));
 
-// Around line 183, update the availability check:
-// Set availability toggle state
-setIsCurrentlyAvailable(
-    typeof data.availability === 'boolean' 
-        ? data.availability 
-        : (data.availability === 'Full Time' || data.availability === 'On Demand')
-);
+                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -195,13 +210,14 @@ setIsCurrentlyAvailable(
             }
         };
         fetchData();
-    }, [editId, defaultCategory]);
+    }, [editId]);
 
     // ── Auto-detect coordinates when area is entered ────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`.replace(/, ,/g, ',').replace(/^,|,$/g, '');
+                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
+                    .replace(/, ,/g, ',').replace(/^,|,$/g, '');
 
                 if (fullAddress.trim()) {
                     const coords = await geocodeAddress(fullAddress);
@@ -218,12 +234,28 @@ setIsCurrentlyAvailable(
 
         const timer = setTimeout(detectCoordinates, 1000);
         return () => clearTimeout(timer);
-    }, [formData.area, formData.city, formData.state, formData.pincode, formData.latitude, formData.longitude]);
+    }, [formData.area, formData.city, formData.state, formData.pincode]);
 
     // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // ── services management ──────────────────────────────────────────────────
+    const handleAddService = (service: string) => {
+        if (!service.trim()) return;
+        if (formData.services.includes(service)) {
+            setError(`"${service}" is already added`);
+            return;
+        }
+        setFormData(prev => ({ ...prev, services: [...prev.services, service] }));
+        setCustomService('');
+        setError('');
+    };
+
+    const handleRemoveService = (index: number) => {
+        setFormData(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }));
     };
 
     // ── image helpers ────────────────────────────────────────────────────────
@@ -326,34 +358,45 @@ setIsCurrentlyAvailable(
         setSuccessMessage('');
 
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.services || formData.services.trim() === '')
-                throw new Error('Please enter at least one service');
+            if (!formData.serviceName || !formData.subCategory)
+                throw new Error('Please fill in all required fields (Service Name, Category)');
+            if (formData.services.length === 0)
+                throw new Error('Please add at least one service');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // Convert comma-separated services to array
-            const servicesArray = formData.services
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
+            // Create FormData for multipart upload
+            const formDataToSend = new FormData();
 
-            const payload: any = {
-                ...formData,
-                services: servicesArray,
-                serviceCharge: parseFloat(formData.serviceCharge) || 0,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-                experience: parseInt(formData.experience) || 0,
-            };
+            // Append all fields
+            formDataToSend.append('userId', formData.userId);
+            formDataToSend.append('serviceName', formData.serviceName);
+            formDataToSend.append('subCategory', formData.subCategory);
+            formDataToSend.append('description', formData.description);
+            formDataToSend.append('services', JSON.stringify(formData.services));
+            formDataToSend.append('experience', formData.experience);
+            formDataToSend.append('serviceCharge', formData.serviceCharge);
+            formDataToSend.append('chargeType', formData.chargeType);
+            formDataToSend.append('bio', formData.bio);
+            formDataToSend.append('area', formData.area);
+            formDataToSend.append('city', formData.city);
+            formDataToSend.append('state', formData.state);
+            formDataToSend.append('pincode', formData.pincode);
+            formDataToSend.append('latitude', formData.latitude);
+            formDataToSend.append('longitude', formData.longitude);
+            formDataToSend.append('availability', formData.availability.toString());
+
+            // Append images
+            selectedImages.forEach((image) => {
+                formDataToSend.append('images', image);
+            });
 
             if (isEditMode && editId) {
-                await updateBeautyWorker(editId, payload);
+                await updateSportsActivity(editId, formDataToSend);
                 setSuccessMessage('Service updated successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createBeautyWorker(payload);
+                await addSportsActivity(formDataToSend);
                 setSuccessMessage('Service created successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             }
@@ -371,7 +414,7 @@ setIsCurrentlyAvailable(
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -396,10 +439,10 @@ setIsCurrentlyAvailable(
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Beauty Service' : 'Add Beauty Service'}
+                            {isEditMode ? 'Update Sports Service' : 'Add Sports Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your beauty service listing' : 'Create new beauty service listing'}
+                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
@@ -420,54 +463,28 @@ setIsCurrentlyAvailable(
                     </div>
                 )}
 
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
+                {/* ─── 1. SERVICE NAME ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Business/Professional Name</FieldLabel>
+                        <FieldLabel required>Service Name</FieldLabel>
                         <input
                             type="text"
-                            name="name"
-                            value={formData.name}
+                            name="serviceName"
+                            value={formData.serviceName}
                             onChange={handleInputChange}
-                            placeholder="Glam Beauty Salon"
+                            placeholder="e.g., Elite Fitness Training, Pro Cricket Academy"
                             className={inputBase}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. CATEGORY & SERVICES ────────────────────────── */}
+                {/* ─── 2. CATEGORY ───────────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Service Category</FieldLabel>
+                        <FieldLabel required>Category</FieldLabel>
                         <select
-                            name="category"
-                            value={formData.category}
+                            name="subCategory"
+                            value={formData.subCategory}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -478,68 +495,95 @@ setIsCurrentlyAvailable(
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            <option value="Beautician">Beautician</option>
-                            <option value="Hair Stylist">Hair Stylist</option>
-                            <option value="Makeup Artist">Makeup Artist</option>
-                            <option value="Spa Therapist">Spa Therapist</option>
-                            <option value="Massage Therapist">Massage Therapist</option>
-                            <option value="Nail Technician">Nail Technician</option>
-                            <option value="Skincare Specialist">Skincare Specialist</option>
-                            <option value="Fitness Trainer">Fitness Trainer</option>
-                            <option value="Yoga Instructor">Yoga Instructor</option>
-                            <option value="Tattoo Artist">Tattoo Artist</option>
-                            <option value="Mehendi Artist">Mehendi Artist</option>
-                            <option value="Beauty Parlour">Beauty Parlour</option>
+                            {sportsTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
 
-                <SectionCard>
+                {/* ─── 3. SERVICES OFFERED ────────────────────────────────────── */}
+                <SectionCard title="Services Offered">
+                    {/* Common Services */}
                     <div>
-                        <FieldLabel required>Services Offered</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={formData.services}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter services separated by commas
-                        </p>
-
-                        {/* Service Chips Preview */}
-                        {formData.services && formData.services.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.services.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        <p className={`${typography.body.small} text-gray-700 mb-2`}>Quick Select:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {commonServices.map((service) => (
+                                <button
+                                    key={service}
+                                    type="button"
+                                    onClick={() => handleAddService(service)}
+                                    disabled={formData.services.includes(service)}
+                                    className={`px-3 py-1.5 rounded-full text-sm transition ${formData.services.includes(service)
+                                        ? 'bg-blue-100 text-blue-700 cursor-not-allowed'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                        }`}
+                                >
+                                    {formData.services.includes(service) ? '✓ ' : '+ '}
+                                    {service}
+                                </button>
+                            ))}
+                        </div>
                     </div>
+
+                    {/* Custom Service Input */}
+                    <div>
+                        <p className={`${typography.body.small} text-gray-700 mb-2`}>Add Custom Service:</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={customService}
+                                onChange={(e) => setCustomService(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddService(customService);
+                                    }
+                                }}
+                                placeholder="Type custom service..."
+                                className={inputBase}
+                            />
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleAddService(customService)}
+                                className="whitespace-nowrap"
+                            >
+                                Add
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Selected Services */}
+                    {formData.services.length > 0 && (
+                        <div>
+                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                Selected Services ({formData.services.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.services.map((service, idx) => (
+                                    <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200"
+                                    >
+                                        <span className={typography.misc.badge}>{service}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveService(idx)}
+                                            className="hover:text-blue-900"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </SectionCard>
 
-                {/* ─── 4. PROFESSIONAL DETAILS ───────────────────────── */}
+                {/* ─── 4. PROFESSIONAL DETAILS ───────────────────────────────── */}
                 <SectionCard title="Professional Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <FieldLabel required>Experience (years)</FieldLabel>
+                            <FieldLabel>Experience (years)</FieldLabel>
                             <input
                                 type="number"
                                 name="experience"
@@ -551,7 +595,7 @@ setIsCurrentlyAvailable(
                             />
                         </div>
                         <div>
-                            <FieldLabel required>Service Charge (₹)</FieldLabel>
+                            <FieldLabel>Service Charge (₹)</FieldLabel>
                             <input
                                 type="number"
                                 name="serviceCharge"
@@ -564,35 +608,65 @@ setIsCurrentlyAvailable(
                         </div>
                     </div>
 
+                    <div>
+                        <FieldLabel>Charge Type</FieldLabel>
+                        <select
+                            name="chargeType"
+                            value={formData.chargeType}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'}
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5em 1.5em',
+                                paddingRight: '2.5rem'
+                            }}
+                        >
+                            {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
+
                     <div className="flex items-center justify-between py-2">
                         <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
                         <button
                             type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
+                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-emerald-500' : 'bg-gray-300'
                                 }`}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'
                                     }`}
                             />
                         </button>
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. BIO ──────────────────────────────────────── */}
-                <SectionCard title="Bio">
+                {/* ─── 5. DESCRIPTION & BIO ──────────────────────────────────── */}
+                <SectionCard title="Description">
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={3}
+                        placeholder="Brief description of your service..."
+                        className={inputBase + ' resize-none'}
+                    />
+                </SectionCard>
+
+                <SectionCard title="Bio (Optional)">
                     <textarea
                         name="bio"
                         value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
+                        placeholder="Tell us about yourself, your expertise, and achievements..."
                         className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
 
-                {/* ─── 6. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 6. LOCATION DETAILS ────────────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -685,7 +759,7 @@ setIsCurrentlyAvailable(
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -698,11 +772,11 @@ setIsCurrentlyAvailable(
                         />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-rose-300 hover:border-rose-400 hover:bg-rose-50'
+                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
                             }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-rose-600" />
+                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-blue-600" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -743,7 +817,7 @@ setIsCurrentlyAvailable(
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-rose-400"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
                                     />
                                     <button
                                         type="button"
@@ -762,14 +836,14 @@ setIsCurrentlyAvailable(
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-rose-400 cursor-not-allowed'
-                            : 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800'
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
                             } shadow-sm ${typography.body.base}`}
                     >
                         {loading
@@ -789,4 +863,4 @@ setIsCurrentlyAvailable(
     );
 };
 
-export default BeautyServiceForm;
+export default SportsForm;
