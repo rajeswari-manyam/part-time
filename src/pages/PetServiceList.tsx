@@ -1,427 +1,330 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
-import { MoreVertical } from "lucide-react";
+import typography from "../styles/typography";
 
-// Import pet service card components
+// ── Nearby card components with dummy data
 import PetClinicCard from "../components/cards/PetService/NearByPetClinic";
 import PetShopCard from "../components/cards/PetService/NearByPetShops";
 import PetGroomingCard from "../components/cards/PetService/NearByPetGrooming";
 import DogTrainingCard from "../components/cards/PetService/NearByPetTraining";
 
-export interface PetServiceType {
-    id: string;
-    title: string;
-    location: string;
-    description: string;
-    distance?: number;
-    category: string;
-    jobData?: {
-        status: boolean;
-        pincode: string;
-        icon: string;
-        rating?: number;
-        user_ratings_total?: number;
-        opening_hours?: { open_now: boolean };
-        geometry?: { location: { lat: number; lng: number } };
-        phone?: string;
-        photos?: string[];
-        special_tags?: string[];
-        services?: string[];
-        experience?: string;
-        opening_time?: string;
-        suggestions?: string;
-    };
-}
+// ── Import API service
+import { getNearbyPetWorkers, PetWorker, PetWorkerResponse } from "../services/PetWorker.service";
 
-const ActionDropdown: React.FC<{
-    serviceId: string;
-    onEdit: (id: string, e: React.MouseEvent) => void;
-    onDelete: (id: string, e: React.MouseEvent) => void;
-}> = ({ serviceId, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
+// ============================================================================
+// SUBCATEGORY → CARD COMPONENT MAP
+// ============================================================================
+type CardKey = "clinic" | "shop" | "grooming" | "training";
 
-    return (
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
-                className="p-2 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-full transition shadow-sm"
-                aria-label="More options"
-            >
-                <MoreVertical size={18} className="text-gray-700" />
-            </button>
-
-            {isOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                        }}
-                    />
-                    <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-20">
-                        <button
-                            onClick={(e) => {
-                                onEdit(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 flex items-center gap-2 text-blue-600 font-medium transition"
-                        >
-                            ✏️ Edit
-                        </button>
-                        <div className="border-t border-gray-100"></div>
-                        <button
-                            onClick={(e) => {
-                                onDelete(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600 font-medium transition"
-                        >
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </>
-            )}
-        </div>
-    );
+const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
+    clinic: PetClinicCard,
+    shop: PetShopCard,
+    grooming: PetGroomingCard,
+    training: DogTrainingCard,
 };
 
+// ============================================================================
+// HELPERS
+// ============================================================================
+const normalizeSubcategory = (sub: string | undefined): string => {
+    if (!sub) return "";
+    return sub.toLowerCase();
+};
+
+const getCardComponentForSubcategory = (
+    subcategory: string | undefined
+): React.ComponentType<any> | null => {
+    if (!subcategory) return null;
+
+    const normalized = normalizeSubcategory(subcategory);
+
+    if (
+        (normalized.includes("vet") && normalized.includes("clinic")) ||
+        (normalized.includes("pet") && normalized.includes("clinic")) ||
+        normalized.includes("vet-clinic") ||
+        normalized.includes("pet-clinic")
+    ) {
+        return CARD_MAP.clinic;
+    }
+
+    if (
+        (normalized.includes("pet") && normalized.includes("shop")) ||
+        normalized.includes("petshop") ||
+        normalized.includes("pet-shop")
+    ) {
+        return CARD_MAP.shop;
+    }
+
+    if (
+        (normalized.includes("pet") && normalized.includes("groom")) ||
+        normalized.includes("grooming") ||
+        normalized.includes("pet-grooming")
+    ) {
+        return CARD_MAP.grooming;
+    }
+
+    if (
+        (normalized.includes("dog") && normalized.includes("train")) ||
+        (normalized.includes("pet") && normalized.includes("train")) ||
+        normalized.includes("dog-training") ||
+        normalized.includes("pet-training")
+    ) {
+        return CARD_MAP.training;
+    }
+
+    return CARD_MAP.clinic; // Default to clinic card
+};
+
+const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
+    if (!subcategory) return false;
+    const normalized = normalizeSubcategory(subcategory);
+    const keywords = ["vet", "clinic", "pet", "shop", "groom", "train"];
+    return keywords.some((keyword) => normalized.includes(keyword));
+};
+
+const getDisplayTitle = (subcategory: string | undefined) => {
+    if (!subcategory) return "All Pet Services";
+    return subcategory
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+};
+
+const getSubcategoryIcon = (subcategory: string | undefined): string => {
+    if (!subcategory) return "🐾";
+    const normalized = normalizeSubcategory(subcategory);
+    if (normalized.includes("clinic") || normalized.includes("vet")) return "🏥";
+    if (normalized.includes("shop")) return "🛒";
+    if (normalized.includes("groom")) return "✂️";
+    if (normalized.includes("train")) return "🐕";
+    return "🐾";
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 const PetServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<PetServiceType[]>([]);
-    const [loading] = useState(false);
-    const [error] = useState("");
+    // ── State management ─────────────────────────────────────────────
+    const [nearbyData, setNearbyData] = useState<PetWorker[]>([]);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [distance, setDistance] = useState<number>(10);
 
+    // ── Get user location ────────────────────────────────────────────
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                },
+                (err) => {
+                    console.error("❌ Error getting user location:", err);
+                    setError("Unable to get your location. Please enable location services.");
+                    setLoading(false);
+                }
+            );
+        } else {
+            setError("Geolocation is not supported by your browser.");
+            setLoading(false);
+        }
+    }, []);
+
+    // ── Fetch nearby pet services ────────────────────────────────────
+    useEffect(() => {
+        const fetchNearbyPetServices = async () => {
+            if (!userLocation) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                const response: PetWorkerResponse = await getNearbyPetWorkers(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    distance
+                );
+
+                if (response.success && response.data) {
+                    setNearbyData(response.data);
+                } else {
+                    setNearbyData([]);
+                }
+            } catch (err) {
+                console.error("❌ Error fetching nearby pet services:", err);
+                setError("Failed to fetch nearby services. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userLocation && shouldShowNearbyCards(subcategory)) {
+            fetchNearbyPetServices();
+        } else if (userLocation) {
+            setLoading(false);
+        }
+    }, [userLocation, distance, subcategory]);
+
+    // ── Navigation handlers ──────────────────────────────────────────
     const handleView = (service: any) => {
-        navigate(`/pet-services/details/${service.id}`);
+        const id = service.id || service._id;
+        navigate(`/pet-services/details/${id}`);
     };
 
-    const handleEdit = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigate(`/add-pet-service-form/${id}`);
-    };
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this service?")) return;
-
-        try {
-            setServices((prev) => prev.filter((s) => s.id !== id));
-            alert("Service deleted successfully");
-        } catch (err) {
-            console.error(err);
-            alert("Failed to delete service");
-        }
-    };
-
+    // ✅ Navigate to /add-pet-service-form with optional subcategory param
     const handleAddPost = () => {
-        navigate("/add-pet-service-form");
-    };
-
-    const getDisplayTitle = () => {
-        if (!subcategory) return "All Pet Services";
-        return subcategory
-            .split("-")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" ");
-    };
-
-    // ✅ Normalize subcategory to handle different route formats
-    const normalizeSubcategory = (sub: string | undefined): string => {
-        if (!sub) return "";
-
-        // Convert to lowercase for consistent comparison
-        const normalized = sub.toLowerCase();
-
-        // Log for debugging
-        console.log("📍 Raw subcategory:", sub);
-        console.log("📍 Normalized subcategory:", normalized);
-
-        return normalized;
-    };
-
-    // ✅ Smart matching function to handle route variations
-    const getCardComponentForSubcategory = (
-        subcategory: string | undefined
-    ): React.ComponentType<any> | null => {
-        if (!subcategory) return null;
-
-        const normalized = normalizeSubcategory(subcategory);
-
-        // ✅ PET CLINICS MATCHING
-        if (
-            normalized.includes("vet") && normalized.includes("clinic") ||
-            normalized.includes("pet") && normalized.includes("clinic") ||
-            normalized.includes("vet-clinic") ||
-            normalized.includes("pet-clinic")
-        ) {
-            console.log("✅ Matched to PetClinicCard");
-            return PetClinicCard;
+        if (subcategory) {
+            navigate(`/add-pet-service-form?subcategory=${subcategory}`);
+        } else {
+            navigate("/add-pet-service-form");
         }
-
-        // ✅ PET SHOPS MATCHING
-        if (
-            normalized.includes("pet") && normalized.includes("shop") ||
-            normalized.includes("petshop") ||
-            normalized.includes("pet-shop")
-        ) {
-            console.log("✅ Matched to PetShopCard");
-            return PetShopCard;
-        }
-
-        // ✅ PET GROOMING MATCHING
-        if (
-            normalized.includes("pet") && normalized.includes("groom") ||
-            normalized.includes("grooming") ||
-            normalized.includes("pet-grooming")
-        ) {
-            console.log("✅ Matched to PetGroomingCard");
-            return PetGroomingCard;
-        }
-
-        // ✅ DOG TRAINING MATCHING
-        if (
-            normalized.includes("dog") && normalized.includes("train") ||
-            normalized.includes("pet") && normalized.includes("train") ||
-            normalized.includes("dog-training") ||
-            normalized.includes("pet-training")
-        ) {
-            console.log("✅ Matched to DogTrainingCard");
-            return DogTrainingCard;
-        }
-
-        console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-        return null;
     };
 
-    // Helper function to check if subcategory should show nearby cards
-    const shouldShowNearbyCards = (): boolean => {
-        if (!subcategory) return false;
-
-        const normalized = normalizeSubcategory(subcategory);
-
-        // Check if any of the keywords match
-        const keywords = [
-            "vet",
-            "clinic",
-            "pet",
-            "shop",
-            "groom",
-            "train",
-        ];
-
-        const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
-
-        console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
-
-        return hasMatch;
-    };
-
-    // Get appropriate icon based on subcategory
-    const getSubcategoryIcon = (): string => {
-        if (!subcategory) return "🐾";
-
-        const normalized = normalizeSubcategory(subcategory);
-
-        if (normalized.includes("clinic") || normalized.includes("vet")) return "🏥";
-        if (normalized.includes("shop")) return "🛒";
-        if (normalized.includes("groom")) return "✂️";
-        if (normalized.includes("train")) return "🐕";
-
-        return "🐾";
-    };
-
-    // Render nearby cards which have dummy data built-in
-    const renderNearbyCardsSection = () => {
+    // ── Render Cards Section ─────────────────────────────────────────
+    const renderCardsSection = () => {
         const CardComponent = getCardComponentForSubcategory(subcategory);
 
-        if (!CardComponent) {
-            console.error(`❌ No card component available for subcategory: "${subcategory}"`);
-            return null;
+        if (!CardComponent) return null;
+
+        if (loading) {
+            return (
+                <div className="text-center py-20">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-1">
+                                Loading nearby services...
+                            </h3>
+                            <p className="text-gray-500 text-sm">
+                                Getting your location and finding services near you
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{error}</h3>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            );
         }
 
         return (
-            <div className="space-y-8">
-                {/* Nearby Card Components - renders built-in dummy data */}
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        {getSubcategoryIcon()} Nearby {getDisplayTitle()}
+            <div className="space-y-6">
+                {/* Header with distance filter */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className={`${typography.heading.h4} text-gray-800 flex items-center gap-2`}>
+                        <span className="shrink-0">{getSubcategoryIcon(subcategory)}</span>
+                        <span className="truncate">Available {getDisplayTitle(subcategory)}</span>
                     </h2>
-                    <CardComponent onViewDetails={handleView} />
+
+                    {/* Distance Filter */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <label className="text-sm text-gray-600 whitespace-nowrap">Within:</label>
+                        <select
+                            value={distance}
+                            onChange={(e) => setDistance(Number(e.target.value))}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                            <option value={5}>5 km</option>
+                            <option value={10}>10 km</option>
+                            <option value={20}>20 km</option>
+                            <option value={50}>50 km</option>
+                            <option value={100}>100 km</option>
+                        </select>
+                    </div>
                 </div>
 
-                {/* Real API Services Section */}
-                {services.length > 0 && (
-                    <>
-                        <div className="my-8 flex items-center gap-4">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                            <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                {getSubcategoryIcon()} Your Listed Services ({services.length})
-                            </span>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                {/* Nearby Cards with Real Data */}
+                <div>
+                    {nearbyData.length > 0 ? (
+                        <CardComponent
+                            onViewDetails={handleView}
+                            nearbyData={nearbyData}
+                            userLocation={userLocation}
+                        />
+                    ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="text-5xl mb-3">📍</div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                No services found nearby
+                            </h3>
+                            <p className="text-gray-500 text-sm mb-4">
+                                Try increasing the search distance or be the first to add a service!
+                            </p>
+                            <button
+                                onClick={handleAddPost}
+                                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                            >
+                                + Add a Service
+                            </button>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {services.map((service) => (
-                                <div key={service.id} className="relative">
-                                    <CardComponent job={service} onViewDetails={handleView} />
-                                    <div className="absolute top-3 right-3 z-10">
-                                        <ActionDropdown
-                                            serviceId={service.id}
-                                            onEdit={handleEdit}
-                                            onDelete={handleDelete}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
+                    )}
+                </div>
             </div>
         );
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading services...</p>
-                </div>
-            </div>
-        );
-    }
-
+    // ============================================================================
+    // MAIN RENDER
+    // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800 flex items-center gap-3">
-                        {getSubcategoryIcon()}
-                        {getDisplayTitle()}
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+
+                {/* ─── HEADER ── title + "+ Add Post" ─────────────── */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight flex items-center gap-2`}>
+                        <span className="shrink-0">{getSubcategoryIcon(subcategory)}</span>
+                        <span className="truncate">{getDisplayTitle(subcategory)}</span>
                     </h1>
-                    <Button variant="gradient-blue" size="md" onClick={handleAddPost}>
-                        + Add Post
-                    </Button>
+
+                    {/* ✅ Button navigates to /pet-services/add */}
+                    <button
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                        <span className="text-lg leading-none">+</span>
+                        <span>Add Post</span>
+                    </button>
                 </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium">{error}</p>
-                    </div>
-                )}
-
-                {/* Content Rendering */}
-                {shouldShowNearbyCards() ? (
-                    // Render nearby cards with dummy data built-in
-                    renderNearbyCardsSection()
+                {/* ─── CONTENT RENDERING ─────────────────────────────── */}
+                {shouldShowNearbyCards(subcategory) ? (
+                    renderCardsSection()
                 ) : (
-                    // Regular display for other subcategories or no subcategory
-                    <>
-                        {services.length === 0 ? (
-                            <div className="text-center py-20">
-                                <div className="text-6xl mb-4">{getSubcategoryIcon()}</div>
-                                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                                    No Services Found
-                                </h3>
-                                <p className="text-gray-600">
-                                    Be the first to add a service in this category!
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {services.map((service) => (
-                                    <div
-                                        key={service.id}
-                                        className="relative group bg-white rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-lg transition cursor-pointer overflow-hidden"
-                                        onClick={() => handleView(service)}
-                                    >
-                                        {/* Dropdown */}
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <ActionDropdown
-                                                serviceId={service.id}
-                                                onEdit={handleEdit}
-                                                onDelete={handleDelete}
-                                            />
-                                        </div>
-
-                                        {/* Service Badge */}
-                                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                            <span>{service.jobData?.icon || getSubcategoryIcon()}</span>
-                                            <span>{service.category}</span>
-                                        </div>
-
-                                        {/* Image Placeholder */}
-                                        <div className="w-full h-48 bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="text-5xl mb-2">
-                                                {service.jobData?.icon || getSubcategoryIcon()}
-                                            </span>
-                                            <span className="text-sm">No Image</span>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="p-4 space-y-2">
-                                            <h2 className="text-lg font-bold text-gray-800 line-clamp-1">
-                                                {service.title}
-                                            </h2>
-                                            <p className="text-sm text-gray-600 line-clamp-1">
-                                                {service.location}
-                                            </p>
-                                            <p className="text-sm text-gray-600 line-clamp-2">
-                                                {service.description}
-                                            </p>
-
-                                            {service.jobData?.pincode && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-400">📍</span>
-                                                    <span className="text-gray-700">
-                                                        Pincode: {service.jobData.pincode}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {service.jobData?.status !== undefined && (
-                                                <div className="flex items-center gap-2">
-                                                    <span
-                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${
-                                                            service.jobData.status
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-red-100 text-red-800"
-                                                        }`}
-                                                    >
-                                                        <span className="mr-1">
-                                                            {service.jobData.status ? "✓" : "✗"}
-                                                        </span>
-                                                        {service.jobData.status ? "Open" : "Closed"}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {service.jobData?.rating && (
-                                                <div className="flex items-center gap-1 text-sm">
-                                                    <span className="text-yellow-500">⭐</span>
-                                                    <span className="font-semibold">{service.jobData.rating}</span>
-                                                    {service.jobData.user_ratings_total && (
-                                                        <span className="text-gray-500">
-                                                            ({service.jobData.user_ratings_total})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
+                    <div className="text-center py-20">
+                        <div className="text-6xl mb-4">🐾</div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            No Services Found
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6">
+                            Select a category or add a new service!
+                        </p>
+                        <button
+                            onClick={handleAddPost}
+                            className="px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+                        >
+                            + Add New Service
+                        </button>
+                    </div>
                 )}
             </div>
         </div>

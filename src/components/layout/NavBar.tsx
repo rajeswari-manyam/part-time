@@ -571,6 +571,7 @@ const Navbar: React.FC = () => {
                   <>
                     <NavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
                     <NavItem icon={Calendar} label="My Services" path="/my-bookings" onClick={() => handleNavClick("/my-bookings")} />
+                    <NavItem icon={Calendar} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
                   </>
                 )}
               </div>
@@ -668,8 +669,10 @@ const Navbar: React.FC = () => {
             ) : (
               <>
                 <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Calendar} label="My Bookings" path="/my-bookings" onClick={() => handleNavClick("/my-bookings")} />
+                <MobileNavItem icon={Calendar} label="My Services" path="/my-services" onClick={() => handleNavClick("/my-services")} />
+                <MobileNavItem icon={Calendar} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
+              
             )}
             <MobileNavItem icon={Bell} label="Notification" path="/notification" onClick={() => handleNavClick("/notification")} />
           </div>

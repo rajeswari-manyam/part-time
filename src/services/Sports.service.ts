@@ -122,6 +122,7 @@ export const getSportsWorkerById = async (id: string): Promise<SingleSportsWorke
     return { success: false, data: {} as SportsWorker };
   }
 };
+
 /**
  * Fetch all sports activity service providers
  * @returns Promise<SportsWorkerResponse>
@@ -144,6 +145,7 @@ export const getAllSportsActivities = async (): Promise<SportsWorkerResponse> =>
     return { success: false, count: 0, data: [] };
   }
 };
+
 /**
  * Fetch a single sports activity provider by ID
  * @param id string - sports activity ID
@@ -167,6 +169,7 @@ export const getSportsActivityById = async (id: string): Promise<SingleSportsWor
     return { success: false, data: {} as SportsWorker };
   }
 };
+
 /**
  * Update a sports activity provider by ID
  * @param id string - sports activity ID
@@ -195,6 +198,7 @@ export const updateSportsActivity = async (
     return { success: false, data: {} as SportsWorker };
   }
 };
+
 /**
  * Delete a sports activity by ID
  * @param id string - sports activity ID
@@ -218,18 +222,31 @@ export const deleteSportsActivity = async (id: string): Promise<{ success: boole
     return { success: false, message: "Failed to delete sports activity" };
   }
 };
-// src/services/Sports.service.ts
 
+/**
+ * Fetch sports activities by user ID
+ * FIXED: Changed endpoint from /getSportsByUserId to /getUserSports with query param
+ * @param userId string - user ID
+ * @returns Promise<SportsWorkerResponse>
+ */
+export const getUserSportsActivities = async ({ userId }: { userId: string }): Promise<SportsWorkerResponse> => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/getUserSports?userId=${userId}`,
+      {
+        method: "GET",
+        redirect: "follow"
+      }
+    );
 
-export const getUserSportsActivities = async ({ userId }: { userId: string }) => {
-  const response = await fetch(
-    `${API_BASE_URL}/getSportsByUserId/${userId}`,
-    { method: "GET" }
-  );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user sports activities:", error);
+    return { success: false, count: 0, data: [] };
   }
-
-  return response.json();
 };

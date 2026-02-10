@@ -1,85 +1,74 @@
 import React, { useEffect, useState } from "react";
-import { Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-    getUserSportsActivities,
-    deleteSportsActivity,
-    SportsWorker
-} from "../services/Sports.service";
+import { getUserEducations, deleteEducationService, EducationService } from "../services/EducationService.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
 
-interface SportsUserServiceProps {
+interface EducationUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
-    hideEmptyState?: boolean;
     hideHeader?: boolean;
+    hideEmptyState?: boolean;
 }
 
-const SportsUserService: React.FC<SportsUserServiceProps> = ({
+const EducationUserService: React.FC<EducationUserServiceProps> = ({
     userId,
     selectedSubcategory,
-    hideEmptyState = false,
-    hideHeader = false
+    hideHeader = false,
+    hideEmptyState = false
 }) => {
     const navigate = useNavigate();
-    const [sportsServices, setSportsServices] = useState<SportsWorker[]>([]);
+    const [services, setServices] = useState<EducationService[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    // ── Fetch Sports Services API ──
+    // ── Fetch Education Services API ──
     useEffect(() => {
-        const fetchSportsServices = async () => {
+        const fetchServices = async () => {
             if (!userId) {
-                setSportsServices([]);
+                setServices([]);
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
             try {
-                const response = await getUserSportsActivities({
-                    userId,
-                });
-
-                const userServices = response.success
-                    ? (response.data || [])
-                    : [];
-                setSportsServices(userServices);
+                const response = await getUserEducations(userId);
+                setServices(response.success ? response.data || [] : []);
             } catch (error) {
-                console.error("Error fetching sports services:", error);
-                setSportsServices([]);
+                console.error("Error fetching education services:", error);
+                setServices([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchSportsServices();
+        fetchServices();
     }, [userId]);
 
-    // ── Filter by subcategory (CLIENT-SIDE) ──
+    // ── Filter by subcategory ──
     const filteredServices = selectedSubcategory
-        ? sportsServices.filter(s =>
-            s.subCategory &&
-            s.subCategory.toLowerCase() === selectedSubcategory.toLowerCase()
+        ? services.filter(s =>
+            s.type &&
+            selectedSubcategory.toLowerCase().includes(s.type.toLowerCase())
         )
-        : sportsServices;
+        : services;
 
-    // ── Delete Sports Service API ──
+    // ── Delete Service API ──
     const handleDelete = async (serviceId: string) => {
-        if (!window.confirm("Delete this sports service?")) return;
+        if (!window.confirm("Delete this education service?")) return;
 
         setDeletingId(serviceId);
         try {
-            const result = await deleteSportsActivity(serviceId);
+            const result = await deleteEducationService(serviceId);
             if (result.success) {
-                setSportsServices(prev => prev.filter(s => s._id !== serviceId));
+                setServices(prev => prev.filter(s => s._id !== serviceId));
             } else {
                 alert("Failed to delete service. Please try again.");
             }
         } catch (error) {
-            console.error("Error deleting sports service:", error);
+            console.error("Error deleting education service:", error);
             alert("Failed to delete service. Please try again.");
         } finally {
             setDeletingId(null);
@@ -87,7 +76,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
     };
 
     // ── Helper functions ──
-    const openDirections = (service: SportsWorker) => {
+    const openDirections = (service: EducationService) => {
         if (service.latitude && service.longitude) {
             window.open(
                 `https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`,
@@ -101,33 +90,18 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
         }
     };
 
-    // ── Get icon for service type ──
-    const getServiceIcon = (subCategory?: string): string => {
-        if (!subCategory) return "🏃";
-        const normalized = subCategory.toLowerCase();
-
-        if (normalized.includes("gym") || normalized.includes("fitness")) return "💪";
-        if (normalized.includes("yoga")) return "🧘";
-        if (normalized.includes("swimming")) return "🏊";
-        if (normalized.includes("cricket")) return "🏏";
-        if (normalized.includes("football") || normalized.includes("soccer")) return "⚽";
-        if (normalized.includes("basketball")) return "🏀";
-        if (normalized.includes("tennis")) return "🎾";
-        if (normalized.includes("badminton")) return "🏸";
-        if (normalized.includes("stadium") || normalized.includes("ground")) return "🏟️";
-        if (normalized.includes("play") || normalized.includes("indoor")) return "🎮";
-
-        return "🏃";
+    const openCall = (phone: string) => {
+        window.location.href = `tel:${phone}`;
     };
 
-    // ── Render Sports Service Card ──
-    const renderServiceCard = (service: SportsWorker) => {
+    // ── Render Service Card ──
+    const renderServiceCard = (service: EducationService) => {
         const id = service._id || "";
         const location = [service.area, service.city, service.state]
             .filter(Boolean)
             .join(", ") || "Location not set";
-        const servicesList = service.services || [];
-        const icon = getServiceIcon(service.subCategory);
+        const subjects = service.subjects || [];
+        const qualifications = service.qualifications || [];
 
         return (
             <div
@@ -140,7 +114,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                     <ActionDropdown
                         onEdit={(e) => {
                             e.stopPropagation();
-                            navigate(`/add-sports-service-form?id=${id}`);
+                            navigate(`/add-education-form?id=${id}`);
                         }}
                         onDelete={(e) => {
                             e.stopPropagation();
@@ -153,7 +127,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                 <div className="p-5 flex flex-col flex-1 gap-3">
                     {/* Title */}
                     <h2 className="text-xl font-semibold text-gray-900 truncate pr-8">
-                        {service.serviceName || "Unnamed Service"}
+                        {service.name || "Unnamed Service"}
                     </h2>
 
                     {/* Location */}
@@ -162,17 +136,17 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {/* Type and Availability Badge */}
+                    {/* Type and Experience Badge */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {service.subCategory && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
-                                <span className="shrink-0">{icon}</span>
-                                <span className="truncate">{service.subCategory}</span>
+                        {service.type && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
+                                <span className="shrink-0">🎓</span>
+                                <span className="truncate">{service.type}</span>
                             </span>
                         )}
-                        {service.availability && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-200 font-medium">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span> Available
+                        {service.experience && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200 font-medium">
+                                <span className="shrink-0">📚</span> {service.experience} years exp
                             </span>
                         )}
                     </div>
@@ -184,50 +158,65 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                         </p>
                     )}
 
-                    {/* Rating and Experience */}
-                    <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-yellow-400 text-base">⭐</span>
-                            <span className="text-sm font-semibold text-gray-900">
-                                {service.rating || "N/A"}
-                            </span>
-                        </div>
-                        {service.experience && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500">{service.experience} years</p>
-                                <p className="text-xs text-gray-500">experience</p>
+                    {/* Charges */}
+                    {service.charges && (
+                        <div className="flex items-center justify-between py-2 border-t border-b border-gray-100">
+                            <div className="text-left">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Charges</p>
+                                <p className="text-lg font-bold text-green-600">
+                                    ₹{service.charges}
+                                    {service.chargeType && (
+                                        <span className="text-xs font-normal text-gray-500 ml-1">
+                                            / {service.chargeType}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Service Charge */}
-                    {service.serviceCharge && service.chargeType && (
-                        <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service Charge</p>
-                            <p className="text-lg font-bold text-green-600">
-                                ₹{service.serviceCharge}/{service.chargeType}
-                            </p>
                         </div>
                     )}
 
-                    {/* Available Services */}
-                    {servicesList.length > 0 && (
-                        <div className="pt-2 border-t border-gray-100">
+                    {/* Subjects */}
+                    {subjects.length > 0 && (
+                        <div className="pt-2">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Services Offered
+                                Subjects Taught
                             </p>
                             <div className="flex flex-wrap gap-1.5">
-                                {servicesList.slice(0, 3).map((s, idx) => (
+                                {subjects.slice(0, 3).map((subject, idx) => (
                                     <span
-                                        key={`${id}-${idx}`}
-                                        className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2.5 py-1 rounded-md border border-gray-200"
+                                        key={`${id}-subject-${idx}`}
+                                        className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200"
                                     >
-                                        <span className="text-purple-500">●</span> {s}
+                                        <span className="text-blue-500">●</span> {subject}
                                     </span>
                                 ))}
-                                {servicesList.length > 3 && (
+                                {subjects.length > 3 && (
                                     <span className="text-xs text-gray-500 px-2 py-1">
-                                        +{servicesList.length - 3} more
+                                        +{subjects.length - 3} more
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Qualifications */}
+                    {qualifications.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                Qualifications
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {qualifications.slice(0, 2).map((qual, idx) => (
+                                    <span
+                                        key={`${id}-qual-${idx}`}
+                                        className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-md border border-green-200"
+                                    >
+                                        🎓 {qual}
+                                    </span>
+                                ))}
+                                {qualifications.length > 2 && (
+                                    <span className="text-xs text-gray-500 px-2 py-1">
+                                        +{qualifications.length - 2} more
                                     </span>
                                 )}
                             </div>
@@ -245,14 +234,14 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                             <span>📍</span> Directions
                         </Button>
                         <Button
-                            variant="primary"
+                            variant="success"
                             size="sm"
-                            onClick={() => navigate(`/sports-services/details/${id}`)}
-                            className="w-full sm:flex-1 justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => service.phone && openCall(service.phone)}
+                            className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
                             disabled={deletingId === id}
                         >
-                            <span className="shrink-0">👁️</span>
-                            <span className="truncate">View Details</span>
+                            <span className="shrink-0">📞</span>
+                            <span className="truncate">{service.phone || "No Phone"}</span>
                         </Button>
                     </div>
                 </div>
@@ -266,7 +255,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
             <div>
                 {!hideHeader && (
                     <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>🏃</span> Sports & Fitness Services
+                        <span>🎓</span> Education Services
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
@@ -276,46 +265,44 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
         );
     }
 
-    // ── Empty State - CONDITIONALLY RENDERED ──
+    // ── Empty State ──
     if (filteredServices.length === 0) {
-        if (hideEmptyState) {
-            return null;
-        }
+        if (hideEmptyState) return null;
 
         return (
             <div>
                 {!hideHeader && (
                     <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>🏃</span> Sports & Fitness Services (0)
+                        <span>🎓</span> Education Services (0)
                     </h2>
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="text-6xl mb-4">🏃</div>
+                    <div className="text-6xl mb-4">🎓</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Sports Services Yet
+                        No Education Services Yet
                     </h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
-                        Start adding your sports and fitness services to showcase them here.
+                        Start adding your education and training services to showcase them here.
                     </p>
                     <Button
                         variant="primary"
                         size="md"
-                        onClick={() => navigate('/add-sports-service-form')}
+                        onClick={() => navigate('/add-education-form')}
                         className="gap-1.5"
                     >
-                        + Add Sports Service
+                        + Add Education Service
                     </Button>
                 </div>
             </div>
         );
     }
 
-    // ── Render Services ──
+    // ── Render ──
     return (
         <div>
             {!hideHeader && (
                 <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏃</span> Sports & Fitness Services ({filteredServices.length})
+                    <span>🎓</span> Education Services ({filteredServices.length})
                 </h2>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -325,4 +312,4 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
     );
 };
 
-export default SportsUserService;
+export default EducationUserService;

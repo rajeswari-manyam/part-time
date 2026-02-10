@@ -4,29 +4,34 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 
 // ── Nearby card components with dummy data
-import NearbyTowingCard from "../components/cards/Automotive/NearByTowingService";
-import NearbyBikeRepairCard from "../components/cards/Automotive/NearByBikeRepairCard";
-import NearbyCarRepairCard from "../components/cards/Automotive/NearByCarRepair";
-import NearbyBikeWashingCard from "../components/cards/Automotive/NearByBikeWash";
-import NearbyCarWashingCard from "../components/cards/Automotive/NearByCarWashing";
-import NearbyAutomotiveSparePartsCard from "../components/cards/Automotive/NearByAutomotiveSpareParts";
+import NearbyCCTVCard from "../components/cards/Tech&DigitalService/NearByCCTVCard";
+import NearbyDigitalMarketingCard from "../components/cards/Tech&DigitalService/NearByDigitalMarketingCard";
+import NearbyGraphicDesignerCard from "../components/cards/Tech&DigitalService/NearByGraphicCard";
+import NearbyInternetWebsiteCard from "../components/cards/Tech&DigitalService/NearbyInternetWebsiteCard";
+import NearbyLaptopRepairCard from "../components/cards/Tech&DigitalService/NearByLaptop";
+import NearbyMobileRepairCard from "../components/cards/Tech&DigitalService/NearByMobileCard";
+import NearbySoftwareCard from "../components/cards/Tech&DigitalService/NearBysoftwareCard";
+import NearbyWebsiteCard from "../components/cards/Tech&DigitalService/NearByWebsiteCard";
 
 // ── Import API service
-import { getNearbyAutomotive, AutomotiveService, AutomotiveResponse } from "../services/AutomotiveServcie.service";
+import { getNearbyDigitalWorkers, DigitalWorker, DigitalWorkerResponse } from "../services/DigitalService.service";
 
 // ============================================================================
 // SUBCATEGORY → CARD COMPONENT MAP
 // ============================================================================
 type CardKey =
-    | "towing" | "bikeRepair" | "carRepair" | "bikeWash" | "carWash" | "spareParts";
+    | "cctv" | "digital-marketing" | "graphic-design" | "internet-website"
+    | "laptop-repair" | "mobile-repair" | "software" | "website";
 
 const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
-    towing: NearbyTowingCard,
-    bikeRepair: NearbyBikeRepairCard,
-    carRepair: NearbyCarRepairCard,
-    bikeWash: NearbyBikeWashingCard,
-    carWash: NearbyCarWashingCard,
-    spareParts: NearbyAutomotiveSparePartsCard,
+    "cctv": NearbyCCTVCard,
+    "digital-marketing": NearbyDigitalMarketingCard,
+    "graphic-design": NearbyGraphicDesignerCard,
+    "internet-website": NearbyInternetWebsiteCard,
+    "laptop-repair": NearbyLaptopRepairCard,
+    "mobile-repair": NearbyMobileRepairCard,
+    "software": NearbySoftwareCard,
+    "website": NearbyWebsiteCard,
 };
 
 // ============================================================================
@@ -47,57 +52,66 @@ const getCardComponentForSubcategory = (
 
     const normalized = normalizeSubcategory(subcategory);
 
-    // Towing matching
-    if (normalized.includes("towing") || normalized.includes("tow")) {
-        console.log("✅ Matched to NearbyTowingCard");
-        return CARD_MAP.towing;
+    // CCTV/Security matching
+    if (normalized.includes("cctv") || (normalized.includes("security") && normalized.includes("system"))) {
+        console.log("✅ Matched to NearbyCCTVCard");
+        return CARD_MAP.cctv;
     }
 
-    // Car Repair matching
-    if (normalized.includes("car") && normalized.includes("repair")) {
-        console.log("✅ Matched to NearbyCarRepairCard");
-        return CARD_MAP.carRepair;
+    // Digital Marketing matching
+    if (normalized.includes("digital") && normalized.includes("marketing")) {
+        console.log("✅ Matched to NearbyDigitalMarketingCard");
+        return CARD_MAP["digital-marketing"];
     }
 
-    // Bike Repair matching
-    if (normalized.includes("bike") && normalized.includes("repair")) {
-        console.log("✅ Matched to NearbyBikeRepairCard");
-        return CARD_MAP.bikeRepair;
+    // Graphic Design matching
+    if (normalized.includes("graphic") && normalized.includes("design")) {
+        console.log("✅ Matched to NearbyGraphicDesignerCard");
+        return CARD_MAP["graphic-design"];
     }
 
-    // Car Washing matching
-    if (normalized.includes("car") && normalized.includes("wash")) {
-        console.log("✅ Matched to NearbyCarWashingCard");
-        return CARD_MAP.carWash;
+    // Internet Website matching
+    if (normalized.includes("internet") && normalized.includes("website")) {
+        console.log("✅ Matched to NearbyInternetWebsiteCard");
+        return CARD_MAP["internet-website"];
     }
 
-    // Bike Washing matching
-    if (normalized.includes("bike") && normalized.includes("wash")) {
-        console.log("✅ Matched to NearbyBikeWashingCard");
-        return CARD_MAP.bikeWash;
+    // Laptop Repair matching
+    if (normalized.includes("laptop") && normalized.includes("repair")) {
+        console.log("✅ Matched to NearbyLaptopRepairCard");
+        return CARD_MAP["laptop-repair"];
     }
 
-    // Spare Parts matching
-    if (
-        (normalized.includes("spare") && normalized.includes("part")) ||
-        normalized.includes("sparepart") ||
-        normalized.includes("parts")
-    ) {
-        console.log("✅ Matched to NearbyAutomotiveSparePartsCard");
-        return CARD_MAP.spareParts;
+    // Mobile Repair matching
+    if (normalized.includes("mobile") && normalized.includes("repair")) {
+        console.log("✅ Matched to NearbyMobileRepairCard");
+        return CARD_MAP["mobile-repair"];
+    }
+
+    // Software matching
+    if (normalized.includes("software") && (normalized.includes("service") || normalized.includes("development"))) {
+        console.log("✅ Matched to NearbySoftwareCard");
+        return CARD_MAP.software;
+    }
+
+    // Website Development matching
+    if (normalized.includes("website") && normalized.includes("development")) {
+        console.log("✅ Matched to NearbyWebsiteCard");
+        return CARD_MAP.website;
     }
 
     console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-    return CARD_MAP.towing; // Default to towing card
+    return CARD_MAP.website; // Default to website card
 };
 
 const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
     if (!subcategory) return false;
 
     const normalized = normalizeSubcategory(subcategory);
-
+    
     const keywords = [
-        "towing", "tow", "repair", "wash", "spare", "part", "bike", "car"
+        "cctv", "security", "digital", "marketing", "graphic", "design",
+        "internet", "website", "laptop", "mobile", "repair", "software", "development"
     ];
 
     const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
@@ -108,7 +122,7 @@ const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
 };
 
 const getDisplayTitle = (subcategory: string | undefined) => {
-    if (!subcategory) return "All Automotive Services";
+    if (!subcategory) return "All Tech & Digital Services";
     return subcategory
         .split("-")
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -118,12 +132,12 @@ const getDisplayTitle = (subcategory: string | undefined) => {
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
-const AutomotiveList: React.FC = () => {
+const DigitalServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
     // ── State management ─────────────────────────────────────────────
-    const [nearbyData, setNearbyData] = useState<AutomotiveService[]>([]);
+    const [nearbyData, setNearbyData] = useState<DigitalWorker[]>([]);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -154,63 +168,62 @@ const AutomotiveList: React.FC = () => {
         }
     }, []);
 
-    // ── Fetch nearby automotives ──────────────────────────────────────────
+    // ── Fetch nearby digital services ────────────────────────────────
     useEffect(() => {
-        const fetchNearbyAutomotives = async () => {
+        const fetchNearbyServices = async () => {
             if (!userLocation) return;
 
             try {
                 setLoading(true);
                 setError(null);
 
-                console.log("🔍 Fetching nearby automotives...", {
+                console.log("🔍 Fetching nearby digital services...", {
                     latitude: userLocation.latitude,
                     longitude: userLocation.longitude,
                     distance,
                 });
 
-                const response: AutomotiveResponse = await getNearbyAutomotive(
+                const response: DigitalWorkerResponse = await getNearbyDigitalWorkers(
                     userLocation.latitude,
                     userLocation.longitude,
                     distance
                 );
 
                 if (response.success && response.data) {
-                    console.log("✅ Nearby automotives fetched:", response.data);
+                    console.log("✅ Nearby digital services fetched:", response.data);
                     setNearbyData(response.data);
                 } else {
-                    console.warn("⚠️ No nearby automotives found");
+                    console.warn("⚠️ No nearby digital services found");
                     setNearbyData([]);
                 }
             } catch (err) {
-                console.error("❌ Error fetching nearby automotives:", err);
-                setError("Failed to fetch nearby services. Showing example data below.");
-                // Don't set nearbyData to empty - let cards show their dummy data
+                console.error("❌ Error fetching nearby services:", err);
+                setError("Failed to fetch nearby services. Please try again.");
             } finally {
                 setLoading(false);
             }
         };
 
         if (userLocation && shouldShowNearbyCards(subcategory)) {
-            fetchNearbyAutomotives();
+            fetchNearbyServices();
         } else {
             setLoading(false);
         }
     }, [userLocation, distance, subcategory]);
 
     // ── navigation handlers ─────────────────────────────────────────
-    const handleView = (automotive: any) => {
-        const id = automotive.id || automotive._id;
-        console.log("Viewing automotive details:", id);
-        navigate(`/automotive-services/details/${id}`);
+    const handleView = (service: any) => {
+        const id = service.id || service._id;
+        console.log("Viewing service details:", id);
+        navigate(`/tech-services/details/${id}`);
     };
 
     const handleAddPost = () => {
         console.log("Adding new post. Subcategory:", subcategory);
         navigate(
             subcategory
-                ? `/add-automotive-form?subcategory=${subcategory}`
-                : "/add-automotive-form"
+                ? `/add-digital-service-form?subcategory=${subcategory}`
+                : "/add-digital-service-form"
         );
     };
 
@@ -238,12 +251,32 @@ const AutomotiveList: React.FC = () => {
             );
         }
 
+        // Show error state
+        if (error) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {error}
+                    </h3>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => window.location.reload()}
+                        className="mt-4"
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            );
+        }
+
         return (
             <div className="space-y-8">
                 {/* Header with distance filter */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                        <span className="shrink-0">🚗</span>
+                        <span className="shrink-0">💻</span>
                         <span className="truncate">Available {getDisplayTitle(subcategory)}</span>
                     </h2>
 
@@ -253,7 +286,7 @@ const AutomotiveList: React.FC = () => {
                         <select
                             value={distance}
                             onChange={(e) => setDistance(Number(e.target.value))}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                             <option value={5}>5 km</option>
                             <option value={10}>10 km</option>
@@ -264,27 +297,33 @@ const AutomotiveList: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Nearby Cards - Show dummy data from card components or real API data */}
+                {/* Nearby Cards with Real Data */}
                 <div className="mb-6">
-                    <CardComponent
-                        onViewDetails={handleView}
-                        nearbyData={nearbyData.length > 0 ? nearbyData : undefined}
-                        userLocation={userLocation}
-                    />
-                </div>
-
-                {/* Show error message below cards if there's an error */}
-                {error && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                            <span className="text-2xl">⚠️</span>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-yellow-800 mb-1">{error}</p>
-                                <p className="text-xs text-yellow-700">Showing example data below. Your location data may not be available.</p>
-                            </div>
+                    {nearbyData.length > 0 ? (
+                        <CardComponent
+                            onViewDetails={handleView}
+                            nearbyData={nearbyData}
+                            userLocation={userLocation}
+                        />
+                    ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-lg">
+                            <div className="text-5xl mb-3">📍</div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                No services found nearby
+                            </h3>
+                            <p className="text-gray-600 mb-4">
+                                Try increasing the search distance or check back later
+                            </p>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleAddPost}
+                            >
+                                Add a Service
+                            </Button>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         );
     };
@@ -293,7 +332,7 @@ const AutomotiveList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+        <div className="min-h-screen bg-gradient-to-b from-indigo-50/30 to-white">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
 
                 {/* ─── HEADER ── title  +  "+ Add Post" ─────────────── */}
@@ -319,7 +358,7 @@ const AutomotiveList: React.FC = () => {
                 ) : (
                     // Default view when no subcategory matches
                     <div className="text-center py-20">
-                        <div className="text-6xl mb-4">🚗</div>
+                        <div className="text-6xl mb-4">💻</div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">
                             No Services Found
                         </h3>
@@ -333,4 +372,4 @@ const AutomotiveList: React.FC = () => {
     );
 };
 
-export default AutomotiveList;
+export default DigitalServicesList;

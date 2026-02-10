@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getNearbyHotels, Hotel } from "../services/HotelService.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 
@@ -14,6 +13,9 @@ import NearbyTaxiServiceCard from "../components/cards/Hotel/NearByTaxiService";
 import NearbyTrainServiceCard from "../components/cards/Hotel/NearByTrains";
 import NearbyBusServiceCard from "../components/cards/Hotel/NearByBuses";
 import NearbyVehicleCard from "../components/cards/Hotel/NearByBikeCard";
+
+// ── Import API service
+import { getNearbyHotels, Hotel, HotelResponse } from "../services/HotelService.service";
 
 // ============================================================================
 // SUBCATEGORY → CARD COMPONENT MAP
@@ -37,46 +39,103 @@ const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
 // ============================================================================
 // HELPERS
 // ============================================================================
-const getCardKeyFromType = (type: string | undefined): CardKey | null => {
-    if (!type) return null;
-    const n = type.toLowerCase();
-    if (n.includes("resort")) return "resort";
-    if (n.includes("lodge")) return "lodge";
-    if (n.includes("guest")) return "guest";
-    if (n.includes("travel") || n.includes("agenc")) return "travel";
-    if (n.includes("taxi")) return "taxi";
-    if (n.includes("train")) return "train";
-    if (n.includes("bus")) return "bus";
-    if (n.includes("vehicle") || n.includes("rental") || n.includes("bike")) return "vehicle";
-    if (n.includes("hotel")) return "hotel";
-    return null;
+const normalizeSubcategory = (sub: string | undefined): string => {
+    if (!sub) return "";
+    const normalized = sub.toLowerCase();
+    console.log("📍 Raw subcategory:", sub);
+    console.log("📍 Normalized subcategory:", normalized);
+    return normalized;
 };
 
-const resolveCardKey = (sub: string | undefined): CardKey | null => {
-    if (!sub) return null;
-    const n = sub.toLowerCase();
-    if (n.includes("resort")) return "resort";
-    if (n.includes("lodge")) return "lodge";
-    if (n.includes("guest")) return "guest";
-    if (n.includes("travel") || n.includes("tour") || n.includes("agenc")) return "travel";
-    if (n.includes("taxi")) return "taxi";
-    if (n.includes("train")) return "train";
-    if (n.includes("bus")) return "bus";
-    if (n.includes("vehicle") || n.includes("rental") || n.includes("bike")) return "vehicle";
-    if (n.includes("hotel")) return "hotel";
-    return null;
+const getCardComponentForSubcategory = (
+    subcategory: string | undefined
+): React.ComponentType<any> | null => {
+    if (!subcategory) return null;
+
+    const normalized = normalizeSubcategory(subcategory);
+
+    // Resort matching
+    if (normalized.includes("resort")) {
+        console.log("✅ Matched to NearbyResortsCard");
+        return CARD_MAP.resort;
+    }
+
+    // Lodge matching
+    if (normalized.includes("lodge")) {
+        console.log("✅ Matched to NearbyLodgesCard");
+        return CARD_MAP.lodge;
+    }
+
+    // Guest house matching
+    if (normalized.includes("guest")) {
+        console.log("✅ Matched to NearbyGuestHouseCard");
+        return CARD_MAP.guest;
+    }
+
+    // Travel agency matching
+    if (normalized.includes("travel") || normalized.includes("tour") || normalized.includes("agenc")) {
+        console.log("✅ Matched to NearbyTravelCard");
+        return CARD_MAP.travel;
+    }
+
+    // Taxi matching
+    if (normalized.includes("taxi")) {
+        console.log("✅ Matched to NearbyTaxiServiceCard");
+        return CARD_MAP.taxi;
+    }
+
+    // Train matching
+    if (normalized.includes("train")) {
+        console.log("✅ Matched to NearbyTrainServiceCard");
+        return CARD_MAP.train;
+    }
+
+    // Bus matching
+    if (normalized.includes("bus")) {
+        console.log("✅ Matched to NearbyBusServiceCard");
+        return CARD_MAP.bus;
+    }
+
+    // Vehicle/Bike rental matching
+    if (normalized.includes("vehicle") || normalized.includes("rental") || normalized.includes("bike")) {
+        console.log("✅ Matched to NearbyVehicleCard");
+        return CARD_MAP.vehicle;
+    }
+
+    // Hotel matching (default)
+    if (normalized.includes("hotel")) {
+        console.log("✅ Matched to NearbyHotelsCard");
+        return CARD_MAP.hotel;
+    }
+
+    console.warn(`⚠️ No matching card component for: "${subcategory}"`);
+    return CARD_MAP.hotel; // Default to hotel card
 };
 
-const getTypeFromSubcategory = (subcategory: string | undefined): string | undefined => {
-    if (!subcategory) return undefined;
+const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
+    if (!subcategory) return false;
+
+    const normalized = normalizeSubcategory(subcategory);
+
+    const keywords = [
+        "hotel", "resort", "lodge", "guest",
+        "travel", "taxi", "train", "bus", "vehicle", "rental", "bike"
+    ];
+
+    const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
+
+    console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
+
+    return hasMatch;
+};
+
+const getDisplayTitle = (subcategory: string | undefined) => {
+    if (!subcategory) return "All Hotel & Travel Services";
     return subcategory
         .split("-")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(" ");
 };
-
-const normalizeType = (type: string): string =>
-    type.toLowerCase().trim().replace(/\s+/g, " ");
 
 // ============================================================================
 // MAIN COMPONENT
@@ -85,148 +144,209 @@ const HotelServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    // ── state ────────────────────────────────────────────────────────────────
-    const [nearbyServices, setNearbyServices] = useState<Hotel[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [locationError, setLocationError] = useState("");
+    // ── State management ─────────────────────────────────────────────
+    const [nearbyData, setNearbyData] = useState<Hotel[]>([]);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [distance, setDistance] = useState<number>(10); // Default 10km radius
 
-    // ── fetch nearby hotels with automatic location ──────────────────────────
-    const fetchNearbyHotels = useCallback(async () => {
-        setLoading(true);
-        setError("");
-        setLocationError("");
-
-        try {
-            // Get current location
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error("Geolocation not supported"));
-                    return;
+    // ── Get user location ────────────────────────────────────────────
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    };
+                    setUserLocation(location);
+                    console.log("📍 User location obtained:", location);
+                },
+                (err) => {
+                    console.error("❌ Error getting user location:", err);
+                    setError("Unable to get your location. Please enable location services.");
+                    setLoading(false);
                 }
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000 // Cache for 5 minutes
-                });
-            });
-
-            const { latitude, longitude } = position.coords;
-            setUserLocation({ latitude, longitude });
-
-            const distance = 10; // 10 km radius
-
-            console.log("Fetching nearby hotels with coordinates:", { latitude, longitude, distance });
-            const response = await getNearbyHotels(latitude, longitude, distance);
-            console.log("Nearby hotels API response:", response);
-
-            if (response.success) {
-                const allServices = response.data || [];
-                console.log("All services fetched:", allServices);
-
-                if (subcategory) {
-                    const targetType = getTypeFromSubcategory(subcategory);
-                    if (targetType) {
-                        const normalizedTarget = normalizeType(targetType);
-                        const filtered = allServices.filter(s =>
-                            s.type && normalizeType(s.type) === normalizedTarget
-                        );
-                        console.log(`Filtered services for ${targetType}:`, filtered);
-                        setNearbyServices(filtered);
-                    } else {
-                        setNearbyServices(allServices);
-                    }
-                } else {
-                    setNearbyServices(allServices);
-                }
-            } else {
-                console.warn("API returned success=false:", response);
-                setNearbyServices([]);
-            }
-        } catch (err: any) {
-            console.error("fetchNearbyHotels error:", err);
-            setLocationError(
-                err.message === "User denied Geolocation"
-                    ? "Location access denied. Please enable location services to see nearby services."
-                    : err.message || "Failed to get location. Please enable location services."
             );
-            setNearbyServices([]);
-        } finally {
+        } else {
+            console.error("❌ Geolocation not supported");
+            setError("Geolocation is not supported by your browser.");
             setLoading(false);
         }
-    }, [subcategory]);
+    }, []);
 
+    // ── Fetch nearby hotels ──────────────────────────────────────────
     useEffect(() => {
-        console.log("Component mounted/updated. Subcategory:", subcategory);
-        fetchNearbyHotels();
-    }, [fetchNearbyHotels]);
+        const fetchNearbyHotels = async () => {
+            if (!userLocation) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                console.log("🔍 Fetching nearby hotels...", {
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                    distance,
+                });
+
+                const response: HotelResponse = await getNearbyHotels(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    distance
+                );
+
+                if (response.success && response.data) {
+                    console.log("✅ Nearby hotels fetched:", response.data);
+                    setNearbyData(response.data);
+                } else {
+                    console.warn("⚠️ No nearby hotels found");
+                    setNearbyData([]);
+                }
+            } catch (err) {
+                console.error("❌ Error fetching nearby hotels:", err);
+                setError("Failed to fetch nearby services. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userLocation && shouldShowNearbyCards(subcategory)) {
+            fetchNearbyHotels();
+        } else {
+            setLoading(false);
+        }
+    }, [userLocation, distance, subcategory]);
 
     // ── navigation handlers ─────────────────────────────────────────
-    const handleView = (id: string) => {
+    const handleView = (hotel: any) => {
+        const id = hotel.id || hotel._id;
         console.log("Viewing hotel details:", id);
         navigate(`/hotel-services/details/${id}`);
     };
 
     const handleAddPost = () => {
         console.log("Adding new post. Subcategory:", subcategory);
-        navigate(subcategory
-            ? `/add-hotel-service-form?subcategory=${subcategory}`
-            : "/add-hotel-service-form"
+        navigate(
+            subcategory
+                ? `/add-hotel-service-form?subcategory=${subcategory}`
+                : "/add-hotel-service-form"
         );
     };
 
-    // ── display helpers ──────────────────────────────────────────────────────
-    const getDisplayTitle = () =>
-        subcategory
-            ? subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
-            : "All Hotel & Travel Services";
+    // ── Render Cards Section ─────────────────────────────────────────
+    const renderCardsSection = () => {
+        const CardComponent = getCardComponentForSubcategory(subcategory);
 
-    const getCardComponent = (): React.ComponentType<any> | null => {
-        if (subcategory) {
-            const key = resolveCardKey(subcategory);
-            console.log("Card key from subcategory:", key);
-            if (key && CARD_MAP[key]) return CARD_MAP[key];
+        if (!CardComponent) {
+            console.error(`❌ No card component available for subcategory: "${subcategory}"`);
+            return null;
         }
-        if (nearbyServices.length > 0 && nearbyServices[0].type) {
-            const key = getCardKeyFromType(nearbyServices[0].type);
-            console.log("Card key from first service type:", key);
-            if (key && CARD_MAP[key]) return CARD_MAP[key];
+
+        // Show loading state
+        if (loading) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⏳</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        Loading nearby services...
+                    </h3>
+                    <p className="text-gray-600">
+                        Getting your location and finding services near you
+                    </p>
+                </div>
+            );
         }
-        // Default to hotel card if no specific match
-        console.log("Using default hotel card component");
-        return CARD_MAP.hotel;
-    };
 
-    const CardComponent = getCardComponent();
+        // Show error state
+        if (error) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {error}
+                    </h3>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => window.location.reload()}
+                        className="mt-4"
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            );
+        }
 
-    // ============================================================================
-    // LOADING
-    // ============================================================================
-    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-                    <p className={`${typography.body.small} text-gray-600`}>Loading services...</p>
+            <div className="space-y-8">
+                {/* Header with distance filter */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
+                        <span className="shrink-0">🏨</span>
+                        <span className="truncate">Available {getDisplayTitle(subcategory)}</span>
+                    </h2>
+
+                    {/* Distance Filter */}
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">Within:</label>
+                        <select
+                            value={distance}
+                            onChange={(e) => setDistance(Number(e.target.value))}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value={5}>5 km</option>
+                            <option value={10}>10 km</option>
+                            <option value={20}>20 km</option>
+                            <option value={50}>50 km</option>
+                            <option value={100}>100 km</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Nearby Cards with Real Data */}
+                <div className="mb-6">
+                    {nearbyData.length > 0 ? (
+                        <CardComponent
+                            onViewDetails={handleView}
+                            nearbyData={nearbyData}
+                            userLocation={userLocation}
+                        />
+                    ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-lg">
+                            <div className="text-5xl mb-3">📍</div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                No services found nearby
+                            </h3>
+                            <p className="text-gray-600 mb-4">
+                                Try increasing the search distance or check back later
+                            </p>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleAddPost}
+                            >
+                                Add a Service
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
-    }
+    };
 
     // ============================================================================
     // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-
-            {/* ─── PAGE CONTENT ───────────────────────────────────────── */}
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
 
                 {/* ─── HEADER ── title  +  "+ Add Post" ─────────────── */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                     <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                        {getDisplayTitle()}
+                        {getDisplayTitle(subcategory)}
                     </h1>
 
                     <Button
@@ -239,53 +359,20 @@ const HotelServicesList: React.FC = () => {
                     </Button>
                 </div>
 
-                {/* ─── ERROR ──────────────────────────────────────── */}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg">
-                        <p className={`${typography.body.small} text-red-700 font-medium`}>{error}</p>
-                    </div>
-                )}
-
-                {/* ─── LOCATION ERROR ──────────────────────────────────────── */}
-                {locationError && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 sm:p-4 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <span className="text-2xl">📍</span>
-                            <div>
-                                <p className={`${typography.body.small} text-yellow-800 font-semibold mb-1`}>
-                                    Location Access Required
-                                </p>
-                                <p className={`${typography.body.xs} text-yellow-700`}>
-                                    {locationError}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ─── NEARBY SECTION ─────────────────────────────── */}
-                {CardComponent && (
-                    <div>
-                        <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                            <span className="shrink-0">🏨</span>
-                            <span className="truncate">Nearby {getDisplayTitle()}</span>
-                            {nearbyServices.length > 0 && (
-                                <span className={`${typography.misc.badge} bg-blue-100 text-blue-700 px-2 py-1 rounded-full ml-2`}>
-                                    {nearbyServices.length}
-                                </span>
-                            )}
-                        </h2>
-
-                        {/* Always render the CardComponent - it will handle its own dummy data */}
-                        <CardComponent
-                            onViewDetails={(hotel: any) => {
-                                const id = hotel.id || hotel._id;
-                                console.log("Card view details clicked:", id);
-                                handleView(id);
-                            }}
-                            nearbyData={nearbyServices.length > 0 ? nearbyServices : undefined}
-                            userLocation={userLocation}
-                        />
+                {/* ─── CONTENT RENDERING ─────────────────────────────── */}
+                {shouldShowNearbyCards(subcategory) ? (
+                    // Render nearby cards with real API data
+                    renderCardsSection()
+                ) : (
+                    // Default view when no subcategory matches
+                    <div className="text-center py-20">
+                        <div className="text-6xl mb-4">🏨</div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            No Services Found
+                        </h3>
+                        <p className="text-gray-600">
+                            Select a category or add a new service!
+                        </p>
                     </div>
                 )}
             </div>

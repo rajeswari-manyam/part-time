@@ -9,11 +9,15 @@ import ActionDropdown from "../components/ActionDropDown";
 interface HotelUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
+    hideHeader?: boolean;
+    hideEmptyState?: boolean;
 }
 
-const HotelUserService: React.FC<HotelUserServiceProps> = ({ 
-    userId, 
-    selectedSubcategory 
+const HotelUserService: React.FC<HotelUserServiceProps> = ({
+    userId,
+    selectedSubcategory,
+    hideHeader = false,
+    hideEmptyState = false
 }) => {
     const navigate = useNavigate();
     const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -46,16 +50,16 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
 
     // ── Filter by subcategory ──
     const filteredHotels = selectedSubcategory
-        ? hotels.filter(h => 
-            h.type && 
+        ? hotels.filter(h =>
+            h.type &&
             selectedSubcategory.toLowerCase().includes(h.type.toLowerCase())
-          )
+        )
         : hotels;
 
     // ── Delete Hotel API ──
     const handleDelete = async (hotelId: string) => {
         if (!window.confirm("Delete this hotel service?")) return;
-        
+
         setDeletingId(hotelId);
         try {
             const result = await deleteHotel(hotelId);
@@ -104,81 +108,91 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative"
+                style={{ border: '1px solid #e5e7eb' }}
             >
-                {/* Banner */}
-                <div className="relative w-full h-36 sm:h-48 bg-gradient-to-br from-blue-100 to-cyan-100 flex flex-col items-center justify-center">
-                    <span className="text-5xl sm:text-6xl">🏨</span>
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
-                        <ActionDropdown
-                            onEdit={(e) => {
-                                e.stopPropagation();
-                                navigate(`/add-hotel-service-form?id=${id}`);
-                            }}
-                            onDelete={(e) => {
-                                e.stopPropagation();
-                                handleDelete(id);
-                            }}
-                        />
-                    </div>
+                {/* Three Dots Menu */}
+                <div className="absolute top-3 right-3 z-10">
+                    <ActionDropdown
+                        onEdit={(e) => {
+                            e.stopPropagation();
+                            navigate(`/add-hotel-service-form?id=${id}`);
+                        }}
+                        onDelete={(e) => {
+                            e.stopPropagation();
+                            handleDelete(id);
+                        }}
+                    />
                 </div>
 
                 {/* Body */}
-                <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
-                    <h2 className={`${typography.card.title} text-gray-800 truncate`}>
+                <div className="p-5 flex flex-col flex-1 gap-3">
+                    {/* Title */}
+                    <h2 className="text-xl font-semibold text-gray-900 truncate pr-8">
                         {hotel.name || "Unnamed Service"}
                     </h2>
-                    <p className={`${typography.body.xs} text-gray-500 flex items-center gap-1.5`}>
-                        <span className="shrink-0">📍</span>
-                        <span className="truncate">{location}</span>
+
+                    {/* Location */}
+                    <p className="text-sm text-gray-500 flex items-start gap-1.5">
+                        <span className="shrink-0 mt-0.5">📍</span>
+                        <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    {/* Type and Open 24 Hrs Badge */}
+                    <div className="flex flex-wrap items-center gap-2">
                         {hotel.type && (
-                            <span className={`inline-flex items-center gap-1 ${typography.misc.badge} bg-gray-100 text-gray-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-gray-200`}>
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
                                 <span className="shrink-0">🏨</span>
                                 <span className="truncate">{hotel.type}</span>
                             </span>
                         )}
-                        <span className={`inline-flex items-center gap-1 ${typography.misc.badge} bg-green-50 text-green-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-green-200`}>
-                            <span>⏰</span> Open 24 Hrs
+                        <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-200 font-medium">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span> Open 24 Hrs
                         </span>
                     </div>
 
+                    {/* Description */}
                     {hotel.description && (
-                        <p className={`${typography.card.description} text-gray-600 line-clamp-2`}>
+                        <p className="text-sm text-gray-600 line-clamp-2">
                             {hotel.description}
                         </p>
                     )}
 
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="text-yellow-500">★</span>
-                        <span className={`${typography.body.xs} font-semibold text-gray-700`}>
-                            {hotel.ratings || "N/A"}
-                        </span>
-                        {hotel.priceRange && (
-                            <span className={`ml-auto ${typography.body.xs} font-semibold text-green-700`}>
-                                ₹ {hotel.priceRange}
+                    {/* Rating and Price */}
+                    <div className="flex items-center justify-between py-2">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-yellow-400 text-base">⭐</span>
+                            <span className="text-sm font-semibold text-gray-900">
+                                {hotel.ratings || "N/A"}
                             </span>
+                        </div>
+                        {hotel.priceRange && (
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Starting at</p>
+                                <p className="text-lg font-bold text-green-600">
+                                    ₹{hotel.priceRange}
+                                </p>
+                            </div>
                         )}
                     </div>
 
+                    {/* Available Services */}
                     {amenities.length > 0 && (
-                        <div>
-                            <p className={`${typography.misc.caption} font-semibold uppercase tracking-wide mb-1.5`}>
-                                Services:
+                        <div className="pt-2 border-t border-gray-100">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                Available Services
                             </p>
-                            <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                            <div className="flex flex-wrap gap-1.5">
                                 {amenities.slice(0, 3).map((a, idx) => (
                                     <span
                                         key={`${id}-${idx}`}
-                                        className={`inline-flex items-center gap-1 ${typography.misc.badge} bg-gray-100 text-gray-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-gray-200`}
+                                        className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2.5 py-1 rounded-md border border-gray-200"
                                     >
-                                        <span>✓</span> {a}
+                                        <span className="text-green-500">●</span> {a}
                                     </span>
                                 ))}
                                 {amenities.length > 3 && (
-                                    <span className={`${typography.misc.badge} text-gray-500`}>
+                                    <span className="text-xs text-gray-500 px-2 py-1">
                                         +{amenities.length - 3} more
                                     </span>
                                 )}
@@ -187,12 +201,12 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto pt-3">
+                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openDirections(hotel)}
-                            className="w-full sm:flex-1 justify-center gap-1.5 border-green-600 text-green-700 hover:bg-green-50"
+                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                             <span>📍</span> Directions
                         </Button>
@@ -200,7 +214,7 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
                             variant="success"
                             size="sm"
                             onClick={() => hotel.phone && openCall(hotel.phone)}
-                            className="w-full sm:flex-1 justify-center gap-1.5"
+                            className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
                             disabled={deletingId === id}
                         >
                             <span className="shrink-0">📞</span>
@@ -216,9 +230,11 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
     if (loading) {
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏨</span> Hotel & Travel Services
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>🏨</span> Hotel & Travel Services
+                    </h2>
+                )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
@@ -226,13 +242,17 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
         );
     }
 
-    // ── Empty State - NOW SHOWS INSTEAD OF RETURNING NULL ──
+    // ── Empty State ──
     if (filteredHotels.length === 0) {
+        if (hideEmptyState) return null;
+
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏨</span> Hotel & Travel Services (0)
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>🏨</span> Hotel & Travel Services (0)
+                    </h2>
+                )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">🏨</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
@@ -257,9 +277,11 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
     // ── Render ──
     return (
         <div>
-            <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                <span>🏨</span> Hotel & Travel Services ({filteredHotels.length})
-            </h2>
+            {!hideHeader && (
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                    <span>🏨</span> Hotel & Travel Services ({filteredHotels.length})
+                </h2>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredHotels.map(renderHotelCard)}
             </div>

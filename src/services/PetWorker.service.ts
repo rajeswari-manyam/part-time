@@ -230,3 +230,41 @@ export const deletePetServiceById = async (
     };
   }
 };
+/* ===================== Get Pet Services By User ===================== */
+
+/**
+ * Fetch pet services created by a specific user
+ * @param userId string
+ * @returns Promise<PetWorkerResponse>
+ */
+export const getUserPetServices = async (
+  userId: string
+): Promise<PetWorkerResponse> => {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/getUserPets?userId=${userId}`,
+      {
+        method: "GET",
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user pet services:", error);
+    return {
+      success: false,
+      count: 0,
+      data: [],
+      message: "Failed to fetch user pet services"
+    };
+  }
+};

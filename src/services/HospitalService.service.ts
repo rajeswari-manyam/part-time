@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
    INTERFACES
 ======================= */
 
-export interface Hospital {
+export interface Hospital {   
   id?: string;
   name?: string;
   hospitalType?: string;       // added hospital type

@@ -7,14 +7,18 @@ import ActionDropdown from "../components/ActionDropDown";
 interface HospitalUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
+    hideHeader?: boolean;
+    hideEmptyState?: boolean;
 }
 
 // You'll need to import your actual service functions here
 // import { getUserHospitals, deleteHospital, Hospital } from "../services/HospitalService.service";
 
-const HospitalUserService: React.FC<HospitalUserServiceProps> = ({ 
-    userId, 
-    selectedSubcategory 
+const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
+    userId,
+    selectedSubcategory,
+    hideHeader = false,
+    hideEmptyState = false
 }) => {
     const navigate = useNavigate();
     const [hospitals, setHospitals] = useState<any[]>([]);
@@ -46,18 +50,20 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
     }, [userId]);
 
     const filteredHospitals = selectedSubcategory
-        ? hospitals.filter(h => 
-            h.type && 
+        ? hospitals.filter(h =>
+            h.type &&
             selectedSubcategory.toLowerCase().includes(h.type.toLowerCase())
-          )
+        )
         : hospitals;
 
     if (loading) {
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏥</span> Hospital & Medical Services
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>🏥</span> Hospital & Medical Services
+                    </h2>
+                )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                 </div>
@@ -66,11 +72,15 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
     }
 
     if (filteredHospitals.length === 0) {
+        if (hideEmptyState) return null;
+
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏥</span> Hospital & Medical Services (0)
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>🏥</span> Hospital & Medical Services (0)
+                    </h2>
+                )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">🏥</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
@@ -94,9 +104,11 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
 
     return (
         <div>
-            <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                <span>🏥</span> Hospital & Medical Services ({filteredHospitals.length})
-            </h2>
+            {!hideHeader && (
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                    <span>🏥</span> Hospital & Medical Services ({filteredHospitals.length})
+                </h2>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {/* Add your hospital cards here */}
             </div>

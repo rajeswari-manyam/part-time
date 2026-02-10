@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createHotelWithImages, updateHotel, getHotelById, Hotel } from '../services/HotelService.service';
+import { addPetService, updatePetServiceById, getPetServiceById } from "../services/PetWorker.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
@@ -9,11 +9,28 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-// ── Pull hotel/travel subcategories from JSON (categoryId 4) ────────────────
-const getHotelTravelSubcategories = () => {
-    const hotelCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 4);
-    return hotelCategory ? hotelCategory.items.map(item => item.name) : [];
+// ── Pull pet service subcategories from JSON (categoryId 13) ────────────────
+const getPetServiceSubcategories = () => {
+    const petCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 13);
+    return petCategory ? petCategory.items.map(item => item.name) : [];
 };
+
+// ── Common pet services ──────────────────────────────────────────────────────
+const commonServices = [
+    'Vaccination',
+    'Health Checkup',
+    'Grooming',
+    'Bathing',
+    'Nail Trimming',
+    'Training',
+    'Boarding',
+    'Pet Sitting',
+    'Dog Walking',
+    'Emergency Care',
+    'Dental Care',
+    'Surgery',
+    'Pet Food & Supplies'
+];
 
 // ============================================================================
 // SHARED INPUT CLASSES - Mobile First
@@ -74,7 +91,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const HotelForm = () => {
+const PetForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -98,25 +115,25 @@ const HotelForm = () => {
     // NEW: separate warning state for low-accuracy GPS (yellow banner)
     const [locationWarning, setLocationWarning] = useState('');
 
-    const hotelTypes = getHotelTravelSubcategories();
-    const defaultType = getSubcategoryFromUrl() || hotelTypes[0] || 'Hotels';
+    const petCategories = getPetServiceSubcategories();
+    const defaultCategory = getSubcategoryFromUrl() || petCategories[0] || 'Pet Shops';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
-        type: defaultType,
+        category: defaultCategory,
         email: '',
         phone: '',
-        description: '',
-        service: '' as string,
-        priceRange: '',
+        bio: '',
+        services: [] as string[],
+        experience: '',
+        serviceCharge: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        experience: '',
         availability: availabilityOptions[0],
     });
 
@@ -138,30 +155,43 @@ const HotelForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getHotelById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getPetServiceById(editId);
+                if (!response.success || !response.data || response.data.length === 0) {
+                    throw new Error('Service not found');
+                }
+
+                const data = response.data[0];
 
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
-                    type: data.type || defaultType,
+                    category: data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
-                    description: data.description || '',
-                    service: data.service || '',
-                    priceRange: data.priceRange || '',
+                    bio: data.bio || '',
+                    services: data.services || [],
+                    experience: data.experience?.toString() || '',
+                    serviceCharge: data.serviceCharge?.toString() || '',
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
                     pincode: data.pincode || '',
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
-                    experience: data.experience?.toString() || '',
-                    availability: data.availability || availabilityOptions[0],
+                    availability: typeof data.availability === 'string' 
+                        ? data.availability 
+                        : availabilityOptions[0],
                 }));
 
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+                // Set the currently available toggle based on the data
+                if (typeof data.availability === 'boolean') {
+                    setIsCurrentlyAvailable(data.availability);
+                }
+
+                if (data.images && Array.isArray(data.images)) {
+                    setExistingImages(data.images);
+                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -209,6 +239,16 @@ const HotelForm = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // ── service selection ────────────────────────────────────────────────────
+    const toggleService = (service: string) => {
+        setFormData(prev => ({
+            ...prev,
+            services: prev.services.includes(service)
+                ? prev.services.filter(s => s !== service)
+                : [...prev.services, service]
+        }));
     };
 
     // ── image helpers ────────────────────────────────────────────────────────
@@ -334,23 +374,41 @@ const HotelForm = () => {
         try {
             if (!formData.name || !formData.phone || !formData.email)
                 throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.service || formData.service.trim() === '')
-                throw new Error('Please enter at least one service or skill');
+            if (!formData.services || formData.services.length === 0)
+                throw new Error('Please select at least one service');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const payload: Hotel = {
-                ...formData,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-            };
+            const formDataToSend = new FormData();
+
+            formDataToSend.append('userId', formData.userId);
+            formDataToSend.append('name', formData.name);
+            formDataToSend.append('category', formData.category);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('phone', formData.phone);
+            formDataToSend.append('bio', formData.bio);
+            formDataToSend.append('services', JSON.stringify(formData.services));
+            formDataToSend.append('experience', formData.experience);
+            formDataToSend.append('serviceCharge', formData.serviceCharge);
+            formDataToSend.append('area', formData.area);
+            formDataToSend.append('city', formData.city);
+            formDataToSend.append('state', formData.state);
+            formDataToSend.append('pincode', formData.pincode);
+            formDataToSend.append('latitude', formData.latitude);
+            formDataToSend.append('longitude', formData.longitude);
+            // Send the currently available toggle state (API expects boolean)
+            formDataToSend.append('availability', isCurrentlyAvailable.toString());
+
+            selectedImages.forEach((image) => {
+                formDataToSend.append('images', image);
+            });
 
             if (isEditMode && editId) {
-                await updateHotel(editId, payload);
+                await updatePetServiceById(editId, formDataToSend);
                 setSuccessMessage('Service updated successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createHotelWithImages(payload, selectedImages);
+                await addPetService(formDataToSend);
                 setSuccessMessage('Service created successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             }
@@ -393,10 +451,10 @@ const HotelForm = () => {
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Service' : 'Add New Service'}
+                            {isEditMode ? 'Update Pet Service' : 'Add Pet Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
+                            {isEditMode ? 'Update your pet service listing' : 'Create new pet service listing'}
                         </p>
                     </div>
                 </div>
@@ -420,13 +478,13 @@ const HotelForm = () => {
                 {/* ─── 1. NAME ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Hotel Name</FieldLabel>
+                        <FieldLabel required>Service Name / Business Name</FieldLabel>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="Enter your name"
+                            placeholder="e.g., Happy Paws Veterinary Clinic"
                             className={inputBase}
                         />
                     </div>
@@ -463,8 +521,8 @@ const HotelForm = () => {
                     <div>
                         <FieldLabel required>Category</FieldLabel>
                         <select
-                            name="type"
-                            value={formData.type}
+                            name="category"
+                            value={formData.category}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -475,7 +533,7 @@ const HotelForm = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {petCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                 </SectionCard>
@@ -483,52 +541,45 @@ const HotelForm = () => {
                 <SectionCard>
                     <div>
                         <FieldLabel required>Services Offered</FieldLabel>
-                        <select
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            <option>Select services</option>
-                        </select>
-                        <div className="mt-3">
-                            <textarea
-                                name="service"
-                                value={formData.service}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                                className={inputBase + ' resize-none'}
-                            />
-                            <p className={`${typography.misc.caption} mt-2`}>
-                                💡 Enter services separated by commas
-                            </p>
+                        <p className={`${typography.misc.caption} mb-3`}>
+                            Select all services you provide
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {commonServices.map((service) => (
+                                <button
+                                    key={service}
+                                    type="button"
+                                    onClick={() => toggleService(service)}
+                                    className={`px-3 py-2.5 rounded-lg ${typography.body.small} font-medium transition-all ${
+                                        formData.services.includes(service)
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {formData.services.includes(service) && '✓ '}
+                                    {service}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Service Chips Preview */}
-                        {formData.service && formData.service.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
+                        {/* Selected Services Preview */}
+                        {formData.services.length > 0 && (
+                            <div className="mt-4">
+                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                    Selected Services ({formData.services.length}):
+                                </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.service.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
+                                    {formData.services.map((s, i) => (
+                                        <span
+                                            key={i}
+                                            className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                        >
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            {s}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -554,8 +605,8 @@ const HotelForm = () => {
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
                                 type="text"
-                                name="priceRange"
-                                value={formData.priceRange}
+                                name="serviceCharge"
+                                value={formData.serviceCharge}
                                 onChange={handleInputChange}
                                 placeholder="Amount"
                                 className={inputBase}
@@ -568,25 +619,27 @@ const HotelForm = () => {
                         <button
                             type="button"
                             onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                                isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
+                            }`}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                    isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
+                                }`}
                             />
                         </button>
                     </div>
                 </SectionCard>
 
                 {/* ─── 5. BIO ──────────────────────────────────────── */}
-                <SectionCard title="Bio">
+                <SectionCard title="About Your Service">
                     <textarea
-                        name="description"
-                        value={formData.description}
+                        name="bio"
+                        value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
+                        placeholder="Tell us about your pet service, expertise, and what makes you special..."
                         className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
@@ -697,7 +750,7 @@ const HotelForm = () => {
                 </SectionCard>
 
                 {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────── */}
-                <SectionCard title="Portfolio Photos (Optional)">
+                <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
                             type="file"
@@ -707,10 +760,11 @@ const HotelForm = () => {
                             className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
+                            selectedImages.length + existingImages.length >= 5
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
+                        }`}>
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
                                     <Upload className="w-8 h-8 text-blue-600" />
@@ -719,7 +773,7 @@ const HotelForm = () => {
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
                                             ? 'Maximum limit reached'
-                                            : 'Tap to upload portfolio photos'}
+                                            : 'Tap to upload service photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
                                 </div>
@@ -778,10 +832,11 @@ const HotelForm = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-blue-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                            } shadow-sm ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${
+                            loading
+                                ? 'bg-blue-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                        } shadow-sm ${typography.body.base}`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -800,4 +855,4 @@ const HotelForm = () => {
     );
 };
 
-export default HotelForm;
+export default PetForm;

@@ -10,12 +10,14 @@ interface ShoppingUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
     hideEmptyState?: boolean; // NEW: Control empty state display
+    hideHeader?: boolean;
 }
 
 const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     userId,
     selectedSubcategory,
-    hideEmptyState = false // Default: show empty state
+    hideEmptyState = false, // Default: show empty state
+    hideHeader = false
 }) => {
     const navigate = useNavigate();
     const [stores, setStores] = useState<ShoppingStore[]>([]);
@@ -182,10 +184,12 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     if (loading) {
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
-                    <span className="text-lg sm:text-xl">🛒</span>
-                    <span className="flex-1 min-w-0">Shopping & Retail</span>
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
+                        <span className="text-lg sm:text-xl">🛒</span>
+                        <span className="flex-1 min-w-0">Shopping & Retail</span>
+                    </h2>
+                )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                 </div>
@@ -203,10 +207,12 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
         // Otherwise, show the empty state card
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
-                    <span className="text-lg sm:text-xl">🛒</span>
-                    <span className="flex-1 min-w-0">Shopping & Retail (0)</span>
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
+                        <span className="text-lg sm:text-xl">🛒</span>
+                        <span className="flex-1 min-w-0">Shopping & Retail (0)</span>
+                    </h2>
+                )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">🛒</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
@@ -231,10 +237,12 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     // ── Render Stores ──
     return (
         <div>
-            <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
-                <span className="text-lg sm:text-xl">🛒</span>
-                <span className="flex-1 min-w-0">Shopping & Retail ({filteredStores.length})</span>
-            </h2>
+            {!hideHeader && (
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl`}>
+                    <span className="text-lg sm:text-xl">🛒</span>
+                    <span className="flex-1 min-w-0">Shopping & Retail ({filteredStores.length})</span>
+                </h2>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 {filteredStores.map(renderStoreCard)}
             </div>

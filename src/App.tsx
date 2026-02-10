@@ -55,8 +55,7 @@ import CreateWorkerProfile from "./pages/WorkerProfile";
 import EditSkillScreen from "./pages/EditWorkerSkill";
 import WorkerDetails from "./pages/WorkerDetails";
 import AddAutomotive from "./pages/AddAutomotive";
-import AutomotiveDetails from "./pages/AutomotiveDetails";
-import AutomotiveEdit from "./pages/AutomotiveEdit";
+
 
 import AutomotiveForm from "./pages/AutomotiveForm";
 import WorkerRedirectHandler from "./Routs/WorkerRender";
@@ -73,8 +72,8 @@ import ShoppingList from "./pages/ShoppingList";
 import AutomotiveList from "./pages/AutomotiveList";
 import EducationList from "./pages/EducationList";
 import BusinessList from "./pages/BusinessList";
-import PetServiceList from "./pages/PetServiceList";
-import TechDigitalServiceList from "./pages/Tech&DigitalServiceList";
+
+import TechDigitalServiceList from "./pages/DegitalServiceList";
 import EventList from "./pages/EventList";
 import CourierList from "./pages/CourierServiceList";
 import IndustrialServiceList from "./pages/IndustrialServiceList";
@@ -94,6 +93,16 @@ import HospitalForm from "./pages/HospitalForm";
 
 import SportsServiceForm from "./pages/SportsServiceForm";
 import ShoppingForm from "./pages/SoppingForm";
+import MyBusiness from "./pages/MyBusiness";
+import DigitalServiceForm from "./pages/DigitalServiceForm";
+import DigitalServiceList from "./pages/DegitalServiceList";
+import EducationForm from "./pages/EducationForm";
+import EducationServiceList from "./pages/EducationList";
+
+import PetServiceForm from "./pages/PetForm";
+import PetServiceList from "./pages/PetServiceList";
+
+
 
 
 /* ---------------- Protected Route ---------------- */
@@ -114,7 +123,22 @@ const ListedJobsWrapper: React.FC = () => {
         );
     }
 
-    return <ListedJobs userId={user._id} />;
+    return <MyBusiness userId={user._id} />;
+};
+
+/* ---------------- MyBusiness Wrapper to get userId ---------------- */
+const MyBusinessWrapper: React.FC = () => {
+    const { user } = useAuth();
+
+    if (!user?._id) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-red-600">Please log in to view your business</p>
+            </div>
+        );
+    }
+
+    return <MyBusiness userId={user._id} />;
 };
 
 /* ---------------- Layout ---------------- */
@@ -144,10 +168,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/category/:id" element={<CategoryPage />} />
 
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
-                    <Route
-                        path="/automotive/details/:id"
-                        element={<AutomotiveDetails />}
-                    />
+                 
 
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/worker-list/:id" element={<WorkerList />} />
@@ -191,8 +212,12 @@ const AppRoutes: React.FC = () => {
                     <Route path="/hospital-services/:subcategory" element={<HospitalServiceList />} />
                     <Route path="/add-sports-service-form" element={<SportsServiceForm />} />
                     <Route path="/add-shopping-form" element={<ShoppingForm />} />
-                   
-                   
+                    <Route path="/add-digital-service-form" element={<DigitalServiceForm />} />
+                    <Route path="/add-education-form" element={<EducationForm />} />
+                    <Route path="/add-automotive-form" element={<AutomotiveForm />} />
+                    <Route path="/add-pet-service-form" element={<PetServiceForm />} />
+
+
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
                     <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
                     <Route path="/beauty-services" element={<BeautyServicesList />} />
@@ -240,8 +265,16 @@ const AppRoutes: React.FC = () => {
                     <Route path="/sports-services" element={<SportsServiceList />} />
                     <Route path="/shopping/:subcategory" element={<ShoppingList />} />
                     <Route path="/shopping" element={<ShoppingList />} />
-                    
-                   
+                    <Route path="/digital-services/:subcategory" element={<DigitalServiceList />} />
+                    <Route path="/digital-services" element={<DigitalServiceList />} />
+                    <Route path="/education/:subcategory" element={<EducationServiceList />} />
+                    <Route path="/education" element={<EducationServiceList />} />
+                    <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+                    <Route path="/automotive" element={<AutomotiveList />} />
+                    <Route path="/pet/:subcategory" element={<PetServiceList />} />
+                    <Route path="/pet" element={<PetServiceList />} />
+
+
                     <Route
                         path="/add-skills"
                         element={
@@ -266,6 +299,14 @@ const AppRoutes: React.FC = () => {
                         element={
                             <ProtectedRoute>
                                 <ListedJobsWrapper />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/my-business"
+                        element={
+                            <ProtectedRoute>
+                                <MyBusinessWrapper />
                             </ProtectedRoute>
                         }
                     />

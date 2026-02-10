@@ -1,85 +1,75 @@
 import React, { useEffect, useState } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-    getUserSportsActivities,
-    deleteSportsActivity,
-    SportsWorker
-} from "../services/Sports.service";
+import { getUserAutomotives, deleteAutomotive, AutomotiveService } from "../services/AutomotiveServcie.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
 
-interface SportsUserServiceProps {
+interface AutomotiveUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
-    hideEmptyState?: boolean;
     hideHeader?: boolean;
+    hideEmptyState?: boolean;
 }
 
-const SportsUserService: React.FC<SportsUserServiceProps> = ({
+const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
     userId,
     selectedSubcategory,
-    hideEmptyState = false,
-    hideHeader = false
+    hideHeader = false,
+    hideEmptyState = false
 }) => {
     const navigate = useNavigate();
-    const [sportsServices, setSportsServices] = useState<SportsWorker[]>([]);
+    const [automotives, setAutomotives] = useState<AutomotiveService[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    // ── Fetch Sports Services API ──
+    // ── Fetch Automotives API ──
     useEffect(() => {
-        const fetchSportsServices = async () => {
+        const fetchAutomotives = async () => {
             if (!userId) {
-                setSportsServices([]);
+                setAutomotives([]);
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
             try {
-                const response = await getUserSportsActivities({
-                    userId,
-                });
-
-                const userServices = response.success
-                    ? (response.data || [])
-                    : [];
-                setSportsServices(userServices);
+                const response = await getUserAutomotives(userId);
+                setAutomotives(response.success ? response.data || [] : []);
             } catch (error) {
-                console.error("Error fetching sports services:", error);
-                setSportsServices([]);
+                console.error("Error fetching automotives:", error);
+                setAutomotives([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchSportsServices();
+        fetchAutomotives();
     }, [userId]);
 
-    // ── Filter by subcategory (CLIENT-SIDE) ──
-    const filteredServices = selectedSubcategory
-        ? sportsServices.filter(s =>
-            s.subCategory &&
-            s.subCategory.toLowerCase() === selectedSubcategory.toLowerCase()
+    // ── Filter by subcategory ──
+    const filteredAutomotives = selectedSubcategory
+        ? automotives.filter(a =>
+            a.businessType &&
+            selectedSubcategory.toLowerCase().includes(a.businessType.toLowerCase())
         )
-        : sportsServices;
+        : automotives;
 
-    // ── Delete Sports Service API ──
-    const handleDelete = async (serviceId: string) => {
-        if (!window.confirm("Delete this sports service?")) return;
+    // ── Delete Automotive API ──
+    const handleDelete = async (automotiveId: string) => {
+        if (!window.confirm("Delete this automotive service?")) return;
 
-        setDeletingId(serviceId);
+        setDeletingId(automotiveId);
         try {
-            const result = await deleteSportsActivity(serviceId);
+            const result = await deleteAutomotive(automotiveId);
             if (result.success) {
-                setSportsServices(prev => prev.filter(s => s._id !== serviceId));
+                setAutomotives(prev => prev.filter(a => a._id !== automotiveId));
             } else {
                 alert("Failed to delete service. Please try again.");
             }
         } catch (error) {
-            console.error("Error deleting sports service:", error);
+            console.error("Error deleting automotive:", error);
             alert("Failed to delete service. Please try again.");
         } finally {
             setDeletingId(null);
@@ -87,47 +77,31 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
     };
 
     // ── Helper functions ──
-    const openDirections = (service: SportsWorker) => {
-        if (service.latitude && service.longitude) {
+    const openDirections = (automotive: AutomotiveService) => {
+        if (automotive.latitude && automotive.longitude) {
             window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`,
+                `https://www.google.com/maps/dir/?api=1&destination=${automotive.latitude},${automotive.longitude}`,
                 "_blank"
             );
-        } else if (service.area || service.city) {
+        } else if (automotive.area || automotive.city) {
             const addr = encodeURIComponent(
-                [service.area, service.city, service.state].filter(Boolean).join(", ")
+                [automotive.area, automotive.city, automotive.state].filter(Boolean).join(", ")
             );
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
     };
 
-    // ── Get icon for service type ──
-    const getServiceIcon = (subCategory?: string): string => {
-        if (!subCategory) return "🏃";
-        const normalized = subCategory.toLowerCase();
-
-        if (normalized.includes("gym") || normalized.includes("fitness")) return "💪";
-        if (normalized.includes("yoga")) return "🧘";
-        if (normalized.includes("swimming")) return "🏊";
-        if (normalized.includes("cricket")) return "🏏";
-        if (normalized.includes("football") || normalized.includes("soccer")) return "⚽";
-        if (normalized.includes("basketball")) return "🏀";
-        if (normalized.includes("tennis")) return "🎾";
-        if (normalized.includes("badminton")) return "🏸";
-        if (normalized.includes("stadium") || normalized.includes("ground")) return "🏟️";
-        if (normalized.includes("play") || normalized.includes("indoor")) return "🎮";
-
-        return "🏃";
+    const openCall = (phone: string) => {
+        window.location.href = `tel:${phone}`;
     };
 
-    // ── Render Sports Service Card ──
-    const renderServiceCard = (service: SportsWorker) => {
-        const id = service._id || "";
-        const location = [service.area, service.city, service.state]
+    // ── Render Automotive Card ──
+    const renderAutomotiveCard = (automotive: AutomotiveService) => {
+        const id = automotive._id || "";
+        const location = [automotive.area, automotive.city, automotive.state]
             .filter(Boolean)
             .join(", ") || "Location not set";
-        const servicesList = service.services || [];
-        const icon = getServiceIcon(service.subCategory);
+        const services = automotive.services || [];
 
         return (
             <div
@@ -140,7 +114,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                     <ActionDropdown
                         onEdit={(e) => {
                             e.stopPropagation();
-                            navigate(`/add-sports-service-form?id=${id}`);
+                            navigate(`/add-automotive-form?id=${id}`);
                         }}
                         onDelete={(e) => {
                             e.stopPropagation();
@@ -153,7 +127,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                 <div className="p-5 flex flex-col flex-1 gap-3">
                     {/* Title */}
                     <h2 className="text-xl font-semibold text-gray-900 truncate pr-8">
-                        {service.serviceName || "Unnamed Service"}
+                        {automotive.name || "Unnamed Service"}
                     </h2>
 
                     {/* Location */}
@@ -162,72 +136,64 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {/* Type and Availability Badge */}
+                    {/* Business Type and Availability Badge */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {service.subCategory && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
-                                <span className="shrink-0">{icon}</span>
-                                <span className="truncate">{service.subCategory}</span>
+                        {automotive.businessType && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
+                                <span className="shrink-0">🚗</span>
+                                <span className="truncate">{automotive.businessType}</span>
                             </span>
                         )}
-                        {service.availability && (
+                        {automotive.availability && (
                             <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-200 font-medium">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span> Available
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span> {automotive.availability}
                             </span>
                         )}
                     </div>
 
                     {/* Description */}
-                    {service.description && (
+                    {automotive.description && (
                         <p className="text-sm text-gray-600 line-clamp-2">
-                            {service.description}
+                            {automotive.description}
                         </p>
                     )}
 
-                    {/* Rating and Experience */}
+                    {/* Experience and Price */}
                     <div className="flex items-center justify-between py-2">
                         <div className="flex items-center gap-1.5">
-                            <span className="text-yellow-400 text-base">⭐</span>
+                            <span className="text-blue-500 text-base">📅</span>
                             <span className="text-sm font-semibold text-gray-900">
-                                {service.rating || "N/A"}
+                                {automotive.experience ? `${automotive.experience} years` : "N/A"}
                             </span>
                         </div>
-                        {service.experience && (
+                        {automotive.priceRange && (
                             <div className="text-right">
-                                <p className="text-xs text-gray-500">{service.experience} years</p>
-                                <p className="text-xs text-gray-500">experience</p>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Starting at</p>
+                                <p className="text-lg font-bold text-green-600">
+                                    ₹{automotive.priceRange}
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Service Charge */}
-                    {service.serviceCharge && service.chargeType && (
-                        <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service Charge</p>
-                            <p className="text-lg font-bold text-green-600">
-                                ₹{service.serviceCharge}/{service.chargeType}
-                            </p>
-                        </div>
-                    )}
-
                     {/* Available Services */}
-                    {servicesList.length > 0 && (
+                    {services.length > 0 && (
                         <div className="pt-2 border-t border-gray-100">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Services Offered
+                                Available Services
                             </p>
                             <div className="flex flex-wrap gap-1.5">
-                                {servicesList.slice(0, 3).map((s, idx) => (
+                                {services.slice(0, 3).map((s, idx) => (
                                     <span
                                         key={`${id}-${idx}`}
                                         className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2.5 py-1 rounded-md border border-gray-200"
                                     >
-                                        <span className="text-purple-500">●</span> {s}
+                                        <span className="text-blue-500">●</span> {s}
                                     </span>
                                 ))}
-                                {servicesList.length > 3 && (
+                                {services.length > 3 && (
                                     <span className="text-xs text-gray-500 px-2 py-1">
-                                        +{servicesList.length - 3} more
+                                        +{services.length - 3} more
                                     </span>
                                 )}
                             </div>
@@ -239,20 +205,20 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => openDirections(service)}
+                            onClick={() => openDirections(automotive)}
                             className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                             <span>📍</span> Directions
                         </Button>
                         <Button
-                            variant="primary"
+                            variant="success"
                             size="sm"
-                            onClick={() => navigate(`/sports-services/details/${id}`)}
-                            className="w-full sm:flex-1 justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => automotive.phone && openCall(automotive.phone)}
+                            className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
                             disabled={deletingId === id}
                         >
-                            <span className="shrink-0">👁️</span>
-                            <span className="truncate">View Details</span>
+                            <span className="shrink-0">📞</span>
+                            <span className="truncate">{automotive.phone || "No Phone"}</span>
                         </Button>
                     </div>
                 </div>
@@ -266,7 +232,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
             <div>
                 {!hideHeader && (
                     <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>🏃</span> Sports & Fitness Services
+                        <span>🚗</span> Automotive Services
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
@@ -276,53 +242,51 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
         );
     }
 
-    // ── Empty State - CONDITIONALLY RENDERED ──
-    if (filteredServices.length === 0) {
-        if (hideEmptyState) {
-            return null;
-        }
+    // ── Empty State ──
+    if (filteredAutomotives.length === 0) {
+        if (hideEmptyState) return null;
 
         return (
             <div>
                 {!hideHeader && (
                     <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>🏃</span> Sports & Fitness Services (0)
+                        <span>🚗</span> Automotive Services (0)
                     </h2>
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="text-6xl mb-4">🏃</div>
+                    <div className="text-6xl mb-4">🚗</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Sports Services Yet
+                        No Automotive Services Yet
                     </h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
-                        Start adding your sports and fitness services to showcase them here.
+                        Start adding your automotive services to showcase them here.
                     </p>
                     <Button
                         variant="primary"
                         size="md"
-                        onClick={() => navigate('/add-sports-service-form')}
+                        onClick={() => navigate('/add-automotive-form')}
                         className="gap-1.5"
                     >
-                        + Add Sports Service
+                        + Add Automotive Service
                     </Button>
                 </div>
             </div>
         );
     }
 
-    // ── Render Services ──
+    // ── Render ──
     return (
         <div>
             {!hideHeader && (
                 <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>🏃</span> Sports & Fitness Services ({filteredServices.length})
+                    <span>🚗</span> Automotive Services ({filteredAutomotives.length})
                 </h2>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {filteredServices.map(renderServiceCard)}
+                {filteredAutomotives.map(renderAutomotiveCard)}
             </div>
         </div>
     );
 };
 
-export default SportsUserService;
+export default AutomotiveUserService;

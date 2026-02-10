@@ -8,11 +8,15 @@ import ActionDropdown from "../components/ActionDropDown";
 interface BeautyUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
+    hideHeader?: boolean;
+    hideEmptyState?: boolean;
 }
 
-const BeautyUserService: React.FC<BeautyUserServiceProps> = ({ 
-    userId, 
-    selectedSubcategory 
+const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
+    userId,
+    selectedSubcategory,
+    hideHeader = false,
+    hideEmptyState = false
 }) => {
     const navigate = useNavigate();
     const [beautyServices, setBeautyServices] = useState<BeautyWorker[]>([]);
@@ -45,16 +49,16 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
 
     // ── Filter by subcategory ──
     const filteredBeauty = selectedSubcategory
-        ? beautyServices.filter(b => 
-            b.category && 
+        ? beautyServices.filter(b =>
+            b.category &&
             selectedSubcategory.toLowerCase().includes(b.category.toLowerCase())
-          )
+        )
         : beautyServices;
 
     // ── Delete Beauty Service API ──
     const handleDelete = async (beautyId: string) => {
         if (!window.confirm("Delete this beauty service?")) return;
-        
+
         setDeletingId(beautyId);
         try {
             const result = await deleteById(beautyId);
@@ -149,11 +153,10 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                                 <span className="truncate">{beauty.category}</span>
                             </span>
                         )}
-                        <span className={`inline-flex items-center gap-1 ${typography.misc.badge} ${
-                            beauty.availability 
-                                ? "bg-green-50 text-green-700 border-green-200" 
+                        <span className={`inline-flex items-center gap-1 ${typography.misc.badge} ${beauty.availability
+                                ? "bg-green-50 text-green-700 border-green-200"
                                 : "bg-gray-50 text-gray-700 border-gray-200"
-                        } px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border`}>
+                            } px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border`}>
                             <span>{beauty.availability ? "✓" : "⏸"}</span>{" "}
                             {beauty.availability ? "Available" : "Unavailable"}
                         </span>
@@ -239,9 +242,11 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     if (loading) {
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>💅</span> Beauty & Wellness Services
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>💅</span> Beauty & Wellness Services
+                    </h2>
+                )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div>
                 </div>
@@ -249,13 +254,17 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
         );
     }
 
-    // ── Empty State - NOW SHOWS INSTEAD OF RETURNING NULL ──
+    // ── Empty State ──
     if (filteredBeauty.length === 0) {
+        if (hideEmptyState) return null;
+
         return (
             <div>
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                    <span>💅</span> Beauty & Wellness Services (0)
-                </h2>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>💅</span> Beauty & Wellness Services (0)
+                    </h2>
+                )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">💅</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
@@ -280,9 +289,11 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     // ── Render ──
     return (
         <div>
-            <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                <span>💅</span> Beauty & Wellness Services ({filteredBeauty.length})
-            </h2>
+            {!hideHeader && (
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                    <span>💅</span> Beauty & Wellness Services ({filteredBeauty.length})
+                </h2>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredBeauty.map(renderBeautyCard)}
             </div>

@@ -268,3 +268,32 @@ export const getNearbyAutomotive = async (
         throw error;
     }
 };
+// Get automotive services by user ID
+export const getUserAutomotives = async (
+  userId: string
+): Promise<AutomotiveResponse> => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/getUserAutomotives?userId=${userId}`,
+      {
+        method: "GET",
+        redirect: "follow",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("User Automotive API Error:", errorText);
+      throw new Error("Failed to fetch user automotive services");
+    }
+
+    const result: AutomotiveResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Error fetching user automotive services:", error);
+    throw error;
+  }
+};
