@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createHotelWithImages, updateHotel, getHotelById, Hotel } from '../services/HotelService.service';
+import { addEventService, updateEventService, getEventServiceById, EventWorker } from "../services/EventWorker.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
@@ -9,10 +9,13 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-// ── Pull hotel/travel subcategories from JSON (categoryId 4) ────────────────
-const getHotelTravelSubcategories = () => {
-    const hotelCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 4);
-    return hotelCategory ? hotelCategory.items.map(item => item.name) : [];
+// ── Charge type options ──────────────────────────────────────────────────────
+const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Event', 'Fixed Rate'];
+
+// ── Pull event subcategories from JSON (categoryId 3) ────────────────────────
+const getEventSubcategories = () => {
+    const eventCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 14);
+    return eventCategory ? eventCategory.items.map(item => item.name) : [];
 };
 
 // ============================================================================
@@ -20,7 +23,7 @@ const getHotelTravelSubcategories = () => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
+    `focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -74,7 +77,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const HotelForm = () => {
+const EventForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -98,18 +101,19 @@ const HotelForm = () => {
     // NEW: separate warning state for low-accuracy GPS (yellow banner)
     const [locationWarning, setLocationWarning] = useState('');
 
-    const hotelTypes = getHotelTravelSubcategories();
-    const defaultType = getSubcategoryFromUrl() || hotelTypes[0] || 'Hotels';
+    const eventCategories = getEventSubcategories();
+    const defaultCategory = getSubcategoryFromUrl() || eventCategories[0] || 'Party Decoration';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
-        type: defaultType,
+        category: defaultCategory,
         email: '',
         phone: '',
-        description: '',
-        service: '' as string,
-        priceRange: '',
+        bio: '',
+        services: '' as string,
+        serviceCharge: '',
+        chargeType: chargeTypeOptions[0],
         area: '',
         city: '',
         state: '',
@@ -117,7 +121,7 @@ const HotelForm = () => {
         latitude: '',
         longitude: '',
         experience: '',
-        availability: availabilityOptions[0],
+        availability: true,
     });
 
     // ── images ───────────────────────────────────────────────────────────────
@@ -127,7 +131,6 @@ const HotelForm = () => {
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
 
     // FIX: Prevents geocoding useEffect from overwriting real GPS coordinates
     const isGPSDetected = useRef(false);
@@ -138,19 +141,22 @@ const HotelForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getHotelById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getEventServiceById(editId);
+                if (!response.success || !response.data) throw new Error('Service not found');
+
+                const data = response.data;
 
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
-                    type: data.type || defaultType,
+                    category: data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
-                    description: data.description || '',
-                    service: data.service || '',
-                    priceRange: data.priceRange || '',
+                    bio: data.bio || '',
+                    services: data.services?.join(', ') || '',
+                    serviceCharge: data.serviceCharge?.toString() || '',
+                    chargeType: data.chargeType || chargeTypeOptions[0],
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
@@ -158,7 +164,7 @@ const HotelForm = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                     experience: data.experience?.toString() || '',
-                    availability: data.availability || availabilityOptions[0],
+                    availability: data.availability !== undefined ? data.availability : true,
                 }));
 
                 if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
@@ -334,25 +340,62 @@ const HotelForm = () => {
         try {
             if (!formData.name || !formData.phone || !formData.email)
                 throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.service || formData.service.trim() === '')
-                throw new Error('Please enter at least one service or skill');
+            if (!formData.services || formData.services.trim() === '')
+                throw new Error('Please enter at least one service');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const payload: Hotel = {
-                ...formData,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-            };
+            const formDataToSend = new FormData();
+            
+            // Append all text fields
+            formDataToSend.append('userId', formData.userId);
+            formDataToSend.append('name', formData.name);
+            formDataToSend.append('category', formData.category);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('phone', formData.phone);
+            formDataToSend.append('bio', formData.bio);
+            
+            // Convert services string to array
+            const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
+            formDataToSend.append('services', JSON.stringify(servicesArray));
+            
+            formDataToSend.append('serviceCharge', formData.serviceCharge);
+            formDataToSend.append('chargeType', formData.chargeType);
+            formDataToSend.append('area', formData.area);
+            formDataToSend.append('city', formData.city);
+            formDataToSend.append('state', formData.state);
+            formDataToSend.append('pincode', formData.pincode);
+            formDataToSend.append('latitude', formData.latitude);
+            formDataToSend.append('longitude', formData.longitude);
+            formDataToSend.append('experience', formData.experience);
+            formDataToSend.append('availability', formData.availability.toString());
+
+            // Append new images
+            selectedImages.forEach((image) => {
+                formDataToSend.append('images', image);
+            });
+
+            // Append existing images if in edit mode
+            if (isEditMode && existingImages.length > 0) {
+                formDataToSend.append('existingImages', JSON.stringify(existingImages));
+            }
 
             if (isEditMode && editId) {
-                await updateHotel(editId, payload);
-                setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const response = await updateEventService(editId, formDataToSend);
+                if (response.success) {
+                    setSuccessMessage('Service updated successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(response.message || 'Failed to update service');
+                }
             } else {
-                await createHotelWithImages(payload, selectedImages);
-                setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const response = await addEventService(formDataToSend);
+                if (response.success) {
+                    setSuccessMessage('Service created successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(response.message || 'Failed to create service');
+                }
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
@@ -368,7 +411,7 @@ const HotelForm = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -393,10 +436,10 @@ const HotelForm = () => {
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Service' : 'Add New Service'}
+                            {isEditMode ? 'Update Event Service' : 'Add New Event Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
+                            {isEditMode ? 'Update your event service listing' : 'Create new event service listing'}
                         </p>
                     </div>
                 </div>
@@ -420,13 +463,13 @@ const HotelForm = () => {
                 {/* ─── 1. NAME ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Hotel Name</FieldLabel>
+                        <FieldLabel required>Your Name</FieldLabel>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="Enter Hotel name"
+                            placeholder="Enter your name"
                             className={inputBase}
                         />
                     </div>
@@ -463,8 +506,8 @@ const HotelForm = () => {
                     <div>
                         <FieldLabel required>Category</FieldLabel>
                         <select
-                            name="type"
-                            value={formData.type}
+                            name="category"
+                            value={formData.category}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -475,7 +518,7 @@ const HotelForm = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {eventCategories.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
@@ -483,44 +526,30 @@ const HotelForm = () => {
                 <SectionCard>
                     <div>
                         <FieldLabel required>Services Offered</FieldLabel>
-                        <select
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            <option>Select services</option>
-                        </select>
-                        <div className="mt-3">
-                            <textarea
-                                name="service"
-                                value={formData.service}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                                className={inputBase + ' resize-none'}
-                            />
-                            <p className={`${typography.misc.caption} mt-2`}>
-                                💡 Enter services separated by commas
-                            </p>
-                        </div>
+                        <textarea
+                            name="services"
+                            value={formData.services}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="DJ Services, Sound System, Lighting, Stage Setup"
+                            className={inputBase + ' resize-none'}
+                        />
+                        <p className={`${typography.misc.caption} mt-2`}>
+                            💡 Enter services separated by commas
+                        </p>
 
                         {/* Service Chips Preview */}
-                        {formData.service && formData.service.trim() && (
+                        {formData.services && formData.services.trim() && (
                             <div className="mt-3">
                                 <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.service.split(',').map((s, i) => {
+                                    {formData.services.split(',').map((s, i) => {
                                         const trimmed = s.trim();
                                         if (!trimmed) return null;
                                         return (
                                             <span
                                                 key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                                className={`inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
                                             >
                                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -554,8 +583,8 @@ const HotelForm = () => {
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
                                 type="text"
-                                name="priceRange"
-                                value={formData.priceRange}
+                                name="serviceCharge"
+                                value={formData.serviceCharge}
                                 onChange={handleInputChange}
                                 placeholder="Amount"
                                 className={inputBase}
@@ -563,16 +592,35 @@ const HotelForm = () => {
                         </div>
                     </div>
 
+                    <div>
+                        <FieldLabel required>Charge Type</FieldLabel>
+                        <select
+                            name="chargeType"
+                            value={formData.chargeType}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'}
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5em 1.5em',
+                                paddingRight: '2.5rem'
+                            }}
+                        >
+                            {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
+
                     <div className="flex items-center justify-between py-2">
                         <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
                         <button
                             type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
+                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-emerald-500' : 'bg-gray-300'
                                 }`}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'
                                     }`}
                             />
                         </button>
@@ -582,11 +630,11 @@ const HotelForm = () => {
                 {/* ─── 5. BIO ──────────────────────────────────────── */}
                 <SectionCard title="Bio">
                     <textarea
-                        name="description"
-                        value={formData.description}
+                        name="bio"
+                        value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
+                        placeholder="Tell us about yourself and your expertise in event services..."
                         className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
@@ -677,8 +725,8 @@ const HotelForm = () => {
                     </div>
 
                     {/* Location Tip */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-purple-800`}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
@@ -709,11 +757,11 @@ const HotelForm = () => {
                         />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
+                            : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50'
                             }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-purple-600" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -744,7 +792,7 @@ const HotelForm = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-purple-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
                                         Saved
                                     </span>
                                 </div>
@@ -754,7 +802,7 @@ const HotelForm = () => {
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-purple-400"
                                     />
                                     <button
                                         type="button"
@@ -779,8 +827,8 @@ const HotelForm = () => {
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-blue-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                            ? 'bg-purple-400 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
                             } shadow-sm ${typography.body.base}`}
                     >
                         {loading
@@ -800,4 +848,4 @@ const HotelForm = () => {
     );
 };
 
-export default HotelForm;
+export default EventForm;

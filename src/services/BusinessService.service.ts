@@ -7,13 +7,18 @@ export interface BusinessWorker {
   _id?: string;
   userId?: string;
   name?: string;
+  title?: string; // API field
   email?: string;
   phone?: string;
   category?: string;
+  serviceType?: string; // API field
   services?: string[];
+  skills?: string; // API field (comma-separated string)
   experience?: number;
   serviceCharge?: number;
+  chargeType?: string;
   bio?: string;
+  description?: string; // API field
   images?: string[];
   area?: string;
   city?: string;
@@ -35,43 +40,58 @@ export interface BusinessWorkerResponse {
   data: BusinessWorker[];
 }
 
-export interface CreateServicePayload {
-  userId: string;
-  serviceType: string;
-  title: string;
-  description: string;
-  skills: string;
-  serviceCharge: string;
-  chargeType: string;
-  experience: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  latitude: string;
-  longitude: string;
-}
-
 export interface CreateServiceResponse {
   success: boolean;
   message: string;
   data?: BusinessWorker;
 }
 
+export interface ServiceByIdResponse {
+  success: boolean;
+  data?: BusinessWorker;
+  message?: string;
+}
+
+export interface UpdateServiceResponse {
+  success: boolean;
+  message: string;
+  data?: BusinessWorker;
+}
+
+export interface DeleteServiceResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface UserBusinessResponse {
+  success: boolean;
+  count: number;
+  data: BusinessWorker[];
+  message?: string;
+}
+
+export interface AllServicesResponse {
+  success: boolean;
+  count: number;
+  data: BusinessWorker[];
+}
+
 // ---- Fetch nearby business workers ----
 export const getNearbyBusinessWorkers = async (
   latitude: number,
   longitude: number,
-  distance: number
+  distance?: number
 ): Promise<BusinessWorkerResponse> => {
-  if (!distance || distance <= 0) {
-    throw new Error("Please provide a valid distance in km");
-  }
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/getnearbybusinessworkers?latitude=${latitude}&longitude=${longitude}&distance=${distance}`,
-      { method: "GET", redirect: "follow" }
-    );
+    // Build URL based on whether distance is provided
+    const url = distance
+      ? `${API_BASE_URL}/nearby?latitude=${latitude}&longitude=${longitude}&distance=${distance}`
+      : `${API_BASE_URL}/nearby?latitude=${latitude}&longitude=${longitude}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow"
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -85,20 +105,14 @@ export const getNearbyBusinessWorkers = async (
   }
 };
 
-// ---- Create new business service ----
+// ---- Create new business service (with FormData support for images) ----
 export const createBusinessService = async (
-  payload: CreateServicePayload
+  payload: FormData
 ): Promise<CreateServiceResponse> => {
   try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-
     const response = await fetch(`${API_BASE_URL}/createService`, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData,
+      body: payload,
       redirect: "follow",
     });
 
@@ -113,13 +127,8 @@ export const createBusinessService = async (
     return { success: false, message: "Failed to create service" };
   }
 };
-// ---- Fetch all business services ----
-export interface AllServicesResponse {
-  success: boolean;
-  count: number;
-  data: BusinessWorker[];
-}
 
+// ---- Fetch all business services ----
 export const getAllBusinessServices = async (): Promise<AllServicesResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/getAllServices`, {
@@ -138,13 +147,8 @@ export const getAllBusinessServices = async (): Promise<AllServicesResponse> => 
     return { success: false, count: 0, data: [] };
   }
 };
-// ---- Fetch business service by ID ----
-export interface ServiceByIdResponse {
-  success: boolean;
-  data?: BusinessWorker;
-  message?: string;
-}
 
+// ---- Fetch business service by ID ----
 export const getBusinessServiceById = async (
   serviceId: string
 ): Promise<ServiceByIdResponse> => {
@@ -165,44 +169,16 @@ export const getBusinessServiceById = async (
     return { success: false, message: "Failed to fetch service" };
   }
 };
-// ---- Update business service ----
-export interface UpdateServicePayload {
-  userId: string;
-  serviceType: string;
-  title: string;
-  description: string;
-  skills: string;
-  serviceCharge: string;
-  chargeType: string;
-  experience: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  latitude: string;
-  longitude: string;
-}
 
-export interface UpdateServiceResponse {
-  success: boolean;
-  message: string;
-  data?: BusinessWorker;
-}
-
+// ---- Update business service (with FormData support for images) ----
 export const updateBusinessService = async (
   serviceId: string,
-  payload: UpdateServicePayload
+  payload: FormData
 ): Promise<UpdateServiceResponse> => {
   try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-
     const response = await fetch(`${API_BASE_URL}/updateService/${serviceId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData,
+      body: payload,
       redirect: "follow",
     });
 
@@ -217,12 +193,8 @@ export const updateBusinessService = async (
     return { success: false, message: "Failed to update service" };
   }
 };
-// ---- Delete business service ----
-export interface DeleteServiceResponse {
-  success: boolean;
-  message: string;
-}
 
+// ---- Delete business service ----
 export const deleteBusinessService = async (
   serviceId: string
 ): Promise<DeleteServiceResponse> => {
@@ -243,14 +215,8 @@ export const deleteBusinessService = async (
     return { success: false, message: "Failed to delete service" };
   }
 };
-// ---- Fetch business services by user ----
-export interface UserBusinessResponse {
-  success: boolean;
-  count: number;
-  data: BusinessWorker[];
-  message?: string;
-}
 
+// ---- Fetch business services by user ----
 export const getUserBusinessServices = async (
   userId: string,
   serviceType?: string,

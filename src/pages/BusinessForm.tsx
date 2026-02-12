@@ -1,18 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createHotelWithImages, updateHotel, getHotelById, Hotel } from '../services/HotelService.service';
+import {
+    createBusinessService,
+    updateBusinessService,
+    getBusinessServiceById,
+    BusinessWorker
+} from "../services/BusinessService.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Availability options ─────────────────────────────────────────────────────
-const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
+// ── Charge type options — values match API exactly ───────────────────────────
+// Postman shows: "hour", "day", "project", "fixed"
+const chargeTypeOptions: { label: string; value: string }[] = [
+    { label: 'Per Day', value: 'day' },
+    { label: 'Per Hour', value: 'hour' },
+    { label: 'Per Project', value: 'project' },
+    { label: 'Fixed Rate', value: 'fixed' },
+];
 
-// ── Pull hotel/travel subcategories from JSON (categoryId 4) ────────────────
-const getHotelTravelSubcategories = () => {
-    const hotelCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 4);
-    return hotelCategory ? hotelCategory.items.map(item => item.name) : [];
+// ── Pull business subcategories from JSON (categoryId 11) ────────────────────
+const getBusinessSubcategories = () => {
+    const businessCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 11);
+    return businessCategory ? businessCategory.items.map(item => item.name) : [];
 };
 
 // ============================================================================
@@ -74,7 +85,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const HotelForm = () => {
+const BusinessForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -94,22 +105,21 @@ const HotelForm = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-
-    // NEW: separate warning state for low-accuracy GPS (yellow banner)
     const [locationWarning, setLocationWarning] = useState('');
 
-    const hotelTypes = getHotelTravelSubcategories();
-    const defaultType = getSubcategoryFromUrl() || hotelTypes[0] || 'Hotels';
+    const businessCategories = getBusinessSubcategories();
+    const defaultCategory = getSubcategoryFromUrl() || businessCategories[0] || 'Chartered Accountant';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
-        type: defaultType,
+        category: defaultCategory,
         email: '',
         phone: '',
-        description: '',
-        service: '' as string,
-        priceRange: '',
+        bio: '',
+        services: '' as string,
+        serviceCharge: '',
+        chargeType: chargeTypeOptions[0].value, // ✅ store the API value directly ('day')
         area: '',
         city: '',
         state: '',
@@ -117,7 +127,6 @@ const HotelForm = () => {
         latitude: '',
         longitude: '',
         experience: '',
-        availability: availabilityOptions[0],
     });
 
     // ── images ───────────────────────────────────────────────────────────────
@@ -127,9 +136,6 @@ const HotelForm = () => {
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
-
-    // FIX: Prevents geocoding useEffect from overwriting real GPS coordinates
     const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
@@ -138,19 +144,28 @@ const HotelForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getHotelById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getBusinessServiceById(editId);
+                if (!response.success || !response.data) throw new Error('Service not found');
+
+                const data = response.data;
+
+                // ✅ Map the stored chargeType back to our API value format
+                // API may return 'hour', 'day', 'project', 'fixed' — keep as-is
+                const storedChargeType = data.chargeType?.toLowerCase() || chargeTypeOptions[0].value;
+                const matchedChargeType = chargeTypeOptions.find(o => o.value === storedChargeType)?.value
+                    ?? chargeTypeOptions[0].value;
 
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
-                    name: data.name || '',
-                    type: data.type || defaultType,
+                    name: data.title || data.name || '',
+                    category: data.serviceType || data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
-                    description: data.description || '',
-                    service: data.service || '',
-                    priceRange: data.priceRange || '',
+                    bio: data.description || data.bio || '',
+                    services: data.skills || (data.services ? data.services.join(', ') : ''),
+                    serviceCharge: data.serviceCharge?.toString() || '',
+                    chargeType: matchedChargeType,
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
@@ -158,7 +173,6 @@ const HotelForm = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                     experience: data.experience?.toString() || '',
-                    availability: data.availability || availabilityOptions[0],
                 }));
 
                 if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
@@ -173,16 +187,13 @@ const HotelForm = () => {
     }, [editId]);
 
     // ── Auto-detect coordinates when address is typed manually ───────────────
-    // FIX: Skips geocoding when GPS was just used to prevent overwriting real coords
     useEffect(() => {
         const detectCoordinates = async () => {
-            // Skip geocoding if GPS just fired — real coords are already set
             if (isGPSDetected.current) {
                 isGPSDetected.current = false;
                 return;
             }
 
-            // Only auto-detect if we have area but no coordinates yet
             if (formData.area && !formData.latitude && !formData.longitude) {
                 const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
                     .replace(/, ,/g, ',')
@@ -272,17 +283,12 @@ const HotelForm = () => {
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                // FIX: Mark GPS detected BEFORE updating address fields
-                // This blocks the geocoding useEffect from firing and overwriting real GPS coords
                 isGPSDetected.current = true;
 
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy; // metres
+                const accuracy = pos.coords.accuracy;
 
-                // FIX: Show yellow warning if accuracy is poor
-                // > 500m means browser used WiFi/IP fallback (common on desktops)
-                // On mobile with real GPS this is usually < 20m
                 if (accuracy > 500) {
                     setLocationWarning(
                         `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
@@ -290,7 +296,6 @@ const HotelForm = () => {
                     );
                 }
 
-                // Set GPS coordinates immediately
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
@@ -302,7 +307,6 @@ const HotelForm = () => {
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
-                            // FIX: Explicitly re-include lat/lng to prevent state batching from losing them
                             latitude: lat,
                             longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
@@ -332,27 +336,72 @@ const HotelForm = () => {
         setSuccessMessage('');
 
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.service || formData.service.trim() === '')
-                throw new Error('Please enter at least one service or skill');
+            // ✅ Validation aligned with what the API actually requires (matching Postman)
+            if (!formData.name.trim())
+                throw new Error('Please enter a business name');
+            if (!formData.services.trim())
+                throw new Error('Please enter at least one service');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const payload: Hotel = {
-                ...formData,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-            };
+            const formDataToSend = new FormData();
+
+            // ✅ Fields exactly matching the working Postman request
+            formDataToSend.append('userId', formData.userId);
+            formDataToSend.append('serviceType', formData.category);
+            formDataToSend.append('title', formData.name);
+            formDataToSend.append('description', formData.bio || '');
+
+            // ✅ email and phone — optional, only append if filled
+            if (formData.email.trim()) formDataToSend.append('email', formData.email);
+            if (formData.phone.trim()) formDataToSend.append('phone', formData.phone);
+
+            // ✅ skills as comma-separated string (matches Postman: "Property Law,Agreements")
+            const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
+            formDataToSend.append('skills', servicesArray.join(','));
+
+            formDataToSend.append('serviceCharge', formData.serviceCharge);
+
+            // ✅ chargeType is already the correct API value ('hour', 'day', 'project', 'fixed')
+            // NO transformation needed — stored and sent as-is
+            formDataToSend.append('chargeType', formData.chargeType);
+
+            formDataToSend.append('experience', formData.experience);
+            formDataToSend.append('area', formData.area);
+            formDataToSend.append('city', formData.city);
+            formDataToSend.append('state', formData.state);
+            formDataToSend.append('pincode', formData.pincode);
+            formDataToSend.append('latitude', formData.latitude);
+            formDataToSend.append('longitude', formData.longitude);
+
+            // ✅ DO NOT append 'availability' — Postman working request doesn't include it
+
+            // Append new images
+            selectedImages.forEach((image) => {
+                formDataToSend.append('images', image);
+            });
+
+            // Append existing images if in edit mode
+            if (isEditMode && existingImages.length > 0) {
+                formDataToSend.append('existingImages', JSON.stringify(existingImages));
+            }
 
             if (isEditMode && editId) {
-                await updateHotel(editId, payload);
-                setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const response = await updateBusinessService(editId, formDataToSend);
+                if (response.success) {
+                    setSuccessMessage('Service updated successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(response.message || 'Failed to update service');
+                }
             } else {
-                await createHotelWithImages(payload, selectedImages);
-                setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const response = await createBusinessService(formDataToSend);
+                if (response.success) {
+                    setSuccessMessage('Service created successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(response.message || 'Failed to create service');
+                }
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
@@ -393,10 +442,10 @@ const HotelForm = () => {
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Service' : 'Add New Service'}
+                            {isEditMode ? 'Update Business Service' : 'Add New Business Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
+                            {isEditMode ? 'Update your business service listing' : 'Create new business service listing'}
                         </p>
                     </div>
                 </div>
@@ -420,39 +469,39 @@ const HotelForm = () => {
                 {/* ─── 1. NAME ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Hotel Name</FieldLabel>
+                        <FieldLabel required>Business Name</FieldLabel>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="Enter Hotel name"
+                            placeholder="Enter Business name"
                             className={inputBase}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
+                {/* ─── 2. CONTACT INFORMATION (optional) ───────────────────────── */}
                 <SectionCard title="Contact Information">
                     <div>
-                        <FieldLabel required>Phone</FieldLabel>
+                        <FieldLabel>Phone</FieldLabel>
                         <input
                             type="tel"
                             name="phone"
                             value={formData.phone}
                             onChange={handleInputChange}
-                            placeholder="Enter phone number"
+                            placeholder="Enter phone number (optional)"
                             className={inputBase}
                         />
                     </div>
                     <div>
-                        <FieldLabel required>Email</FieldLabel>
+                        <FieldLabel>Email</FieldLabel>
                         <input
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            placeholder="Enter email address"
+                            placeholder="Enter email address (optional)"
                             className={inputBase}
                         />
                     </div>
@@ -463,8 +512,8 @@ const HotelForm = () => {
                     <div>
                         <FieldLabel required>Category</FieldLabel>
                         <select
-                            name="type"
-                            value={formData.type}
+                            name="category"
+                            value={formData.category}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -475,7 +524,7 @@ const HotelForm = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {businessCategories.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
@@ -483,38 +532,24 @@ const HotelForm = () => {
                 <SectionCard>
                     <div>
                         <FieldLabel required>Services Offered</FieldLabel>
-                        <select
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            <option>Select services</option>
-                        </select>
-                        <div className="mt-3">
-                            <textarea
-                                name="service"
-                                value={formData.service}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                                className={inputBase + ' resize-none'}
-                            />
-                            <p className={`${typography.misc.caption} mt-2`}>
-                                💡 Enter services separated by commas
-                            </p>
-                        </div>
+                        <textarea
+                            name="services"
+                            value={formData.services}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="Tax Filing, GST Returns, Auditing, Financial Planning"
+                            className={inputBase + ' resize-none'}
+                        />
+                        <p className={`${typography.misc.caption} mt-2`}>
+                            💡 Enter services separated by commas
+                        </p>
 
                         {/* Service Chips Preview */}
-                        {formData.service && formData.service.trim() && (
+                        {formData.services && formData.services.trim() && (
                             <div className="mt-3">
                                 <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.service.split(',').map((s, i) => {
+                                    {formData.services.split(',').map((s, i) => {
                                         const trimmed = s.trim();
                                         if (!trimmed) return null;
                                         return (
@@ -554,8 +589,8 @@ const HotelForm = () => {
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
                                 type="text"
-                                name="priceRange"
-                                value={formData.priceRange}
+                                name="serviceCharge"
+                                value={formData.serviceCharge}
                                 onChange={handleInputChange}
                                 placeholder="Amount"
                                 className={inputBase}
@@ -563,30 +598,39 @@ const HotelForm = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
+                    <div>
+                        <FieldLabel required>Charge Type</FieldLabel>
+                        {/* ✅ option value = API value ('hour','day','project','fixed'), label is display text */}
+                        <select
+                            name="chargeType"
+                            value={formData.chargeType}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'}
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5em 1.5em',
+                                paddingRight: '2.5rem'
+                            }}
                         >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                            />
-                        </button>
+                            {chargeTypeOptions.map(t => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                        </select>
                     </div>
+
+                    {/* ✅ Availability toggle REMOVED — not in working Postman payload */}
                 </SectionCard>
 
                 {/* ─── 5. BIO ──────────────────────────────────────── */}
                 <SectionCard title="Bio">
                     <textarea
-                        name="description"
-                        value={formData.description}
+                        name="bio"
+                        value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
+                        placeholder="Tell us about yourself and your expertise in business services..."
                         className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
@@ -616,7 +660,6 @@ const HotelForm = () => {
                         </Button>
                     }
                 >
-                    {/* NEW: Low accuracy warning — shown when browser uses WiFi/IP instead of GPS */}
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
@@ -676,14 +719,12 @@ const HotelForm = () => {
                         </div>
                     </div>
 
-                    {/* Location Tip */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                         <p className={`${typography.body.small} text-blue-800`}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
@@ -727,7 +768,6 @@ const HotelForm = () => {
                         </div>
                     </label>
 
-                    {/* Image Previews */}
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
@@ -800,4 +840,4 @@ const HotelForm = () => {
     );
 };
 
-export default HotelForm;
+export default BusinessForm;

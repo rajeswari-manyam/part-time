@@ -12,6 +12,10 @@ import ShoppingUserService from "./ShoppingUserService";
 import EducationUserService from "./EducationUserService";
 import AutomotiveUserService from "./AutomotiveUserService";
 import PetUserService from "./PetUserService";
+import EventUserService from "./EventUserService";
+import IndustrialUserService from "./IndustrialUserService";
+import BusinessUserService from "./BusinessUserService";
+import CourierUserService from "./CourierUserService";
 
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
@@ -55,6 +59,14 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                 return `/add-digital-service-form?subcategory=${sub}`;
             case 13: // Pet services category ID
                 return `/add-pet-service-form?subcategory=${sub}`;
+            case 14: // Event services category ID
+                return `/add-event-service-form?subcategory=${sub}`;
+            case 15: // Industrial services category ID
+                return `/add-industrial-service-form?subcategory=${sub}`;
+            case 16: // Business services category ID
+                return `/add-business-service-form?subcategory=${sub}`;
+                case 17: // Courier services category ID
+                return `/add-courier-service-form?subcategory=${sub}`;
             default:
                 return null;
         }
@@ -224,6 +236,42 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     hideEmptyState={true}
                                 />
                             )}
+
+                            {selectedCategoryId === 14 && (
+                                <EventUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+
+                            {selectedCategoryId === 15 && (
+                                <IndustrialUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+
+                            {selectedCategoryId === 16 && (
+                                <BusinessUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+
+                            {selectedCategoryId === 17 && (
+                                <CourierUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
                         </>
                     ) : (
                         /* Show ALL cards from all categories - each in its own section */
@@ -237,6 +285,10 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                             <ShoppingUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <DigitalUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <PetUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <EventUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <IndustrialUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <BusinessUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <CourierUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                         </>
                     )}
                 </div>

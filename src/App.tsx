@@ -76,7 +76,7 @@ import BusinessList from "./pages/BusinessList";
 import TechDigitalServiceList from "./pages/DegitalServiceList";
 import EventList from "./pages/EventList";
 import CourierList from "./pages/CourierServiceList";
-import IndustrialServiceList from "./pages/IndustrialServiceList";
+
 import SportsServiceList from "./pages/SportsServiceList";
 import AgricultureList from "./pages/AgricultureList";
 import ArtServiceList from "./pages/ArtServiceList";
@@ -101,6 +101,18 @@ import EducationServiceList from "./pages/EducationList";
 
 import PetServiceForm from "./pages/PetForm";
 import PetServiceList from "./pages/PetServiceList";
+
+import EventForm from "./pages/EventForm";
+import EventServiceList from "./pages/EventList";
+
+import IndustrialServiceForm from "./pages/IndustrialForm";
+import IndustrialServiceList from "./pages/IndustrialServiceList";
+
+import BusinessServiceForm from "./pages/BusinessForm";
+import BusinessServiceList from "./pages/BusinessList";
+
+import CourierServiceForm from "./pages/CourierForm";
+import CourierServiceList from "./pages/CourierServiceList";
 
 
 
@@ -216,6 +228,10 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-education-form" element={<EducationForm />} />
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
                     <Route path="/add-pet-service-form" element={<PetServiceForm />} />
+                    <Route path="/add-event-service-form" element={<EventForm />} />
+                    <Route path="/add-industrial-service-form" element={<IndustrialServiceForm />} />
+                    <Route path="/add-business-service-form" element={<BusinessServiceForm />} />
+                    <Route path="/add-courier-service-form" element={<CourierServiceForm />} />
 
 
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
@@ -273,6 +289,14 @@ const AppRoutes: React.FC = () => {
                     <Route path="/automotive" element={<AutomotiveList />} />
                     <Route path="/pet/:subcategory" element={<PetServiceList />} />
                     <Route path="/pet" element={<PetServiceList />} />
+                    <Route path="/event/:subcategory" element={<EventServiceList />} />
+                    <Route path="/event" element={<EventServiceList />} />
+                    <Route path="/industrial/:subcategory" element={<IndustrialServiceList />} />
+                    <Route path="/industrial" element={<IndustrialServiceList />} />
+                    <Route path="/business/:subcategory" element={<BusinessServiceList />} />
+                    <Route path="/business" element={<BusinessServiceList />} />
+                    <Route path="/courier/:subcategory" element={<CourierServiceList />} />
+                    <Route path="/courier" element={<CourierServiceList />} />
 
 
                     <Route
