@@ -1,4 +1,4 @@
-// src/services/AgricultureService.service.ts
+// src/services/Agriculture.service.ts
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -113,7 +113,9 @@ export const addAgricultureService = async (
     });
 
     if (!response.ok) {
-      throw new Error("Failed to add agriculture service");
+      const errorText = await response.text();
+      console.error("Add Agriculture Error:", errorText);
+      throw new Error(`Failed to add agriculture service: ${response.status}`);
     }
 
     return await response.json();
@@ -122,6 +124,7 @@ export const addAgricultureService = async (
     throw error;
   }
 };
+
 export interface AgricultureService {
   _id: string;
   userId: string;
@@ -152,7 +155,9 @@ export const getAgricultureById = async (
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch agriculture service");
+      const errorText = await response.text();
+      console.error("Get Agriculture By ID Error:", errorText);
+      throw new Error(`Failed to fetch agriculture service: ${response.status}`);
     }
 
     return await response.json();
@@ -161,6 +166,7 @@ export const getAgricultureById = async (
     throw error;
   }
 };
+
 export const deleteAgricultureById = async (
   agricultureId: string
 ): Promise<{ message: string }> => {
@@ -173,7 +179,9 @@ export const deleteAgricultureById = async (
     );
 
     if (!response.ok) {
-      throw new Error("Failed to delete agriculture service");
+      const errorText = await response.text();
+      console.error("Delete Agriculture Error:", errorText);
+      throw new Error(`Failed to delete agriculture service: ${response.status}`);
     }
 
     return await response.json();
@@ -182,6 +190,7 @@ export const deleteAgricultureById = async (
     throw error;
   }
 };
+
 export const getAllAgricultureServices = async (): Promise<AgricultureService[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/getAllAgriculture`, {
@@ -189,15 +198,27 @@ export const getAllAgricultureServices = async (): Promise<AgricultureService[]>
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch agriculture services");
+      const errorText = await response.text();
+      console.error("Get All Agriculture Error:", errorText);
+      throw new Error(`Failed to fetch agriculture services: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Handle both array and object responses
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && Array.isArray(data.data)) {
+      return data.data;
+    }
+
+    return [];
   } catch (error) {
     console.error("getAllAgricultureServices error:", error);
-    throw error;
+    return [];
   }
 };
+
 export interface UpdateAgriculturePayload {
   serviceName?: string;
   description?: string;
@@ -211,6 +232,7 @@ export interface UpdateAgriculturePayload {
   state?: string;
   images?: File[]; // optional (only if updating images)
 }
+
 export const updateAgricultureById = async (
   agricultureId: string,
   payload: UpdateAgriculturePayload
@@ -251,7 +273,9 @@ export const updateAgricultureById = async (
     );
 
     if (!response.ok) {
-      throw new Error("Failed to update agriculture service");
+      const errorText = await response.text();
+      console.error("Update Agriculture Error:", errorText);
+      throw new Error(`Failed to update agriculture service: ${response.status}`);
     }
 
     return await response.json();
@@ -260,31 +284,81 @@ export const updateAgricultureById = async (
     throw error;
   }
 };
+
+// ============================================================================
+// FIXED: getUserAgricultureServices with better error handling
+// ============================================================================
 export const getUserAgricultureServices = async (
   userId: string,
   serviceName?: string
 ): Promise<AgricultureService[]> => {
   try {
+    console.log("🔍 Fetching user agriculture services for userId:", userId);
+
     const params = new URLSearchParams({ userId });
 
     if (serviceName) {
       params.append("serviceName", serviceName);
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/getUserAgriculture?${params.toString()}`,
-      {
-        method: "GET",
+    const url = `${API_BASE_URL}/getUserAgriculture?${params.toString()}`;
+    console.log("📡 Request URL:", url);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        'Accept': 'application/json',
       }
-    );
+    });
+
+    console.log("📥 Response status:", response.status);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch user agriculture services");
+      const errorText = await response.text();
+      console.error("❌ API Error Response:", errorText);
+      console.error("❌ Response status:", response.status);
+
+      // Return empty array instead of throwing to prevent UI crash
+      if (response.status === 404) {
+        console.warn("⚠️ Endpoint not found. Check if '/getUserAgriculture' exists on backend");
+      }
+
+      return [];
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log("✅ API Response data:", data);
+
+    // Handle multiple possible response structures
+    if (Array.isArray(data)) {
+      console.log("✅ Response is array, returning directly");
+      return data;
+    } else if (data && Array.isArray(data.data)) {
+      console.log("✅ Response has data property, returning data.data");
+      return data.data;
+    } else if (data && Array.isArray(data.services)) {
+      console.log("✅ Response has services property, returning data.services");
+      return data.services;
+    } else if (data && typeof data === 'object') {
+      console.warn("⚠️ Unexpected response structure:", data);
+      // Try to extract any array from the object
+      const arrayValue = Object.values(data).find(val => Array.isArray(val));
+      if (arrayValue) {
+        console.log("✅ Found array in response object");
+        return arrayValue as AgricultureService[];
+      }
+    }
+
+    console.warn("⚠️ No valid data found in response, returning empty array");
+    return [];
   } catch (error) {
-    console.error("getUserAgricultureServices error:", error);
-    throw error;
+    console.error("❌ getUserAgricultureServices error:", error);
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      serviceName
+    });
+    // Return empty array instead of throwing to prevent app crash
+    return [];
   }
 };

@@ -79,10 +79,10 @@ import CourierList from "./pages/CourierServiceList";
 
 import SportsServiceList from "./pages/SportsServiceList";
 import AgricultureList from "./pages/AgricultureList";
-import ArtServiceList from "./pages/ArtServiceList";
+
 import DailyWagesList from "./pages/DailyWagesList";
-import WeddingServiceList from "./pages/WeddingServiceList";
-import CorporativeServiceList from "./pages/CorporativeServiceList";
+
+
 import PlumberServiceList from "./pages/PlumbarsList";
 import HomePersonalServiceList from "./pages/Home&PersonalServiceList";
 import HotelForm from "./pages/HotelForm";
@@ -113,6 +113,21 @@ import BusinessServiceList from "./pages/BusinessList";
 
 import CourierServiceForm from "./pages/CourierForm";
 import CourierServiceList from "./pages/CourierServiceList";
+
+import DailyWageForm from "./pages/DailyWageForm";
+import DailyWageList from "./pages/DailyWagesList";
+
+import AgricultureForm from "./pages/AgricultureForm";
+import AgricultureServiceList from "./pages/AgricultureList";
+
+import CorporativeForm from "./pages/CorporativeForm";
+import CorporativeServiceList from "./pages/CorporativeServiceList";
+
+import WeddingForm from "./pages/WeddingForm";
+import WeddingServiceList from "./pages/WeddingServiceList";
+import ArtForm from "./pages/ArtForm";
+import ArtServiceList from "./pages/ArtServiceList";
+
 
 
 
@@ -232,6 +247,11 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-industrial-service-form" element={<IndustrialServiceForm />} />
                     <Route path="/add-business-service-form" element={<BusinessServiceForm />} />
                     <Route path="/add-courier-service-form" element={<CourierServiceForm />} />
+                    <Route path="/add-daily-wage-service-form" element={<DailyWageForm />} />
+                    <Route path="/add-agriculture-service-form" element={<AgricultureForm />} />
+                    <Route path="/add-corporative-service-form" element={<CorporativeForm />} />
+                    <Route path="/add-wedding-service-form" element={<WeddingForm />} />
+                    <Route path="/add-art-service-form" element={<ArtForm />} />
 
 
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
@@ -297,6 +317,16 @@ const AppRoutes: React.FC = () => {
                     <Route path="/business" element={<BusinessServiceList />} />
                     <Route path="/courier/:subcategory" element={<CourierServiceList />} />
                     <Route path="/courier" element={<CourierServiceList />} />
+                    <Route path="/daily-wages/:subcategory" element={<DailyWageList />} />
+                    <Route path="/daily-wages" element={<DailyWageList />} />
+                    <Route path="/agriculture/:subcategory" element={<AgricultureServiceList />} />
+                    <Route path="/agriculture" element={<AgricultureServiceList />} />
+                    <Route path="/corporative/:subcategory" element={<CorporativeServiceList />} />
+                    <Route path="/corporative" element={<CorporativeServiceList />} />
+                    <Route path="/wedding/:subcategory" element={<WeddingServiceList />} />
+                    <Route path="/wedding" element={<WeddingServiceList />} />
+                    <Route path="/art/:subcategory" element={<ArtServiceList />} />
+                    <Route path="/art" element={<ArtServiceList />} />
 
 
                     <Route

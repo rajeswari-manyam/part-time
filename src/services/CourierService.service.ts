@@ -12,6 +12,7 @@ export interface CourierWorker {
   services?: string[];
   experience?: number;
   serviceCharge?: number;
+  chargeType?: string;
   bio?: string;
   images?: string[];
   area?: string;
@@ -41,21 +42,71 @@ export interface CourierWorkerResponse {
  */
 export const addCourierService = async (formData: FormData): Promise<any> => {
   try {
+    // 🔍 Debug: Log what we're sending
+    console.log('📤 Sending FormData to API:');
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      if (value instanceof File) {
+        console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
+
     const response = await fetch(`${API_BASE_URL}/addCourierService`, {
       method: "POST",
       body: formData,
       redirect: "follow",
     });
 
+    // 🔍 Get response text first to see what the server actually returned
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to parse error details from server response
+      let errorMessage = `HTTP ${response.status}: `;
+
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+
+        // Log detailed error info
+        console.error('❌ Server error details:', errorData);
+
+        return {
+          success: false,
+          message: errorMessage,
+          details: errorData
+        };
+      } catch {
+        // If response isn't JSON, return the raw text
+        errorMessage += responseText || response.statusText;
+
+        return {
+          success: false,
+          message: errorMessage,
+          details: { rawResponse: responseText }
+        };
+      }
     }
 
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error adding courier service:", error);
-    return { success: false, message: "Failed to add courier service" };
+    // Parse successful response
+    try {
+      const result = JSON.parse(responseText);
+      console.log('✅ Success:', result);
+      return result;
+    } catch {
+      console.error('⚠️ Could not parse success response as JSON:', responseText);
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
+    console.error("❌ Network or fetch error:", error);
+    return {
+      success: false,
+      message: error.message || "Network error - failed to connect to server"
+    };
   }
 };
 
@@ -114,6 +165,7 @@ export const getAllCourierServices = async (): Promise<CourierWorkerResponse> =>
     return { success: false, count: 0, data: [] };
   }
 };
+
 /**
  * Fetch a courier service by ID
  * @param id string - the courier service _id
@@ -139,6 +191,7 @@ export const getCourierServiceById = async (id: string): Promise<CourierWorker |
     return null;
   }
 };
+
 /**
  * Update an existing courier service by ID
  * @param id string - the courier service _id
@@ -149,23 +202,57 @@ export const updateCourierService = async (id: string, formData: FormData): Prom
   if (!id) throw new Error("Courier service ID is required");
 
   try {
+    // 🔍 Debug: Log what we're sending
+    console.log('📤 Updating courier service with FormData:');
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      if (value instanceof File) {
+        console.log(`  ${key}: [File] ${value.name}`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
+
     const response = await fetch(`${API_BASE_URL}/updateCourierService/${id}`, {
       method: "PUT",
       body: formData,
       redirect: "follow",
     });
 
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let errorMessage = `HTTP ${response.status}: `;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+        console.error('❌ Update error:', errorData);
+        return { success: false, message: errorMessage, details: errorData };
+      } catch {
+        errorMessage += responseText || response.statusText;
+        return { success: false, message: errorMessage };
+      }
     }
 
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error(`Error updating courier service (${id}):`, error);
-    return { success: false, message: "Failed to update courier service" };
+    try {
+      const result = JSON.parse(responseText);
+      console.log('✅ Update success:', result);
+      return result;
+    } catch {
+      console.error('⚠️ Invalid JSON response:', responseText);
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
+    console.error(`❌ Error updating courier service (${id}):`, error);
+    return {
+      success: false,
+      message: error.message || "Network error"
+    };
   }
 };
+
 /**
  * Delete a courier service by ID
  * @param id string - the courier service _id
@@ -191,6 +278,7 @@ export const deleteCourierService = async (id: string): Promise<any> => {
     return { success: false, message: "Failed to delete courier service" };
   }
 };
+
 /**
  * Fetch courier services for a specific user, optionally filtered by service name
  * @param userId string - ID of the user

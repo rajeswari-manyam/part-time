@@ -57,7 +57,12 @@ export const addWeddingService = async (workerData: FormData): Promise<SingleWed
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Add Wedding Service Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: SingleWeddingWorkerResponse = await response.json();
     return data;
   } catch (error) {
@@ -75,7 +80,12 @@ export const updateWeddingService = async (id: string, workerData: FormData): Pr
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Update Wedding Service Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: SingleWeddingWorkerResponse = await response.json();
     return data;
   } catch (error) {
@@ -92,7 +102,12 @@ export const getAllWeddingServices = async (): Promise<WeddingWorkerResponse> =>
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Get All Wedding Services Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: WeddingWorkerResponse = await response.json();
     return data;
   } catch (error) {
@@ -109,7 +124,12 @@ export const getWeddingServiceById = async (id: string): Promise<SingleWeddingWo
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Get Wedding Service By ID Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: SingleWeddingWorkerResponse = await response.json();
     return data;
   } catch (error) {
@@ -132,7 +152,12 @@ export const getNearbyWeddingWorkers = async (
       { method: "GET", redirect: "follow" }
     );
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Get Nearby Wedding Services Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data: WeddingWorkerResponse = await response.json();
     return data;
   } catch (error) {
@@ -149,7 +174,12 @@ export const deleteWeddingService = async (id: string): Promise<{ success: boole
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Delete Wedding Service Error:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     return { success: true, message: data.message || "Deleted successfully" };
   } catch (error) {
@@ -158,18 +188,100 @@ export const deleteWeddingService = async (id: string): Promise<{ success: boole
   }
 };
 
-/** Fetch all wedding services from external IP (example: 13.204.29.0) */
-export const fetchAllWeddingServicesExternal = async (): Promise<WeddingWorkerResponse> => {
+/** Fetch user's wedding services */
+export const getUserWeddingServices = async (
+  userId: string
+): Promise<{ success: boolean; count?: number; data?: WeddingWorker[] }> => {
+  if (!userId) {
+    throw new Error("userId is required");
+  }
+
   try {
-    const response = await fetch("http://13.204.29.0:3001/getAllWeddingServices", {
+    console.log("🔍 Fetching user wedding services for userId:", userId);
+
+    const url = `${API_BASE_URL}/getUserWedding?userId=${userId}`;
+    console.log("📡 Request URL:", url);
+
+    const response = await fetch(url, {
       method: "GET",
+      headers: {
+        'Accept': 'application/json',
+      },
       redirect: "follow",
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    console.log("📥 Response status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ API Error Response:", errorText);
+      console.error("❌ Response status:", response.status);
+
+      // Return empty array instead of throwing to prevent UI crash
+      if (response.status === 404) {
+        console.warn("⚠️ Endpoint not found. Check if '/getUserWedding' exists on backend");
+      }
+
+      return {
+        success: false,
+        data: [],
+      };
+    }
+
+    const data = await response.json();
+    console.log("✅ API Response data:", data);
+
+    // Handle multiple possible response structures
+    if (Array.isArray(data)) {
+      console.log("✅ Response is array, returning directly");
+      return {
+        success: true,
+        data: data,
+        count: data.length
+      };
+    } else if (data && Array.isArray(data.data)) {
+      console.log("✅ Response has data property, returning data.data");
+      return {
+        success: true,
+        data: data.data,
+        count: data.count || data.data.length
+      };
+    } else if (data && Array.isArray(data.services)) {
+      console.log("✅ Response has services property, returning data.services");
+      return {
+        success: true,
+        data: data.services,
+        count: data.services.length
+      };
+    } else if (data && typeof data === 'object') {
+      console.warn("⚠️ Unexpected response structure:", data);
+      // Try to extract any array from the object
+      const arrayValue = Object.values(data).find(val => Array.isArray(val));
+      if (arrayValue) {
+        console.log("✅ Found array in response object");
+        return {
+          success: true,
+          data: arrayValue as WeddingWorker[],
+          count: (arrayValue as WeddingWorker[]).length
+        };
+      }
+    }
+
+    console.warn("⚠️ No valid data found in response, returning empty array");
+    return {
+      success: false,
+      data: [],
+    };
   } catch (error) {
-    console.error("Error fetching wedding services from external API:", error);
-    return { success: false, count: 0, data: [] };
+    console.error("❌ getUserWeddingServices error:", error);
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      userId
+    });
+    // Return empty array instead of throwing to prevent app crash
+    return {
+      success: false,
+      data: [],
+    };
   }
 };

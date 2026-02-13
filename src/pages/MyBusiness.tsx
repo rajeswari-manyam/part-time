@@ -16,10 +16,16 @@ import EventUserService from "./EventUserService";
 import IndustrialUserService from "./IndustrialUserService";
 import BusinessUserService from "./BusinessUserService";
 import CourierUserService from "./CourierUserService";
+import DailyWageUserService from "./DailyWageUserService";
+import AgricultureUserService from "./AgricultureUserService";
+import CorporativeUserService from "./CorporativeUserService";
+import WeddingUserService from "./WeddingUserService";
+import ArtUserService from "./ArtUserService";
 
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import CategoryFilterDropdown from "../components/CategoriesFilterDropDown";
+
 
 import categories from "../data/categories.json";
 
@@ -65,8 +71,18 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                 return `/add-industrial-service-form?subcategory=${sub}`;
             case 16: // Business services category ID
                 return `/add-business-service-form?subcategory=${sub}`;
-                case 17: // Courier services category ID
+            case 17: // Courier services category ID
                 return `/add-courier-service-form?subcategory=${sub}`;
+            case 18: // Daily wage services category ID
+                return `/add-daily-wage-service-form?subcategory=${sub}`;
+            case 19: // Agriculture services category ID
+                return `/add-agriculture-service-form?subcategory=${sub}`; 
+            case 20: // Corporative services category ID
+                return `/add-corporative-form?subcategory=${sub}`;
+            case 21: // Wedding services category ID
+                return `/add-wedding-form?subcategory=${sub}`;
+            case 22: // Art services category ID
+                return `/add-art-form?subcategory=${sub}`;
             default:
                 return null;
         }
@@ -272,6 +288,46 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     hideEmptyState={true}
                                 />
                             )}
+                            {selectedCategoryId === 18 && (
+                                <DailyWageUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 19 && (
+                                <AgricultureUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 20 && (
+                                <CorporativeUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 21 && (
+                                <WeddingUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 22 && (
+                                <ArtUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
                         </>
                     ) : (
                         /* Show ALL cards from all categories - each in its own section */
@@ -289,6 +345,11 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                             <IndustrialUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <BusinessUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <CourierUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <DailyWageUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <AgricultureUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <CorporativeUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <WeddingUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <ArtUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                         </>
                     )}
                 </div>

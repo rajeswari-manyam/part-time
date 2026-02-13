@@ -1,308 +1,345 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
-import { MoreVertical } from "lucide-react";
+import typography from "../styles/typography";
 
-// Import existing corporate card components
+// ── Nearby card components with dummy data
 import NearbyBackgroundVerification from "../components/cards/Corporate/NearByBackgroundVerification";
 import CourierServiceCard from "../components/cards/Corporate/NearByCourierCard";
 import NearbyCleaningServices from "../components/cards/Corporate/NearBYOfficeCleaning";
 
-// ─── Types ──────────────────────────────────────────────────────────────
-export interface CorporateServiceType {
-    id: string;
-    title: string;
-    location: string;
-    description: string;
-    distance?: number;
-    category: string;
-    corporateData?: {
-        status: boolean;
-        pincode: string;
-        icon: string;
-        rating?: number;
-        user_ratings_total?: number;
-        opening_hours?: { open_now: boolean };
-        geometry?: { location: { lat: number; lng: number } };
-        phone?: string;
-        photos?: string[];
-        price_range?: string;
-        services?: string[];
-        special_tags?: string[];
-        years_in_business?: number;
-    };
-}
+// ── Import API service
+import { getNearbyCorporateWorkers, CorporateWorkerResponse, CorporateWorker } from "../services/Corporate.service";
 
-// ─── Action Dropdown ────────────────────────────────────────────────────
-const ActionDropdown: React.FC<{
-    serviceId: string;
-    onEdit: (id: string, e: React.MouseEvent) => void;
-    onDelete: (id: string, e: React.MouseEvent) => void;
-}> = ({ serviceId, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
+// ============================================================================
+// SUBCATEGORY → CARD COMPONENT MAP
+// ============================================================================
+type CardKey = "background" | "courier" | "cleaning";
 
-    return (
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
-                className="p-2 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-full transition shadow-sm"
-                aria-label="More options"
-            >
-                <MoreVertical size={18} className="text-gray-700" />
-            </button>
-
-            {isOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                        }}
-                    />
-                    <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-20">
-                        <button
-                            onClick={(e) => {
-                                onEdit(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 flex items-center gap-2 text-blue-600 font-medium transition"
-                        >
-                            ✏️ Edit
-                        </button>
-                        <div className="border-t border-gray-100"></div>
-                        <button
-                            onClick={(e) => {
-                                onDelete(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600 font-medium transition"
-                        >
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </>
-            )}
-        </div>
-    );
+const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
+    background: NearbyBackgroundVerification,
+    courier: CourierServiceCard,
+    cleaning: NearbyCleaningServices,
 };
 
-// ─── Corporate Card Matching ─────────────────────────────────────────────
+// ============================================================================
+// HELPERS
+// ============================================================================
 const normalizeSubcategory = (sub: string | undefined): string => {
     if (!sub) return "";
-    return sub.toLowerCase().trim();
+    const normalized = sub.toLowerCase();
+    console.log("📍 Raw subcategory:", sub);
+    console.log("📍 Normalized subcategory:", normalized);
+    return normalized;
 };
 
 const getCardComponentForSubcategory = (
     subcategory: string | undefined
 ): React.ComponentType<any> | null => {
     if (!subcategory) return null;
+
     const normalized = normalizeSubcategory(subcategory);
 
-    if (
-        normalized.includes("background") &&
-        normalized.includes("verification")
-    )
-        return NearbyBackgroundVerification;
+    // Background Verification
+    if (normalized.includes("background") && normalized.includes("verification")) {
+        console.log("✅ Matched to NearbyBackgroundVerification");
+        return CARD_MAP.background;
+    }
 
-    if (
-        normalized.includes("document") &&
-        normalized.includes("courier")
-    )
-        return CourierServiceCard;
+    // Courier Service
+    if (normalized.includes("document") && normalized.includes("courier")) {
+        console.log("✅ Matched to CourierServiceCard");
+        return CARD_MAP.courier;
+    }
 
-    if (normalized.includes("office") && normalized.includes("cleaning"))
-        return NearbyCleaningServices;
+    // Office Cleaning
+    if (normalized.includes("office") && normalized.includes("cleaning")) {
+        console.log("✅ Matched to NearbyCleaningServices");
+        return CARD_MAP.cleaning;
+    }
 
+    console.warn(`⚠️ No matching card component for: "${subcategory}"`);
     return null;
 };
 
 const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
     if (!subcategory) return false;
+
     const normalized = normalizeSubcategory(subcategory);
+
     const keywords = [
-        "background",
-        "verification",
-        "document",
-        "courier",
-        "office",
-        "cleaning",
+        "background", "verification",
+        "document", "courier",
+        "office", "cleaning"
     ];
-    return keywords.some((kw) => normalized.includes(kw));
+
+    const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
+
+    console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
+
+    return hasMatch;
 };
 
-// ─── Main Corporate Screen ───────────────────────────────────────────────
+const getDisplayTitle = (subcategory: string | undefined) => {
+    if (!subcategory) return "All Corporate Services";
+    return subcategory
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+};
+
+const getCategoryIcon = (subcategory: string | undefined): string => {
+    const normalized = normalizeSubcategory(subcategory);
+
+    if (normalized.includes("background")) return "🔍";
+    if (normalized.includes("courier")) return "📦";
+    if (normalized.includes("cleaning")) return "🧹";
+    if (normalized.includes("recruitment")) return "👥";
+    if (normalized.includes("security")) return "🛡️";
+    if (normalized.includes("it")) return "💻";
+
+    return "🏢";
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 const CorporateServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<CorporateServiceType[]>([]);
-    const [loading] = useState(false);
-    const [error] = useState("");
+    // ── State management ─────────────────────────────────────────────
+    const [nearbyData, setNearbyData] = useState<CorporateWorker[]>([]);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [distance, setDistance] = useState<number>(10); // Default 10km radius
 
+    // ── Get user location ────────────────────────────────────────────
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    };
+                    setUserLocation(location);
+                    console.log("📍 User location obtained:", location);
+                },
+                (err) => {
+                    console.error("❌ Error getting user location:", err);
+                    setError("Unable to get your location. Please enable location services.");
+                    setLoading(false);
+                }
+            );
+        } else {
+            console.error("❌ Geolocation not supported");
+            setError("Geolocation is not supported by your browser.");
+            setLoading(false);
+        }
+    }, []);
+
+    // ── Fetch nearby corporate services ──────────────────────────────
+    useEffect(() => {
+        const fetchNearbyCorporateServices = async () => {
+            if (!userLocation) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                console.log("🔍 Fetching nearby corporate services...", {
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                    distance,
+                });
+
+                const response: CorporateWorkerResponse = await getNearbyCorporateWorkers(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    distance
+                );
+
+                if (response.success && response.data) {
+                    console.log("✅ Nearby corporate services fetched:", response.data);
+                    setNearbyData(response.data);
+                } else {
+                    console.warn("⚠️ No nearby corporate services found");
+                    setNearbyData([]);
+                }
+            } catch (err) {
+                console.error("❌ Error fetching nearby corporate services:", err);
+                setError("Failed to fetch nearby services. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userLocation && shouldShowNearbyCards(subcategory)) {
+            fetchNearbyCorporateServices();
+        } else {
+            setLoading(false);
+        }
+    }, [userLocation, distance, subcategory]);
+
+    // ── navigation handlers ─────────────────────────────────────────
     const handleView = (service: any) => {
-        navigate(`/corporate-services/details/${service.id}`);
-    };
-
-    const handleEdit = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigate(`/add-corporate-service-form/${id}`);
-    };
-
-    const handleDelete = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this service?")) return;
-        setServices((prev) => prev.filter((s) => s.id !== id));
-        alert("Service deleted successfully");
+        const id = service.id || service._id;
+        console.log("Viewing service details:", id);
+        navigate(`/corporate-services/details/${id}`);
     };
 
     const handleAddPost = () => {
-        navigate("/add-corporate-service-form");
+        console.log("Adding new post. Subcategory:", subcategory);
+        navigate(
+            subcategory
+                ? `/add-corporative-service-form?subcategory=${subcategory}`
+                : "/add-corporative-service-form"
+        );
     };
 
-    const getDisplayTitle = () => {
-        if (!subcategory) return "All Corporate Services";
-        return subcategory
-            .split("-")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" ");
-    };
-
-    const renderNearbyCardsSection = () => {
+    // ── Render Cards Section ─────────────────────────────────────────
+    const renderCardsSection = () => {
         const CardComponent = getCardComponentForSubcategory(subcategory);
-        if (!CardComponent) return null;
+
+        if (!CardComponent) {
+            console.error(`❌ No card component available for subcategory: "${subcategory}"`);
+            return null;
+        }
+
+        // Show loading state
+        if (loading) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⏳</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        Loading nearby services...
+                    </h3>
+                    <p className="text-gray-600">
+                        Getting your location and finding services near you
+                    </p>
+                </div>
+            );
+        }
+
+        // Show error state
+        if (error) {
+            return (
+                <div className="text-center py-20">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {error}
+                    </h3>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => window.location.reload()}
+                        className="mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            );
+        }
 
         return (
             <div className="space-y-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        🏢 Nearby {getDisplayTitle()}
+                {/* Header with distance filter */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
+                        <span className="shrink-0">{getCategoryIcon(subcategory)}</span>
+                        <span className="truncate">Available {getDisplayTitle(subcategory)}</span>
                     </h2>
-                    <CardComponent onViewDetails={handleView} />
+
+                    {/* Distance Filter */}
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">Within:</label>
+                        <select
+                            value={distance}
+                            onChange={(e) => setDistance(Number(e.target.value))}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value={5}>5 km</option>
+                            <option value={10}>10 km</option>
+                            <option value={20}>20 km</option>
+                            <option value={50}>50 km</option>
+                            <option value={100}>100 km</option>
+                        </select>
+                    </div>
                 </div>
 
-                {services.length > 0 && (
-                    <>
-                        <div className="my-8 flex items-center gap-4">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                            <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                🏢 Your Listed Services ({services.length})
-                            </span>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                {/* Nearby Cards with Real Data */}
+                <div className="mb-6">
+                    {nearbyData.length > 0 ? (
+                        <CardComponent
+                            onViewDetails={handleView}
+                            nearbyData={nearbyData}
+                            userLocation={userLocation}
+                        />
+                    ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-lg">
+                            <div className="text-5xl mb-3">📍</div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                No services found nearby
+                            </h3>
+                            <p className="text-gray-600 mb-4">
+                                Try increasing the search distance or check back later
+                            </p>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleAddPost}
+                            >
+                                Add a Service
+                            </Button>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {services.map((service) => (
-                                <div key={service.id} className="relative">
-                                    <CardComponent job={service} onViewDetails={handleView} />
-                                    <div className="absolute top-3 right-3 z-10">
-                                        <ActionDropdown
-                                            serviceId={service.id}
-                                            onEdit={handleEdit}
-                                            onDelete={handleDelete}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
+                    )}
+                </div>
             </div>
         );
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading services...</p>
-                </div>
-            </div>
-        );
-    }
-
+    // ============================================================================
+    // MAIN RENDER
+    // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-                        {getDisplayTitle()}
-                    </h1>
-                    <Button variant="gradient-blue" size="md" onClick={handleAddPost}>
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+
+                {/* ─── HEADER ── title + "+ Add Post" ─────────────────── */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl sm:text-4xl">{getCategoryIcon(subcategory)}</span>
+                        <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
+                            {getDisplayTitle(subcategory)}
+                        </h1>
+                    </div>
+
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700"
+                    >
                         + Add Post
                     </Button>
                 </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium">{error}</p>
-                    </div>
-                )}
-
-                {/* Content */}
+                {/* ─── CONTENT RENDERING ──────────────────────────────── */}
                 {shouldShowNearbyCards(subcategory) ? (
-                    renderNearbyCardsSection()
-                ) : services.length === 0 ? (
+                    // Render nearby cards with real API data
+                    renderCardsSection()
+                ) : (
+                    // Default view when no subcategory matches
                     <div className="text-center py-20">
                         <div className="text-6xl mb-4">🏢</div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">No Services Found</h3>
-                        <p className="text-gray-600">Be the first to add a service in this category!</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {services.map((service) => (
-                            <div
-                                key={service.id}
-                                className="relative group bg-white rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-lg transition cursor-pointer overflow-hidden"
-                                onClick={() => handleView(service)}
-                            >
-                                <div className="absolute top-3 right-3 z-10">
-                                    <ActionDropdown
-                                        serviceId={service.id}
-                                        onEdit={handleEdit}
-                                        onDelete={handleDelete}
-                                    />
-                                </div>
-                                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                    <span>{service.corporateData?.icon || "🏢"}</span>
-                                    <span>{service.category}</span>
-                                </div>
-                                <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center text-gray-400">
-                                    <span className="text-5xl mb-2">{service.corporateData?.icon || "🏢"}</span>
-                                    <span className="text-sm">No Image</span>
-                                </div>
-                                <div className="p-4 space-y-2">
-                                    <h2 className="text-lg font-bold text-gray-800 line-clamp-1">{service.title}</h2>
-                                    <p className="text-sm text-gray-600 line-clamp-1">{service.location}</p>
-                                    <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
-                                    {service.corporateData?.pincode && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-gray-400">📍</span>
-                                            <span className="text-gray-700">Pincode: {service.corporateData.pincode}</span>
-                                        </div>
-                                    )}
-                                    {service.corporateData?.status !== undefined && (
-                                        <div className="flex items-center gap-2">
-                                            <span
-                                                className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.corporateData.status
-                                                    ? "bg-green-100 text-green-800"
-                                                    : "bg-red-100 text-red-800"
-                                                    }`}
-                                            >
-                                                <span className="mr-1">{service.corporateData.status ? "✓" : "✗"}</span>
-                                                {service.corporateData.status ? "Available" : "Busy"}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            No Services Found
+                        </h3>
+                        <p className="text-gray-600">
+                            Select a category or add a new service!
+                        </p>
                     </div>
                 )}
             </div>
