@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     deleteWeddingService,
+    getUserWeddingServices,
     WeddingWorker
 } from "../services/Wedding.service";
 import { typography } from "../styles/typography";
@@ -25,100 +26,47 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
     const [services, setServices] = useState<WeddingWorker[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // ── Fetch Services API ──
+    // ── Fetch Services ──
     useEffect(() => {
         const fetchServices = async () => {
-            // ⚠️ CRITICAL DEBUG: Log the userId being used
             console.log("═══════════════════════════════════════");
             console.log("🔍 FETCHING WEDDING SERVICES");
             console.log("═══════════════════════════════════════");
-            console.log("📋 Props received:");
+            console.log("📋 Props:");
             console.log("   - userId:", userId);
             console.log("   - selectedSubcategory:", selectedSubcategory);
-            console.log("   - hideHeader:", hideHeader);
-            console.log("   - hideEmptyState:", hideEmptyState);
             console.log("═══════════════════════════════════════");
 
             if (!userId) {
                 console.error("❌ No userId provided!");
+                setError("No user ID provided");
                 setServices([]);
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
+            setError(null);
+
             try {
-                const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-                const url = `${API_BASE_URL}/getUserWedding?userId=${userId}`;
+                const result = await getUserWeddingServices(userId);
 
-                console.log("📡 Making request to:", url);
+                console.log("📦 getUserWeddingServices result:", result);
 
-                const response = await fetch(url, { method: "GET" });
-
-                console.log("📥 Response received:");
-                console.log("   - Status:", response.status);
-                console.log("   - OK:", response.ok);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log("📦 Raw API response:", data);
-                    console.log("📦 Response type:", typeof data);
-                    console.log("📦 Is array:", Array.isArray(data));
-
-                    let servicesData: WeddingWorker[] = [];
-
-                    if (Array.isArray(data)) {
-                        servicesData = data;
-                        console.log("✅ Direct array response");
-                    } else if (data && Array.isArray(data.data)) {
-                        servicesData = data.data;
-                        console.log("✅ Nested data.data response");
-                    } else if (data && data.success && Array.isArray(data.data)) {
-                        servicesData = data.data;
-                        console.log("✅ Success wrapper response");
-                    } else {
-                        console.warn("⚠️ Unexpected response structure:", data);
-                        // Try to find any array in the response
-                        const keys = Object.keys(data || {});
-                        console.log("📋 Response keys:", keys);
-                        for (const key of keys) {
-                            if (Array.isArray(data[key])) {
-                                servicesData = data[key];
-                                console.log(`✅ Found array at key: ${key}`);
-                                break;
-                            }
-                        }
-                    }
-
-                    console.log("═══════════════════════════════════════");
-                    console.log("📊 FINAL RESULTS:");
-                    console.log("   - Services found:", servicesData.length);
-                    if (servicesData.length > 0) {
-                        console.log("   - First service:", servicesData[0]);
-                        servicesData.forEach((s, i) => {
-                            console.log(`   ${i + 1}. ${s.serviceName} (${s.subCategory})`);
-                        });
-                    } else {
-                        console.warn("⚠️ NO SERVICES RETURNED FROM API");
-                        console.log("🔍 Debugging tips:");
-                        console.log("   1. Check if userId exists in database:", userId);
-                        console.log("   2. Verify API endpoint is correct");
-                        console.log("   3. Check if user has any wedding services");
-                        console.log("   4. Test directly:");
-                        console.log(`      GET ${url}`);
-                    }
-                    console.log("═══════════════════════════════════════");
-
-                    setServices(servicesData);
+                if (result.success && result.data) {
+                    console.log("✅ Services loaded:", result.data.length);
+                    setServices(result.data);
+                    setError(null);
                 } else {
-                    console.error("❌ Response not OK:", response.status, response.statusText);
-                    const errorText = await response.text();
-                    console.error("❌ Error response body:", errorText);
+                    console.warn("⚠️ No services found");
                     setServices([]);
+                    setError(null); // Don't show error for empty results
                 }
-            } catch (error) {
-                console.error("❌ Exception during fetch:", error);
+            } catch (err) {
+                console.error("❌ Error fetching services:", err);
+                setError("Failed to load services");
                 setServices([]);
             } finally {
                 setLoading(false);
@@ -132,20 +80,21 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
     const filteredServices = React.useMemo(() => {
         console.log("🔍 Filtering services:");
         console.log("   - Total services:", services.length);
-        console.log("   - Filter (selectedSubcategory):", selectedSubcategory);
+        console.log("   - Filter:", selectedSubcategory);
 
         if (!selectedSubcategory) {
-            console.log("✅ No filter - returning all", services.length, "services");
+            console.log("✅ No filter - returning all services");
             return services;
         }
 
         const filtered = services.filter(s => {
-            if (!s.subCategory) {
-                return false;
-            }
+            if (!s.subCategory) return false;
 
-            const match = s.subCategory.toLowerCase().includes(selectedSubcategory.toLowerCase()) ||
-                selectedSubcategory.toLowerCase().includes(s.subCategory.toLowerCase());
+            const normalizedService = s.subCategory.toLowerCase().trim();
+            const normalizedFilter = selectedSubcategory.toLowerCase().trim();
+
+            const match = normalizedService.includes(normalizedFilter) ||
+                normalizedFilter.includes(normalizedService);
 
             return match;
         });
@@ -154,27 +103,29 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
         return filtered;
     }, [services, selectedSubcategory]);
 
-    // ── Delete Service API ──
+    // ── Delete Service ──
     const handleDelete = async (serviceId: string) => {
-        if (!window.confirm("Delete this wedding service?")) return;
+        if (!window.confirm("Are you sure you want to delete this wedding service?")) return;
 
         setDeletingId(serviceId);
         try {
             const result = await deleteWeddingService(serviceId);
             if (result.success) {
                 setServices(prev => prev.filter(s => s._id !== serviceId));
+                console.log("✅ Service deleted successfully");
             } else {
                 alert("Failed to delete service. Please try again.");
+                console.error("❌ Delete failed:", result.message);
             }
         } catch (error) {
-            console.error("Error deleting service:", error);
+            console.error("❌ Error deleting service:", error);
             alert("Failed to delete service. Please try again.");
         } finally {
             setDeletingId(null);
         }
     };
 
-    // ── Helper functions ──
+    // ── Open Directions ──
     const openDirections = (service: WeddingWorker) => {
         if (service.latitude && service.longitude) {
             window.open(
@@ -186,6 +137,8 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                 [service.area, service.city, service.state].filter(Boolean).join(", ")
             );
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+        } else {
+            alert("Location information not available");
         }
     };
 
@@ -261,7 +214,7 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                                     {service.chargeType || 'Starting at'}
                                 </p>
                                 <p className="text-lg font-bold text-pink-600">
-                                    ₹{service.serviceCharge}
+                                    ₹{service.serviceCharge.toLocaleString()}
                                 </p>
                             </div>
                         )}
@@ -329,11 +282,44 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-600"></div>
+                        <p className="text-sm text-gray-600">Loading services...</p>
+                    </div>
                 </div>
             </div>
         );
-    };
+    }
+
+    // ── Error State ──
+    if (error) {
+        return (
+            <div>
+                {!hideHeader && (
+                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                        <span>💒</span> Wedding Services
+                    </h2>
+                )}
+                <div className="bg-white rounded-xl border border-red-200 p-8 text-center">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
+                        Error Loading Services
+                    </h3>
+                    <p className={`${typography.body.small} text-gray-500 mb-4`}>
+                        {error}
+                    </p>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => window.location.reload()}
+                        className="gap-1.5 bg-pink-600 hover:bg-pink-700"
+                    >
+                        Retry
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     // ── Empty State ──
     if (filteredServices.length === 0) {
@@ -356,20 +342,42 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                             ? `No wedding services match the "${selectedSubcategory}" category.`
                             : 'Start adding your wedding services to showcase them here.'}
                     </p>
-                    {/* Debug info for developers */}
-                    <details className="mt-4 text-left">
-                        <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600">
-                            🔧 Debug Info (click to expand)
-                        </summary>
-                        <div className="mt-2 p-3 bg-gray-50 rounded text-xs font-mono text-left">
-                            <p><strong>UserId:</strong> {userId}</p>
-                            <p><strong>API Endpoint:</strong> /getUserWedding</p>
-                            <p><strong>Filter:</strong> {selectedSubcategory || 'none'}</p>
-                            <p className="mt-2 text-gray-600">
-                                Check console for detailed logs
-                            </p>
-                        </div>
-                    </details>
+
+                    {/* Debug Panel - Only in development */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <details className="mt-6 text-left bg-gray-50 rounded-lg">
+                            <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 p-3">
+                                🔧 Debug Info (Dev Only)
+                            </summary>
+                            <div className="p-4 bg-white rounded text-xs font-mono text-left space-y-2 border-t border-gray-200">
+                                <p><strong>UserId:</strong> <code className="bg-gray-100 px-2 py-1 rounded">{userId}</code></p>
+                                <p><strong>API Base:</strong> <code className="bg-gray-100 px-2 py-1 rounded">{process.env.REACT_APP_API_BASE_URL}</code></p>
+                                <p><strong>Endpoint:</strong> <code className="bg-gray-100 px-2 py-1 rounded">/getUserWedding</code></p>
+                                <p><strong>Filter:</strong> <code className="bg-gray-100 px-2 py-1 rounded">{selectedSubcategory || 'none'}</code></p>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                        const url = `${process.env.REACT_APP_API_BASE_URL}/getUserWedding?userId=${userId}`;
+                                        console.log("🧪 Testing URL:", url);
+                                        try {
+                                            const res = await fetch(url);
+                                            const data = await res.json();
+                                            console.log("🧪 Response:", data);
+                                            alert(JSON.stringify(data, null, 2));
+                                        } catch (err) {
+                                            console.error("🧪 Test failed:", err);
+                                            alert("Test failed: " + err);
+                                        }
+                                    }}
+                                    className="mt-2"
+                                >
+                                    🧪 Test API Call
+                                </Button>
+                            </div>
+                        </details>
+                    )}
+
                     {!selectedSubcategory && (
                         <Button
                             variant="primary"
@@ -377,7 +385,7 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                             onClick={() => navigate('/add-wedding-service-form')}
                             className="gap-1.5 bg-pink-600 hover:bg-pink-700 mt-4"
                         >
-                            + Add Wedding Service
+                            + Add Your First Service
                         </Button>
                     )}
                 </div>
@@ -385,7 +393,7 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
         );
     }
 
-    // ── Render ──
+    // ── Render Services Grid ──
     return (
         <div className="w-full">
             {!hideHeader && (

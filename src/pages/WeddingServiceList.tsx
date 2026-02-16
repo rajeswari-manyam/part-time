@@ -13,7 +13,7 @@ import NearbyWeddingPlanner from "../components/cards/Wedding/NearByWeddingPlane
 // Import utility functions
 import { isWeddingSubcategory, getMainWeddingCategory } from "../utils/SubCategories";
 
-// ── Import API service
+// Import API service
 import { getNearbyWeddingWorkers, WeddingWorkerResponse, WeddingWorker } from "../services/Wedding.service";
 
 // ============================================================================
@@ -104,42 +104,59 @@ const WeddingServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    // ── State management ─────────────────────────────────────────────
+    // State management
     const [nearbyData, setNearbyData] = useState<WeddingWorker[]>([]);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [distance, setDistance] = useState<number>(10); // Default 10km radius
 
-    // ── Get user location ────────────────────────────────────────────
+    // Get user location
     useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const location = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    };
-                    setUserLocation(location);
-                    console.log("📍 User location obtained:", location);
-                },
-                (err) => {
-                    console.error("❌ Error getting user location:", err);
-                    setError("Unable to get your location. Please enable location services.");
-                    setLoading(false);
-                }
-            );
-        } else {
+        console.log("🌍 Getting user location...");
+        
+        if (!navigator.geolocation) {
             console.error("❌ Geolocation not supported");
             setError("Geolocation is not supported by your browser.");
             setLoading(false);
+            return;
         }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const location = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                };
+                setUserLocation(location);
+                console.log("✅ User location obtained:", location);
+            },
+            (err) => {
+                console.error("❌ Error getting user location:", err);
+                setError("Unable to get your location. Please enable location services.");
+                setLoading(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
     }, []);
 
-    // ── Fetch nearby wedding services ───────────────────────────────
+    // Fetch nearby wedding services
     useEffect(() => {
         const fetchNearbyWeddingServices = async () => {
-            if (!userLocation) return;
+            if (!userLocation) {
+                console.log("⏳ Waiting for user location...");
+                return;
+            }
+
+            if (!shouldShowNearbyCards(subcategory)) {
+                console.log("⏭️ Skipping nearby fetch - not a wedding subcategory");
+                setLoading(false);
+                return;
+            }
 
             try {
                 setLoading(true);
@@ -149,6 +166,7 @@ const WeddingServicesList: React.FC = () => {
                     latitude: userLocation.latitude,
                     longitude: userLocation.longitude,
                     distance,
+                    subcategory
                 });
 
                 const response: WeddingWorkerResponse = await getNearbyWeddingWorkers(
@@ -158,8 +176,20 @@ const WeddingServicesList: React.FC = () => {
                 );
 
                 if (response.success && response.data) {
-                    console.log("✅ Nearby wedding services fetched:", response.data);
-                    setNearbyData(response.data);
+                    console.log("✅ Nearby wedding services fetched:", response.data.length);
+                    
+                    // Filter by subcategory if specified
+                    let filteredData = response.data;
+                    if (subcategory) {
+                        const normalizedSubcat = normalizeSubcategory(subcategory);
+                        filteredData = response.data.filter(service => {
+                            const serviceSubcat = normalizeSubcategory(service.subCategory);
+                            return serviceSubcat.includes(normalizedSubcat) || normalizedSubcat.includes(serviceSubcat);
+                        });
+                        console.log(`🔍 Filtered to ${filteredData.length} services for subcategory: ${subcategory}`);
+                    }
+                    
+                    setNearbyData(filteredData);
                 } else {
                     console.warn("⚠️ No nearby wedding services found");
                     setNearbyData([]);
@@ -172,22 +202,18 @@ const WeddingServicesList: React.FC = () => {
             }
         };
 
-        if (userLocation && shouldShowNearbyCards(subcategory)) {
-            fetchNearbyWeddingServices();
-        } else {
-            setLoading(false);
-        }
+        fetchNearbyWeddingServices();
     }, [userLocation, distance, subcategory]);
 
-    // ── navigation handlers ─────────────────────────────────────────
+    // Navigation handlers
     const handleView = (service: any) => {
         const id = service.id || service._id;
-        console.log("Viewing service details:", id);
+        console.log("👁️ Viewing service details:", id);
         navigate(`/wedding-services/details/${id}`);
     };
 
     const handleAddPost = () => {
-        console.log("Adding new post. Subcategory:", subcategory);
+        console.log("➕ Adding new post. Subcategory:", subcategory);
         navigate(
             subcategory
                 ? `/add-wedding-service-form?subcategory=${subcategory}`
@@ -195,7 +221,7 @@ const WeddingServicesList: React.FC = () => {
         );
     };
 
-    // ── Render Cards Section ─────────────────────────────────────────
+    // Render Cards Section
     const renderCardsSection = () => {
         const CardComponent = getCardComponentForSubcategory(subcategory);
 
@@ -207,9 +233,17 @@ const WeddingServicesList: React.FC = () => {
                     <h3 className="text-xl font-bold text-gray-800 mb-2">
                         Wedding Service Category Not Found
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 mb-4">
                         This wedding service category is not yet configured.
                     </p>
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={handleAddPost}
+                        className="bg-pink-600 hover:bg-pink-700"
+                    >
+                        + Add Service
+                    </Button>
                 </div>
             );
         }
@@ -218,13 +252,17 @@ const WeddingServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="text-center py-20">
-                    <div className="text-6xl mb-4">⏳</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                        Loading nearby services...
-                    </h3>
-                    <p className="text-gray-600">
-                        Getting your location and finding services near you
-                    </p>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-600"></div>
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">
+                                Finding services near you...
+                            </h3>
+                            <p className="text-gray-600">
+                                Getting your location and searching for nearby services
+                            </p>
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -313,7 +351,7 @@ const WeddingServicesList: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
 
-                {/* ─── HEADER ── title + "+ Add Post" ─────────────────── */}
+                {/* HEADER - title + "+ Add Post" */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                     <div className="flex items-center gap-3">
                         <span className="text-3xl sm:text-4xl">{getCategoryIcon(subcategory)}</span>
@@ -337,7 +375,7 @@ const WeddingServicesList: React.FC = () => {
                     </Button>
                 </div>
 
-                {/* ─── CONTENT RENDERING ──────────────────────────────── */}
+                {/* CONTENT RENDERING */}
                 {shouldShowNearbyCards(subcategory) ? (
                     // Render nearby cards with real API data
                     renderCardsSection()
@@ -346,11 +384,19 @@ const WeddingServicesList: React.FC = () => {
                     <div className="text-center py-20">
                         <div className="text-6xl mb-4">💒</div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">
-                            No Wedding Services Found
+                            Select a Wedding Service Category
                         </h3>
-                        <p className="text-gray-600">
-                            Select a category or add a new service!
+                        <p className="text-gray-600 mb-6">
+                            Choose a category from the menu to view available services
                         </p>
+                        <Button
+                            variant="primary"
+                            size="md"
+                            onClick={handleAddPost}
+                            className="bg-pink-600 hover:bg-pink-700"
+                        >
+                            + Add New Service
+                        </Button>
                     </div>
                 )}
             </div>

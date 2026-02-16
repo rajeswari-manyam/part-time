@@ -6,6 +6,7 @@ type Props = {
     initialLng?: number;
     onSaveLocation?: (city: string, lat: number, lng: number) => void;
     onNavigate?: () => void;
+    autoDetect?: boolean;
 };
 
 // Google Maps API Key
@@ -15,11 +16,45 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyA6myHzS10YXdcazAFalmXvDkrYCp5cLc8";
 const BG_COLOR = "#F0F0F0";
 const PRIMARY_COLOR = "#1A5F9E";
 
+// ─── IP-based location fallback (works on HTTP + any origin) ───────────────
+const getLocationByIP = async (): Promise<{ lat: number; lng: number; city: string } | null> => {
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        if (data && data.latitude && data.longitude) {
+            return {
+                lat: data.latitude,
+                lng: data.longitude,
+                city: data.city || data.region || "Unknown",
+            };
+        }
+    } catch (e) {
+        console.warn("ipapi.co failed, trying fallback...", e);
+    }
+
+    try {
+        const res = await fetch("http://ip-api.com/json/");
+        const data = await res.json();
+        if (data && data.status === "success") {
+            return {
+                lat: data.lat,
+                lng: data.lon,
+                city: data.city || data.regionName || "Unknown",
+            };
+        }
+    } catch (e) {
+        console.warn("ip-api.com also failed", e);
+    }
+
+    return null;
+};
+
 export default function LocationSelector({
     initialLat,
     initialLng,
     onSaveLocation,
     onNavigate,
+    autoDetect = true,
 }: Props) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -32,6 +67,8 @@ export default function LocationSelector({
     const [showButtons, setShowButtons] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [autoDetected, setAutoDetected] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     /* ---------------- LOAD GOOGLE MAPS ---------------- */
     useEffect(() => {
@@ -69,8 +106,32 @@ export default function LocationSelector({
             setQuery(place.formatted_address || "");
             extractCity(place.address_components || []);
             setShowButtons(true);
+            setIsEditing(false);
         });
     }, [googleMaps]);
+
+    /* ---------------- AUTO-DETECT ON MOUNT ---------------- */
+    useEffect(() => {
+        const savedCity = localStorage.getItem("userCity");
+        const savedLat = localStorage.getItem("userLatitude");
+        const savedLng = localStorage.getItem("userLongitude");
+
+        if (savedCity && savedLat && savedLng) {
+            setCity(savedCity);
+            setLat(parseFloat(savedLat));
+            setLng(parseFloat(savedLng));
+            setQuery(savedCity);
+            setAddress(savedCity);
+            setIsSaved(true);
+            onSaveLocation?.(savedCity, parseFloat(savedLat), parseFloat(savedLng));
+            return;
+        }
+
+        if (autoDetect && !autoDetected && !initialLat && !initialLng) {
+            setAutoDetected(true);
+            handleUseCurrent();
+        }
+    }, [autoDetect, autoDetected, initialLat, initialLng]);
 
     /* ---------------- CITY EXTRACTION ---------------- */
     const extractCity = (components: google.maps.GeocoderAddressComponent[]) => {
@@ -81,72 +142,200 @@ export default function LocationSelector({
             components.find((c) => c.types.includes("country"));
 
         setCity(result?.long_name || "");
+        return result?.long_name || "";
     };
 
+    /* ---------------------------------------------------------------
+       CLICK ON INPUT:
+       - If already saved → clear and enter edit mode so user can type
+       - If not saved → just show buttons
+    --------------------------------------------------------------- */
     const handleInputClick = () => {
-        if (!showButtons && !isSaved) setShowButtons(true);
+        if (isSaved && !isEditing) {
+            // Enter edit mode — clear everything, let user type fresh
+            setIsSaved(false);
+            setIsEditing(true);
+            setQuery("");
+            setCity("");
+            setAddress("");
+            setLat(null);
+            setLng(null);
+            setShowButtons(true);
+            setLocationMethod(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+        } else if (!showButtons) {
+            setShowButtons(true);
+        }
     };
 
-    /* ---------------- USE CURRENT LOCATION ---------------- */
-    const handleUseCurrent = () => {
-        if (!navigator.geolocation || !googleMaps) return;
+    const [locationMethod, setLocationMethod] = useState<"gps" | "ip" | "manual" | null>(null);
 
-        setIsLoading(true);
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const latitude = pos.coords.latitude;
-                const longitude = pos.coords.longitude;
-
-                setLat(latitude);
-                setLng(longitude);
-
+    /* ---------------- REVERSE GEOCODE ------------------------------- */
+    const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
+        if (googleMaps) {
+            return new Promise((resolve) => {
                 const geocoder = new googleMaps.maps.Geocoder();
                 geocoder.geocode(
                     { location: { lat: latitude, lng: longitude } },
                     (results, status) => {
-                        setIsLoading(false);
                         if (status === "OK" && results?.[0]) {
-                            setAddress(results[0].formatted_address || "");
-                            setQuery(results[0].formatted_address || "");
-                            extractCity(results[0].address_components || []);
-                            setShowButtons(true);
+                            const formattedAddress = results[0].formatted_address || "";
+                            setAddress(formattedAddress);
+                            setQuery(formattedAddress);
+                            const extractedCity = extractCity(results[0].address_components || []);
+                            resolve(extractedCity);
+                        } else {
+                            resolve("");
                         }
                     }
                 );
-            },
-            () => setIsLoading(false),
-            { enableHighAccuracy: true }
-        );
+            });
+        }
+
+        // Nominatim fallback
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                { headers: { "Accept-Language": "en" } }
+            );
+            const data = await res.json();
+            if (data?.address) {
+                const cityName =
+                    data.address.city ||
+                    data.address.town ||
+                    data.address.village ||
+                    data.address.state || "";
+                const fullAddress = data.display_name || cityName;
+                setAddress(fullAddress);
+                setQuery(fullAddress);
+                setCity(cityName);
+                return cityName;
+            }
+        } catch (e) {
+            console.warn("Nominatim failed", e);
+        }
+        return "";
     };
 
-    /* ---------------- SAVE ---------------- */
+    /* ---------------- GPS + IP DETECTION ---------------------------- */
+    const handleUseCurrent = async () => {
+        setIsLoading(true);
+        setShowButtons(false);
+        setIsEditing(false);
+
+        const isSecureContext =
+            window.isSecureContext ||
+            window.location.protocol === "https:" ||
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+
+        if (navigator.geolocation && isSecureContext) {
+            await new Promise<void>((resolve) => {
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const latitude = pos.coords.latitude;
+                        const longitude = pos.coords.longitude;
+                        setLat(latitude);
+                        setLng(longitude);
+                        setLocationMethod("gps");
+
+                        const extractedCity = await reverseGeocode(latitude, longitude);
+
+                        if (extractedCity) {
+                            localStorage.setItem("userCity", extractedCity);
+                            localStorage.setItem("userLatitude", latitude.toString());
+                            localStorage.setItem("userLongitude", longitude.toString());
+                            onSaveLocation?.(extractedCity, latitude, longitude);
+                            setIsSaved(true);
+                        } else {
+                            setShowButtons(true);
+                        }
+                        setIsLoading(false);
+                        resolve();
+                    },
+                    async (error) => {
+                        console.warn("GPS failed:", error.message);
+                        await tryIPLocation();
+                        resolve();
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
+            });
+        } else {
+            await tryIPLocation();
+        }
+    };
+
+    const tryIPLocation = async () => {
+        setIsLoading(true);
+        const ipData = await getLocationByIP();
+
+        if (ipData) {
+            setLat(ipData.lat);
+            setLng(ipData.lng);
+            setCity(ipData.city);
+            setQuery(ipData.city);
+            setAddress(ipData.city);
+            setLocationMethod("ip");
+            localStorage.setItem("userCity", ipData.city);
+            localStorage.setItem("userLatitude", ipData.lat.toString());
+            localStorage.setItem("userLongitude", ipData.lng.toString());
+            onSaveLocation?.(ipData.city, ipData.lat, ipData.lng);
+            setIsSaved(true);
+        } else {
+            setShowButtons(true);
+        }
+        setIsLoading(false);
+    };
+
+    /* ---------------- SAVE (after manual search) -------------------- */
     const handleSave = () => {
         if (!city || lat === null || lng === null) return;
 
+        localStorage.setItem("userCity", city);
+        localStorage.setItem("userLatitude", lat.toString());
+        localStorage.setItem("userLongitude", lng.toString());
+
         onSaveLocation?.(city, lat, lng);
         setIsSaved(true);
+        setIsEditing(false);
         setShowButtons(false);
 
         setTimeout(() => onNavigate?.(), 800);
     };
 
-    /* ---------------- CLEAR ---------------- */
+    /* ---------------- CLEAR (X while typing) ------------------------ */
     const handleClear = () => {
         setQuery("");
         setCity("");
         setAddress("");
         setLat(null);
         setLng(null);
-        setShowButtons(false);
+        setShowButtons(true);
         setIsSaved(false);
+        setIsEditing(true);
+        setLocationMethod(null);
+        setTimeout(() => inputRef.current?.focus(), 50);
     };
 
-    /* ---------------- RENDER ---------------- */
+    /* ---------------- RENDER ---------------------------------------- */
     return (
         <div className="w-full max-w-2xl mx-auto space-y-3">
 
-            {/* INPUT BOX */}
+            {/* LOADING */}
+            {isLoading && (
+                <div className="text-center py-2">
+                    <div
+                        className="inline-block animate-spin rounded-full h-6 w-6 border-b-2"
+                        style={{ borderColor: PRIMARY_COLOR }}
+                    ></div>
+                    <p className="mt-2 text-xs" style={{ color: PRIMARY_COLOR }}>
+                        Detecting location...
+                    </p>
+                </div>
+            )}
+
+            {/* INPUT — always editable on click, no "Change" button */}
             <div
                 className="rounded-2xl border-2 shadow-md"
                 style={{ backgroundColor: BG_COLOR, borderColor: PRIMARY_COLOR }}
@@ -161,16 +350,21 @@ export default function LocationSelector({
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onClick={handleInputClick}
-                        disabled={isSaved}
+                        disabled={isLoading}
                         className="flex-1 px-4 py-4 outline-none text-sm md:text-base"
-                        style={{ backgroundColor: BG_COLOR, color: PRIMARY_COLOR }}
-                        placeholder="Enter your location"
+                        style={{
+                            backgroundColor: BG_COLOR,
+                            color: PRIMARY_COLOR,
+                            cursor: "text",
+                        }}
+                        placeholder={isLoading ? "Detecting..." : "Enter your location"}
                     />
 
-                    {query && !isSaved && (
+                    {/* X — only while typing (not saved) */}
+                    {query && !isSaved && !isLoading && (
                         <button
                             onClick={handleClear}
-                            className="pr-4"
+                            className="pr-4 text-lg"
                             style={{ color: PRIMARY_COLOR }}
                         >
                             ✕
@@ -179,8 +373,8 @@ export default function LocationSelector({
                 </div>
             </div>
 
-            {/* SELECTED LOCATION */}
-            {address && !isSaved && (
+            {/* SELECTED LOCATION PREVIEW (before saving, from manual search) */}
+            {address && !isSaved && !isLoading && isEditing && (
                 <div
                     className="p-4 rounded-xl border"
                     style={{ backgroundColor: BG_COLOR, borderColor: PRIMARY_COLOR }}
@@ -192,7 +386,6 @@ export default function LocationSelector({
                         Selected Location
                     </p>
                     <p className="text-sm text-gray-700">{address}</p>
-
                     {city && (
                         <span
                             className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold"
@@ -208,12 +401,11 @@ export default function LocationSelector({
                 </div>
             )}
 
-            {/* BUTTONS */}
-            {showButtons && !isSaved && (
+            {/* BUTTONS — Use Current / Save */}
+            {showButtons && !isSaved && !isLoading && (
                 <div className="flex gap-3">
                     <button
                         onClick={handleUseCurrent}
-                        disabled={isLoading}
                         className="flex-1 py-3 rounded-xl font-semibold border-2"
                         style={{
                             backgroundColor: BG_COLOR,
@@ -221,18 +413,25 @@ export default function LocationSelector({
                             color: PRIMARY_COLOR,
                         }}
                     >
-                        {isLoading ? "Getting Location..." : "Use Current Location"}
+                        Use Current Location
                     </button>
 
                     <button
                         onClick={handleSave}
                         disabled={!city || !lat || !lng}
-                        className="flex-1 py-3 rounded-xl font-semibold text-white"
+                        className="flex-1 py-3 rounded-xl font-semibold text-white disabled:opacity-50"
                         style={{ backgroundColor: PRIMARY_COLOR }}
                     >
                         Save & Continue
                     </button>
                 </div>
+            )}
+
+            {/* HELPER TEXT */}
+            {!isSaved && !isLoading && !address && !showButtons && (
+                <p className="text-xs text-center text-gray-500">
+                    Start typing to search or click "Use Current Location"
+                </p>
             )}
         </div>
     );

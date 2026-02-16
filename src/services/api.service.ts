@@ -195,15 +195,7 @@ export const getJobById = async (id: string) => {
     }
 };
 
-export const getAllJobs = async () => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/getAllJobs`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching all jobs:", error);
-        throw error;
-    }
-};
+
 
 export const deleteJob = async (jobId: string) => {
     try {
@@ -573,25 +565,6 @@ export const createBooking = async (
     }
 };
 
-export const getNearbyJobs = async (
-    latitude: number,
-    longitude: number
-): Promise<{ success: boolean; count: number; jobs: any[] }> => {
-    try {
-        const response = await axios.get(
-            `${API_BASE_URL}/getNearbyJobs`,
-            {
-                params: { latitude, longitude },
-            }
-        );
-
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching nearby jobs:", error);
-        throw error;
-    }
-};
-// Add these interfaces at the top with your other interfaces
 export interface CreateTicketPayload {
     raisedById: string;
     raisedByRole: "User" | "Worker";
@@ -1171,4 +1144,29 @@ export const deleteWorkerSkill = async (skillId: string): Promise<{ success: boo
         console.error("❌ Delete worker skill error:", error);
         throw error;
     }
+};
+export const getAllJobs = async () => {
+    const response = await axios.get(`${API_BASE_URL}/getAllJobs`);
+    return response.data;
+};
+
+
+
+export const getNearbyJobs = async (
+    latitude: number,
+    longitude: number
+) => {
+    const res = await fetch(
+        `${API_BASE_URL}/getNearbyJobs?latitude=${latitude}&longitude=${longitude}`,
+        {
+            method: "GET",
+            redirect: "follow",
+        }
+    );
+
+    if (!res.ok) {
+        throw new Error("Failed to fetch nearby jobs");
+    }
+
+    return res.json();
 };

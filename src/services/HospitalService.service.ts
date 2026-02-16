@@ -8,8 +8,9 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export interface Hospital {   
   id?: string;
+  _id?: string;  // Added for MongoDB compatibility
   name?: string;
-  hospitalType?: string;       // added hospital type
+  hospitalType?: string;
   departments?: string;
   area?: string;
   city?: string;
@@ -18,7 +19,7 @@ export interface Hospital {
   latitude?: number;
   longitude?: number;
   services?: string;
-  images?: string[];            // added images
+  images?: string[];
   rating?: number;
   [key: string]: any;
 }
@@ -41,7 +42,7 @@ export interface CreateHospitalPayload {
   latitude: string | number;
   longitude: string | number;
   services: string;
-  images?: File[];              // optional images
+  images?: File[];
 }
 
 export interface CreateHospitalResponse {
@@ -73,6 +74,15 @@ export const getNearbyHospitals = async (
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: HospitalResponse = await response.json();
+    
+    // Normalize the data to ensure consistent ID field
+    if (data.success && data.data) {
+      data.data = data.data.map(hospital => ({
+        ...hospital,
+        id: hospital.id || hospital._id
+      }));
+    }
+    
     return data;
   } catch (error) {
     console.error("Error fetching hospitals:", error);
@@ -196,6 +206,15 @@ export const getAllHospitals = async (): Promise<HospitalResponse> => {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: HospitalResponse = await response.json();
+    
+    // Normalize the data to ensure consistent ID field
+    if (data.success && data.data) {
+      data.data = data.data.map(hospital => ({
+        ...hospital,
+        id: hospital.id || hospital._id
+      }));
+    }
+    
     return data;
   } catch (error) {
     console.error("Error fetching all hospitals:", error);
@@ -216,6 +235,15 @@ export const getHospitalById = async (hospitalId: string): Promise<CreateHospita
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: CreateHospitalResponse = await response.json();
+    
+    // Normalize the data to ensure consistent ID field
+    if (data.success && data.data) {
+      data.data = {
+        ...data.data,
+        id: data.data.id || data.data._id
+      };
+    }
+    
     return data;
   } catch (error) {
     console.error(`Error fetching hospital with ID ${hospitalId}:`, error);
@@ -225,10 +253,12 @@ export const getHospitalById = async (hospitalId: string): Promise<CreateHospita
 
 /**
  * Fetch hospitals by user ID
+ * NOTE: API endpoint is 'getUsersHealth' (not 'getUserHealthcare')
  */
 export const getUserHospitals = async (userId: string): Promise<HospitalResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/getUserHealthcare?userId=${userId}`, {
+    // Using the correct endpoint from Postman: getUsersHealth
+    const response = await fetch(`${API_BASE_URL}/getUsersHealth?userId=${userId}`, {
       method: "GET",
       redirect: "follow",
     });
@@ -236,6 +266,16 @@ export const getUserHospitals = async (userId: string): Promise<HospitalResponse
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data: HospitalResponse = await response.json();
+    
+    // Normalize the data to ensure consistent ID field
+    if (data.success && data.data) {
+      data.data = data.data.map(hospital => ({
+        ...hospital,
+        id: hospital.id || hospital._id
+      }));
+    }
+    
+    console.log("getUserHospitals API response:", data);
     return data;
   } catch (error) {
     console.error(`Error fetching hospitals for user ID ${userId}:`, error);

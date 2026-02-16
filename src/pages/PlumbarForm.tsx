@@ -1,34 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBeautyWorker, updateBeautyWorker, getBeautyWorkerById, BeautyWorker } from '../services/Beauty.Service.service';
+import { createJob, updateJob, getJobById, CreateJobPayload } from "../services/api.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Availability options ─────────────────────────────────────────────────────
-const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
+// ── Job type options ─────────────────────────────────────────────────────
+const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
 
-// ── Pull beauty/wellness subcategories from JSON (categoryId 5) ─────────────
-const getBeautyWellnessSubcategories = () => {
-    const beautyCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 5);
-    return beautyCategory ? beautyCategory.items.map(item => item.name) : [];
-};
-
-// ── Map subcategory to category for form ─────────────────────────────────────
-const getCategoryFromSubcategory = (subcategory: string): string => {
-    const lower = subcategory.toLowerCase();
-    if (lower.includes('spa') || lower.includes('massage')) return 'Spa Therapist';
-    if (lower.includes('fitness') || lower.includes('gym')) return 'Fitness Trainer';
-    if (lower.includes('makeup')) return 'Makeup Artist';
-    if (lower.includes('salon') || lower.includes('hair')) return 'Hair Stylist';
-    if (lower.includes('yoga')) return 'Yoga Instructor';
-    if (lower.includes('tattoo')) return 'Tattoo Artist';
-    if (lower.includes('mehendi') || lower.includes('mehndi')) return 'Mehendi Artist';
-    if (lower.includes('nail')) return 'Nail Technician';
-    if (lower.includes('skin')) return 'Skincare Specialist';
-    if (lower.includes('beauty') || lower.includes('parlour')) return 'Beautician';
-    return 'Beautician';
+// ── Pull Plumber subcategories from JSON (categoryId 3) ────────────────
+const getPlumberSubcategories = () => {
+    const plumberCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 3);
+    return plumberCategory ? plumberCategory.items.map(item => item.name) : [];
 };
 
 // ============================================================================
@@ -36,7 +20,7 @@ const getCategoryFromSubcategory = (subcategory: string): string => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-rose-500 focus:border-rose-500 ` +
+    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -90,7 +74,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const BeautyServiceForm = () => {
+const PlumberForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -110,38 +94,36 @@ const BeautyServiceForm = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [locationWarning, setLocationWarning] = useState('');
 
-    const beautyCategories = getBeautyWellnessSubcategories();
-    const defaultSubcategory = getSubcategoryFromUrl() || beautyCategories[0] || 'Beauty Parlour';
-    const defaultCategory = getCategoryFromSubcategory(defaultSubcategory);
+    const plumberSubcategories = getPlumberSubcategories();
+    const defaultSubcategory = getSubcategoryFromUrl() || plumberSubcategories[0] || 'Plumbing Services';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        name: '',
-        category: defaultCategory,
-        email: '',
-        phone: '',
-        bio: '',
-        services: '' as string,
-        serviceCharge: '',
+        title: '',
+        description: '',
+        category: 'plumbing',
+        subcategory: defaultSubcategory,
+        jobType: 'FULL_TIME' as 'FULL_TIME' | 'PART_TIME',
+        servicecharges: '',
+        startDate: '',
+        endDate: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        experience: '',
-        availability: availabilityOptions[0],
     });
 
     // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
+    const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -149,59 +131,49 @@ const BeautyServiceForm = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const data = await getBeautyWorkerById(editId);
-                if (!data) throw new Error('Service not found');
+                const response = await getJobById(editId);
+                const job = response.job;
 
-                // Convert services array to comma-separated string
-                const servicesString = Array.isArray(data.services)
-                    ? data.services.join(', ')
-                    : data.services || '';
-// Around line 160-178, update the availability handling:
-setFormData(prev => ({
-    ...prev,
-    userId: data.userId || '',
-    name: data.name || '',
-    category: data.category || defaultCategory,
-    email: data.email || '',
-    phone: data.phone || '',
-    bio: data.bio || '',
-    services: servicesString,
-    serviceCharge: data.serviceCharge?.toString() || '',
-    area: data.area || '',
-    city: data.city || '',
-    state: data.state || '',
-    pincode: data.pincode || '',
-    latitude: data.latitude?.toString() || '',
-    longitude: data.longitude?.toString() || '',
-    experience: data.experience?.toString() || '',
-    // Convert boolean to string if needed
-    availability: typeof data.availability === 'boolean' 
-        ? (data.availability ? 'Full Time' : availabilityOptions[0])
-        : (data.availability || availabilityOptions[0]),
-}));
-
-// Around line 183, update the availability check:
-// Set availability toggle state
-setIsCurrentlyAvailable(
-    typeof data.availability === 'boolean' 
-        ? data.availability 
-        : (data.availability === 'Full Time' || data.availability === 'On Demand')
-);
+                setFormData(prev => ({
+                    ...prev,
+                    userId: job.userId || '',
+                    title: job.title || '',
+                    description: job.description || '',
+                    category: job.category || 'plumbing',
+                    subcategory: job.subcategory || defaultSubcategory,
+                    jobType: job.jobType || 'FULL_TIME',
+                    servicecharges: job.servicecharges?.toString() || '',
+                    startDate: job.startDate?.split('T')[0] || '',
+                    endDate: job.endDate?.split('T')[0] || '',
+                    area: job.area || '',
+                    city: job.city || '',
+                    state: job.state || '',
+                    pincode: job.pincode || '',
+                    latitude: job.latitude?.toString() || '',
+                    longitude: job.longitude?.toString() || '',
+                }));
             } catch (err) {
                 console.error(err);
-                setError('Failed to load service data');
+                setError('Failed to load job data');
             } finally {
                 setLoadingData(false);
             }
         };
         fetchData();
-    }, [editId, defaultCategory]);
+    }, [editId]);
 
-    // ── Auto-detect coordinates when area is entered ────────────────────────
+    // ── Auto-detect coordinates when address is typed manually ───────────────
     useEffect(() => {
         const detectCoordinates = async () => {
+            if (isGPSDetected.current) {
+                isGPSDetected.current = false;
+                return;
+            }
+
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`.replace(/, ,/g, ',').replace(/^,|,$/g, '');
+                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
+                    .replace(/, ,/g, ',')
+                    .replace(/^,|,$/g, '');
 
                 if (fullAddress.trim()) {
                     const coords = await geocodeAddress(fullAddress);
@@ -218,7 +190,7 @@ setIsCurrentlyAvailable(
 
         const timer = setTimeout(detectCoordinates, 1000);
         return () => clearTimeout(timer);
-    }, [formData.area, formData.city, formData.state, formData.pincode, formData.latitude, formData.longitude]);
+    }, [formData.area, formData.city, formData.state, formData.pincode]);
 
     // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -231,7 +203,7 @@ setIsCurrentlyAvailable(
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
+        const availableSlots = 5 - selectedImages.length;
         if (availableSlots <= 0) {
             setError('Maximum 5 images allowed');
             return;
@@ -270,24 +242,33 @@ setIsCurrentlyAvailable(
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
 
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
-
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
+        setLocationWarning('');
 
         if (!navigator.geolocation) {
-            setError('Geolocation not supported');
+            setError('Geolocation not supported by your browser');
             setLocationLoading(false);
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
+                isGPSDetected.current = true;
+
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
+                const accuracy = pos.coords.accuracy;
+
+                if (accuracy > 500) {
+                    setLocationWarning(
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
+                        `The address fields below may be approximate — please verify and correct if needed.`
+                    );
+                }
+
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
@@ -299,6 +280,8 @@ setIsCurrentlyAvailable(
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
+                            latitude: lat,
+                            longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
@@ -326,36 +309,38 @@ setIsCurrentlyAvailable(
         setSuccessMessage('');
 
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.services || formData.services.trim() === '')
-                throw new Error('Please enter at least one service');
+            if (!formData.title || !formData.description)
+                throw new Error('Please fill in all required fields (Title, Description)');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // Convert comma-separated services to array
-            const servicesArray = formData.services
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
-
-            const payload: any = {
-                ...formData,
-                services: servicesArray,
-                serviceCharge: parseFloat(formData.serviceCharge) || 0,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-                experience: parseInt(formData.experience) || 0,
+            const jobPayload: CreateJobPayload = {
+                userId: formData.userId,
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                subcategory: formData.subcategory,
+                jobType: formData.jobType,
+                servicecharges: formData.servicecharges,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                area: formData.area,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
+                images: selectedImages,
             };
 
             if (isEditMode && editId) {
-                await updateBeautyWorker(editId, payload);
+                const response = await updateJob(editId, jobPayload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/my-Business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createBeautyWorker(payload);
+                const response = await createJob(jobPayload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/my-Business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
@@ -371,7 +356,7 @@ setIsCurrentlyAvailable(
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -396,10 +381,10 @@ setIsCurrentlyAvailable(
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Beauty Service' : 'Add Beauty Service'}
+                            {isEditMode ? 'Update Plumber Service' : 'Add New Plumber Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your beauty service listing' : 'Create new beauty service listing'}
+                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
@@ -420,54 +405,39 @@ setIsCurrentlyAvailable(
                     </div>
                 )}
 
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
+                {/* ─── 1. TITLE & DESCRIPTION ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Business/Professional Name</FieldLabel>
+                        <FieldLabel required>Service Title</FieldLabel>
                         <input
                             type="text"
-                            name="name"
-                            value={formData.name}
+                            name="title"
+                            value={formData.title}
                             onChange={handleInputChange}
-                            placeholder="Glam Beauty Salon"
+                            placeholder="e.g., Professional Plumbing Services"
                             className={inputBase}
+                        />
+                    </div>
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Describe your services, experience, and specializations..."
+                            className={inputBase + ' resize-none'}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
-                <SectionCard title="Contact Information">
+                {/* ─── 2. CATEGORY & SUBCATEGORY ────────────────────────── */}
+                <SectionCard title="Service Category">
                     <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. CATEGORY & SERVICES ────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Category</FieldLabel>
+                        <FieldLabel required>Subcategory</FieldLabel>
                         <select
-                            name="category"
-                            value={formData.category}
+                            name="subcategory"
+                            value={formData.subcategory}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -478,121 +448,78 @@ setIsCurrentlyAvailable(
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            <option value="Beautician">Beautician</option>
-                            <option value="Hair Stylist">Hair Stylist</option>
-                            <option value="Makeup Artist">Makeup Artist</option>
-                            <option value="Spa Therapist">Spa Therapist</option>
-                            <option value="Massage Therapist">Massage Therapist</option>
-                            <option value="Nail Technician">Nail Technician</option>
-                            <option value="Skincare Specialist">Skincare Specialist</option>
-                            <option value="Fitness Trainer">Fitness Trainer</option>
-                            <option value="Yoga Instructor">Yoga Instructor</option>
-                            <option value="Tattoo Artist">Tattoo Artist</option>
-                            <option value="Mehendi Artist">Mehendi Artist</option>
-                            <option value="Beauty Parlour">Beauty Parlour</option>
+                            {plumberSubcategories.map(sub => (
+                                <option key={sub} value={sub}>{sub}</option>
+                            ))}
                         </select>
                     </div>
                 </SectionCard>
 
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Services Offered</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={formData.services}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter services separated by commas
-                        </p>
-
-                        {/* Service Chips Preview */}
-                        {formData.services && formData.services.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.services.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. PROFESSIONAL DETAILS ───────────────────────── */}
-                <SectionCard title="Professional Details">
+                {/* ─── 3. JOB DETAILS ───────────────────────── */}
+                <SectionCard title="Job Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <FieldLabel required>Experience (years)</FieldLabel>
-                            <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
+                            <FieldLabel required>Job Type</FieldLabel>
+                            <select
+                                name="jobType"
+                                value={formData.jobType}
                                 onChange={handleInputChange}
-                                placeholder="Years"
-                                min="0"
-                                className={inputBase}
-                            />
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 0.75rem center',
+                                    backgroundSize: '1.5em 1.5em',
+                                    paddingRight: '2.5rem'
+                                }}
+                            >
+                                {jobTypeOptions.map(type => (
+                                    <option key={type} value={type}>
+                                        {type.replace('_', ' ')}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
+
                         <div>
-                            <FieldLabel required>Service Charge (₹)</FieldLabel>
+                            <FieldLabel required>Service Charges (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
+                                type="text"
+                                name="servicecharges"
+                                value={formData.servicecharges}
                                 onChange={handleInputChange}
-                                placeholder="Amount"
-                                min="0"
+                                placeholder="2000"
                                 className={inputBase}
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
-                        >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>Start Date</FieldLabel>
+                            <input
+                                type="date"
+                                name="startDate"
+                                value={formData.startDate}
+                                onChange={handleInputChange}
+                                className={inputBase}
                             />
-                        </button>
+                        </div>
+
+                        <div>
+                            <FieldLabel required>End Date</FieldLabel>
+                            <input
+                                type="date"
+                                name="endDate"
+                                value={formData.endDate}
+                                onChange={handleInputChange}
+                                className={inputBase}
+                            />
+                        </div>
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. BIO ──────────────────────────────────────── */}
-                <SectionCard title="Bio">
-                    <textarea
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
-                        className={inputBase + ' resize-none'}
-                    />
-                </SectionCard>
-
-                {/* ─── 6. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 4. LOCATION DETAILS ────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -617,6 +544,15 @@ setIsCurrentlyAvailable(
                         </Button>
                     }
                 >
+                    {locationWarning && (
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
+                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <p className={`${typography.body.small} text-yellow-800`}>
+                                {locationWarning}
+                            </p>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
@@ -667,25 +603,25 @@ setIsCurrentlyAvailable(
                         </div>
                     </div>
 
-                    {/* Location Tip */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                         <p className={`${typography.body.small} text-blue-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter address manually.
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                                <span className="ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* ─── 5. PORTFOLIO PHOTOS ────────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -694,19 +630,19 @@ setIsCurrentlyAvailable(
                             multiple
                             onChange={handleImageSelect}
                             className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
+                            disabled={selectedImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-rose-300 hover:border-rose-400 hover:bg-rose-50'
+                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
                             }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-rose-600" />
+                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-blue-600" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
+                                        {selectedImages.length >= 5
                                             ? 'Maximum limit reached'
                                             : 'Tap to upload portfolio photos'}
                                     </p>
@@ -716,34 +652,14 @@ setIsCurrentlyAvailable(
                         </div>
                     </label>
 
-                    {/* Image Previews */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                    {imagePreviews.length > 0 && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-rose-400"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
                                     />
                                     <button
                                         type="button"
@@ -752,9 +668,6 @@ setIsCurrentlyAvailable(
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
-                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -768,8 +681,8 @@ setIsCurrentlyAvailable(
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-rose-400 cursor-not-allowed'
-                            : 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800'
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
                             } shadow-sm ${typography.body.base}`}
                     >
                         {loading
@@ -789,4 +702,4 @@ setIsCurrentlyAvailable(
     );
 };
 
-export default BeautyServiceForm;
+export default PlumberForm;

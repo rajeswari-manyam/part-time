@@ -24,26 +24,35 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     // ── Fetch Education Services API ──
+    const fetchServices = async () => {
+        if (!userId) {
+            setServices([]);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await getUserEducations(userId);
+            console.log("Education services response:", response);
+
+            // Debug: Log the structure of the first service
+            if (response.success && response.data && response.data.length > 0) {
+                console.log("First education service structure:", response.data[0]);
+                console.log("Subjects type:", typeof response.data[0].subjects, response.data[0].subjects);
+                console.log("Qualifications type:", typeof response.data[0].qualifications, response.data[0].qualifications);
+            }
+
+            setServices(response.success ? response.data || [] : []);
+        } catch (error) {
+            console.error("Error fetching education services:", error);
+            setServices([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchServices = async () => {
-            if (!userId) {
-                setServices([]);
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const response = await getUserEducations(userId);
-                setServices(response.success ? response.data || [] : []);
-            } catch (error) {
-                console.error("Error fetching education services:", error);
-                setServices([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchServices();
     }, [userId]);
 
@@ -51,7 +60,7 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
     const filteredServices = selectedSubcategory
         ? services.filter(s =>
             s.type &&
-            selectedSubcategory.toLowerCase().includes(s.type.toLowerCase())
+            s.type.toLowerCase().includes(selectedSubcategory.toLowerCase())
         )
         : services;
 
@@ -94,14 +103,26 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
         window.location.href = `tel:${phone}`;
     };
 
+    // ── Helper to convert subjects/qualifications to array ──
+    const toArray = (value: any): string[] => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            return value.split(',').map(item => item.trim()).filter(Boolean);
+        }
+        return [];
+    };
+
     // ── Render Service Card ──
     const renderServiceCard = (service: EducationService) => {
         const id = service._id || "";
         const location = [service.area, service.city, service.state]
             .filter(Boolean)
             .join(", ") || "Location not set";
-        const subjects = service.subjects || [];
-        const qualifications = service.qualifications || [];
+
+        // Convert to arrays safely
+        const subjects = toArray(service.subjects);
+        const qualifications = toArray(service.qualifications);
 
         return (
             <div
@@ -111,16 +132,22 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
             >
                 {/* Three Dots Menu */}
                 <div className="absolute top-3 right-3 z-10">
-                    <ActionDropdown
-                        onEdit={(e) => {
-                            e.stopPropagation();
-                            navigate(`/add-education-form?id=${id}`);
-                        }}
-                        onDelete={(e) => {
-                            e.stopPropagation();
-                            handleDelete(id);
-                        }}
-                    />
+                    {deletingId === id ? (
+                        <div className="bg-white rounded-lg p-2 shadow-lg">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        </div>
+                    ) : (
+                        <ActionDropdown
+                            onEdit={(e) => {
+                                e?.stopPropagation();
+                                navigate(`/add-education-form?id=${id}`);
+                            }}
+                            onDelete={(e) => {
+                                e?.stopPropagation();
+                                handleDelete(id);
+                            }}
+                        />
+                    )}
                 </div>
 
                 {/* Body */}
@@ -238,7 +265,7 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                             size="sm"
                             onClick={() => service.phone && openCall(service.phone)}
                             className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                            disabled={deletingId === id}
+                            disabled={deletingId === id || !service.phone}
                         >
                             <span className="shrink-0">📞</span>
                             <span className="truncate">{service.phone || "No Phone"}</span>

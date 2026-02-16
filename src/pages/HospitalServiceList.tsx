@@ -19,7 +19,7 @@ import NearbyNursingServiceCard from "../components/cards/Hospital&HealthCare/Ne
 import NearbyDiagnosticLabsCard from "../components/cards/Hospital&HealthCare/NearByDiagnosticlabs";
 
 // ============================================================================
-// SUBCATEGORY → CARD COMPONENT MAP  (single source of truth)
+// SUBCATEGORY → CARD COMPONENT MAP
 // ============================================================================
 type CardKey =
     | "hospital"
@@ -53,11 +53,11 @@ const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
 // ============================================================================
 // HELPERS
 // ============================================================================
+const normalizeSubcategory = (sub: string | undefined): string => {
+    if (!sub) return "";
+    return sub.toLowerCase();
+};
 
-/**
- * Resolve a subcategory URL slug (or a hospitalType string) → CardKey.
- * Order matters: more-specific checks come first.
- */
 const resolveCardKey = (text: string | undefined): CardKey | null => {
     if (!text) return null;
     const n = text.toLowerCase();
@@ -78,7 +78,18 @@ const resolveCardKey = (text: string | undefined): CardKey | null => {
     return null;
 };
 
-/** Capitalise a kebab-case slug → Title Case */
+const getCardComponentForSubcategory = (
+    subcategory: string | undefined
+): React.ComponentType<any> | null => {
+    const key = resolveCardKey(subcategory);
+    if (key && CARD_MAP[key]) return CARD_MAP[key];
+    return CARD_MAP.hospital; // Default
+};
+
+const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
+    return true; // Always show dummy cards
+};
+
 const titleFromSlug = (slug: string | undefined): string => {
     if (!slug) return "All Hospital Services";
     return slug
@@ -87,11 +98,7 @@ const titleFromSlug = (slug: string | undefined): string => {
         .join(" ");
 };
 
-/** Derive the hospitalType filter value from the URL subcategory */
-const getTypeFromSubcategory = (subcategory: string | undefined): string | undefined => {
-    if (!subcategory) return undefined;
-    return titleFromSlug(subcategory);
-};
+const getDisplayTitle = (subcategory: string | undefined) => titleFromSlug(subcategory);
 
 const normalizeType = (type: string): string => type.toLowerCase().trim().replace(/\s+/g, " ");
 
@@ -102,92 +109,96 @@ const HospitalServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    // ── state ──────────────────────────────────────────────────────────────────
-    const [nearbyServices, setNearbyServices] = useState<Hospital[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [nearbyServices, setNearbyServices] = useState<Hospital[]>([]);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
-    const [userLocation, setUserLocation] = useState<{
-        latitude: number;
-        longitude: number;
-    } | null>(null);
+    const [fetchingLocation, setFetchingLocation] = useState(false);
 
-    // ── fetch nearby hospitals with automatic geolocation ─────────────────────
-    const fetchNearbyHospitals = useCallback(async () => {
-        setLoading(true);
-        setError("");
-        setLocationError("");
+    // ── Get user's location on component mount ──
+    useEffect(() => {
+        const getUserLocation = () => {
+            setFetchingLocation(true);
+            setLocationError("");
 
-        try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error("Geolocation not supported"));
-                    return;
-                }
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000, // cache 5 min
-                });
-            });
+            if (!navigator.geolocation) {
+                setLocationError("Geolocation is not supported by your browser");
+                setFetchingLocation(false);
+                return;
+            }
 
-            const { latitude, longitude } = position.coords;
-            setUserLocation({ latitude, longitude });
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ latitude, longitude });
+                    setFetchingLocation(false);
+                    console.log("📍 User location:", latitude, longitude);
+                },
+                (error) => {
+                    console.error("Location error:", error);
+                    setLocationError("Unable to retrieve your location.");
+                    setFetchingLocation(false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        };
 
-            const distance = 10; // 10 km radius
+        getUserLocation();
+    }, []);
 
-            console.log("Fetching nearby hospitals:", { latitude, longitude, distance });
-            const response = await getNearbyHospitals(latitude, longitude, distance);
-            console.log("Nearby hospitals API response:", response);
+    // ── Fetch nearby hospitals when location is available ──
+    useEffect(() => {
+        const fetchNearbyHospitals = async () => {
+            if (!userLocation) return;
 
-            if (response.success) {
-                const allServices = response.data || [];
+            setLoading(true);
+            setError("");
 
-                if (subcategory) {
-                    const targetType = getTypeFromSubcategory(subcategory);
-                    if (targetType) {
+            try {
+                const distance = 10;
+                const response = await getNearbyHospitals(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    distance
+                );
+
+                if (response.success && response.data) {
+                    const allServices = Array.isArray(response.data) ? response.data : [response.data];
+
+                    if (subcategory) {
+                        const targetType = titleFromSlug(subcategory);
                         const normalizedTarget = normalizeType(targetType);
                         const filtered = allServices.filter(
                             (s) => s.hospitalType && normalizeType(s.hospitalType) === normalizedTarget
                         );
-                        console.log(`Filtered hospitals for "${targetType}":`, filtered);
                         setNearbyServices(filtered);
                     } else {
                         setNearbyServices(allServices);
                     }
                 } else {
-                    setNearbyServices(allServices);
+                    setNearbyServices([]);
                 }
-            } else {
-                console.warn("API returned success=false:", response);
+            } catch (err: any) {
+                console.error("Error fetching nearby hospitals:", err);
+                setError("Failed to load nearby services");
                 setNearbyServices([]);
+            } finally {
+                setLoading(false);
             }
-        } catch (err: any) {
-            console.error("fetchNearbyHospitals error:", err);
-            setLocationError(
-                err.message === "User denied Geolocation"
-                    ? "Location access denied. Please enable location services to see nearby services."
-                    : err.message || "Failed to get location. Please enable location services."
-            );
-            setNearbyServices([]);
-        } finally {
-            setLoading(false);
+        };
+
+        if (userLocation) {
+            fetchNearbyHospitals();
         }
-    }, [subcategory]);
+    }, [userLocation, subcategory]);
 
-    useEffect(() => {
-        console.log("HospitalServicesList mounted. Subcategory:", subcategory);
-        fetchNearbyHospitals();
-    }, [fetchNearbyHospitals]);
-
-    // ── navigation ─────────────────────────────────────────────────────────────
-    const handleView = (id: string) => {
-        console.log("Viewing hospital details:", id);
+    const handleView = (hospital: any) => {
+        const id = hospital.id || hospital._id;
         navigate(`/hospital-services/details/${id}`);
     };
 
     const handleAddPost = () => {
-        console.log("Adding new hospital post. Subcategory:", subcategory);
         navigate(
             subcategory
                 ? `/add-hospital-service-form?subcategory=${subcategory}`
@@ -195,126 +206,311 @@ const HospitalServicesList: React.FC = () => {
         );
     };
 
-    // ── display helpers ────────────────────────────────────────────────────────
-    const getDisplayTitle = () => titleFromSlug(subcategory);
-
-    /** Pick the right card component from CARD_MAP */
-    const getCardComponent = (): React.ComponentType<any> | null => {
-        // 1. Try from URL subcategory
-        if (subcategory) {
-            const key = resolveCardKey(subcategory);
-            console.log("Card key from subcategory:", key);
-            if (key && CARD_MAP[key]) return CARD_MAP[key];
+    const openDirections = (hospital: Hospital) => {
+        if (hospital.latitude && hospital.longitude) {
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${hospital.latitude},${hospital.longitude}`,
+                "_blank"
+            );
+        } else if (hospital.area || hospital.city) {
+            const addr = encodeURIComponent(
+                [hospital.address, hospital.area, hospital.city, hospital.state].filter(Boolean).join(", ")
+            );
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
-        // 2. Fall back to first fetched item's hospitalType
-        if (nearbyServices.length > 0 && nearbyServices[0].hospitalType) {
-            const key = resolveCardKey(nearbyServices[0].hospitalType);
-            console.log("Card key from first service type:", key);
-            if (key && CARD_MAP[key]) return CARD_MAP[key];
-        }
-        // 3. Default
-        console.log("Using default hospital card");
-        return CARD_MAP.hospital;
     };
 
-    const CardComponent = getCardComponent();
+    const openCall = (phone: string) => {
+        window.location.href = `tel:${phone}`;
+    };
 
-    // ============================================================================
-    // LOADING
-    // ============================================================================
-    if (loading) {
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const getImageUrls = (images?: string[]): string[] => {
+        // Backend already provides full URLs, so just filter out empty values
+        return (images || []).filter(Boolean) as string[];
+    };
+
+    // ── Render Hospital Card (Matching Dummy Card Style) ──
+    const renderHospitalCard = (hospital: Hospital) => {
+        const id = hospital._id || hospital.id || "";
+        const location = [hospital.area, hospital.city].filter(Boolean).join(", ") || "Location not set";
+
+        const servicesList: string[] = (hospital.services && typeof hospital.services === 'string')
+            ? hospital.services.split(',').map(s => s.trim()).filter(Boolean)
+            : (Array.isArray(hospital.services) ? hospital.services : []);
+
+        const imageUrls = getImageUrls(hospital.images);
+
+        let distance: string | null = null;
+        if (userLocation && hospital.latitude && hospital.longitude) {
+            const dist = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                hospital.latitude,
+                hospital.longitude
+            );
+            distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+        }
+
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-emerald-600 mx-auto mb-4" />
-                    <p className={`${typography.body.small} text-gray-600`}>
-                        Loading services...
-                    </p>
+            <div
+                key={id}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                onClick={() => handleView(hospital)}
+            >
+                {/* Image Section - Fixed height like dummy cards */}
+                <div className="relative h-48 bg-gradient-to-br from-emerald-50 to-emerald-100 overflow-hidden">
+                    {imageUrls.length > 0 ? (
+                        <img
+                            src={imageUrls[0]}
+                            alt={hospital.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <span className="text-5xl">🏥</span>
+                        </div>
+                    )}
+
+                    {/* Live Data Badge - Top Left */}
+                    <div className="absolute top-3 left-3 z-10">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-purple-600 text-white text-xs font-bold rounded-md shadow-md">
+                            Live Data
+                        </span>
+                    </div>
+
+                    {/* Image Counter - Bottom Right */}
+                    {imageUrls.length > 1 && (
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                            1 / {imageUrls.length}
+                        </div>
+                    )}
+                </div>
+
+                {/* Body - Consistent padding like dummy cards */}
+                <div className="p-4 flex flex-col gap-2.5">
+                    {/* Title */}
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
+                        {hospital.name || hospital.hospitalType || "Unnamed Hospital"}
+                    </h2>
+
+                    {/* Location with pin icon */}
+                    <div className="flex items-start gap-1.5">
+                        <span className="text-gray-400 text-sm mt-0.5 flex-shrink-0">📍</span>
+                        <p className="text-sm text-gray-600 line-clamp-1">{location}</p>
+                    </div>
+
+                    {/* Distance - Prominent styling */}
+                    {distance && (
+                        <p className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+                            <span>📍</span>
+                            {distance} away
+                        </p>
+                    )}
+
+                    {/* Description - Consistent text size */}
+                    {hospital.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                            {hospital.description}
+                        </p>
+                    )}
+
+                    {/* Operating Hours */}
+                    {hospital.operatingHours && (
+                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                            <span className="text-gray-400">🕐</span>
+                            <span>{hospital.operatingHours}</span>
+                        </div>
+                    )}
+
+                    {/* Hospital Type Badge */}
+                    {hospital.hospitalType && (
+                        <div className="pt-1">
+                            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200 font-medium">
+                                ⭐ {hospital.hospitalType}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Rating */}
+                    {hospital.rating && (
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-yellow-500 text-sm">⭐</span>
+                            <span className="text-sm font-bold text-gray-900">{hospital.rating}</span>
+                            {hospital.reviewCount && (
+                                <span className="text-xs text-gray-500">({hospital.reviewCount} reviews)</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Services Tags */}
+                    {servicesList.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100 mt-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                Services
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {servicesList.slice(0, 3).map((service, idx) => (
+                                    <span
+                                        key={`${id}-${idx}`}
+                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200"
+                                    >
+                                        {service}
+                                    </span>
+                                ))}
+                                {servicesList.length > 3 && (
+                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                        +{servicesList.length - 3} more
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Action Buttons - Grid layout matching dummy cards */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                openDirections(hospital);
+                            }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors active:bg-purple-100"
+                        >
+                            <span>📍</span>
+                            Directions
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                hospital.phone && openCall(hospital.phone);
+                            }}
+                            disabled={!hospital.phone}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${hospital.phone
+                                ? "bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
+                        >
+                            <span>📞</span>
+                            Call
+                        </button>
+                    </div>
                 </div>
             </div>
         );
-    }
+    };
+
+    // ── Render Cards Section (Dummy Data) ──
+    const renderCardsSection = () => {
+        const CardComponent = getCardComponentForSubcategory(subcategory);
+        if (!CardComponent) return null;
+
+        return (
+            <div>
+                <CardComponent
+                    onViewDetails={handleView}
+                    nearbyData={undefined}
+                    userLocation={userLocation}
+                />
+            </div>
+        );
+    };
+
+    // ── Render Your Services (API Data) ──
+    const renderYourServices = () => {
+        if (nearbyServices.length === 0) {
+            return (
+                <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+                    <p className="text-gray-500">No services found in your area.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                        {nearbyServices.length}
+                    </span>
+                </div>
+
+                {/* Cards Grid - Match dummy cards layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {nearbyServices.map(renderHospitalCard)}
+                </div>
+            </div>
+        );
+    };
 
     // ============================================================================
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 to-white">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* ─── HEADER ── title  +  "+ Add Post" ─────────────────────── */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                        {getDisplayTitle()}
-                    </h1>
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">{getDisplayTitle(subcategory)}</h1>
+                        <p className="text-sm text-gray-500 mt-1">Manage Hospitals & Healthcare services</p>
+                    </div>
 
                     <Button
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center"
+                        className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white"
                     >
-                        + Add Post
+                        + Create Hospitals & Healthcare Service
                     </Button>
                 </div>
 
-                {/* ─── ERROR ────────────────────────────────────────────────── */}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg">
-                        <p className={`${typography.body.small} text-red-700 font-medium`}>
-                            {error}
-                        </p>
+                {/* Location Status */}
+                {fetchingLocation && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                        <span className="text-sm text-blue-700">Getting your location...</span>
                     </div>
                 )}
 
-                {/* ─── LOCATION ERROR ───────────────────────────────────────── */}
                 {locationError && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 sm:p-4 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <span className="text-2xl">📍</span>
-                            <div>
-                                <p
-                                    className={`${typography.body.small} text-yellow-800 font-semibold mb-1`}
-                                >
-                                    Location Access Required
-                                </p>
-                                <p className={`${typography.body.xs} text-yellow-700`}>
-                                    {locationError}
-                                </p>
-                            </div>
-                        </div>
+                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                        <p className="text-yellow-700 text-sm">{locationError}</p>
                     </div>
                 )}
 
-                {/* ─── NEARBY SECTION ──────────────────────────────────────── */}
-                {CardComponent && (
-                    <div>
-                        <h2
-                            className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}
-                        >
-                            <span className="shrink-0">🏥</span>
-                            <span className="truncate">Nearby {getDisplayTitle()}</span>
-                            {nearbyServices.length > 0 && (
-                                <span
-                                    className={`${typography.misc.badge} bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full ml-2`}
-                                >
-                                    {nearbyServices.length}
-                                </span>
-                            )}
-                        </h2>
-
-                        {/* CardComponent handles its own dummy / real data */}
-                        <CardComponent
-                            onViewDetails={(hospital: any) => {
-                                const id = hospital.id || hospital._id;
-                                console.log("Card view details clicked:", id);
-                                handleView(id);
-                            }}
-                            nearbyData={nearbyServices.length > 0 ? nearbyServices : undefined}
-                            userLocation={userLocation}
-                        />
+                {/* Error */}
+                {error && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                        <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
+
+                {/* DUMMY CARDS FIRST */}
+                {shouldShowNearbyCards(subcategory) && (
+                    <div className="space-y-4">
+                        {renderCardsSection()}
+                    </div>
+                )}
+
+                {/* YOUR SERVICES (API DATA) SECOND */}
+                {userLocation && !fetchingLocation && renderYourServices()}
             </div>
         </div>
     );

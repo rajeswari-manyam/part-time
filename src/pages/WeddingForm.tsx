@@ -11,8 +11,17 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Charge type options ──────────────────────────────────────────────────────
-const chargeTypeOptions = ['Per Event', 'Per Day', 'Per Hour', 'Fixed Rate', 'Custom'];
+// ══════════════════════════════════════════════════════════════════════════
+// CHARGE TYPE OPTIONS - FIXED TO MATCH BACKEND ENUM
+// ══════════════════════════════════════════════════════════════════════════
+// The backend expects lowercase with hyphens (e.g., "per-event", not "Per Event")
+const chargeTypeOptions = [
+    { value: 'per event', label: 'per event' },
+    { value: 'per day', label: 'per day' },
+    { value: 'per hour', label: 'per hour' },
+    { value: 'fixed rate', label: 'fixed rate' },
+    { value: 'custom', label: 'custom' }
+];
 
 // ── Pull wedding subcategories from JSON ─────────────────────────────────────
 const getWeddingSubcategories = () => {
@@ -117,7 +126,7 @@ const WeddingForm: React.FC = () => {
         subCategory: defaultCategory,
         description: '',
         serviceCharge: '',
-        chargeType: chargeTypeOptions[0],
+        chargeType: chargeTypeOptions[0].value, // Use the enum value
         area: '',
         city: '',
         state: '',
@@ -143,7 +152,12 @@ const WeddingForm: React.FC = () => {
             try {
                 const response = await getWeddingServiceById(editId);
                 const data = response.data;
-                
+
+                // Find matching chargeType enum value or use first option
+                const matchingChargeType = chargeTypeOptions.find(
+                    opt => opt.value === data.chargeType || opt.label === data.chargeType
+                );
+
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
@@ -151,7 +165,7 @@ const WeddingForm: React.FC = () => {
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
-                    chargeType: data.chargeType || chargeTypeOptions[0],
+                    chargeType: matchingChargeType?.value || chargeTypeOptions[0].value,
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
@@ -339,7 +353,7 @@ const WeddingForm: React.FC = () => {
             payload.append('description', formData.description);
             payload.append('subCategory', formData.subCategory);
             payload.append('serviceCharge', formData.serviceCharge);
-            payload.append('chargeType', formData.chargeType);
+            payload.append('chargeType', formData.chargeType); // This is now the correct enum value
             payload.append('latitude', formData.latitude);
             payload.append('longitude', formData.longitude);
             payload.append('area', formData.area);
@@ -352,16 +366,26 @@ const WeddingForm: React.FC = () => {
                 payload.append('images', image);
             });
 
+            console.log('📤 Submitting service with chargeType:', formData.chargeType);
+
             if (isEditMode && editId) {
                 // Update existing service
-                await updateWeddingService(editId, payload);
-                setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const result = await updateWeddingService(editId, payload);
+                if (result.success) {
+                    setSuccessMessage('Service updated successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(result.message || 'Failed to update service');
+                }
             } else {
                 // Create new service
-                await addWeddingService(payload);
-                setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                const result = await addWeddingService(payload);
+                if (result.success) {
+                    setSuccessMessage('Service created successfully!');
+                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                } else {
+                    throw new Error(result.message || 'Failed to create service');
+                }
             }
         } catch (err: any) {
             console.error('Submit error:', err);
@@ -521,11 +545,20 @@ const WeddingForm: React.FC = () => {
                                     paddingRight: '2.5rem',
                                 }}
                             >
-                                {chargeTypeOptions.map(t => (
-                                    <option key={t} value={t}>{t}</option>
+                                {chargeTypeOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
                                 ))}
                             </select>
                         </div>
+                    </div>
+
+                    {/* Helper text for charge type */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-blue-800`}>
+                            💡 <span className="font-medium">Tip:</span> Choose the pricing model that best fits your service
+                        </p>
                     </div>
                 </SectionCard>
 

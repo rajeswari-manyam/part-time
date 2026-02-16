@@ -21,6 +21,9 @@ import AgricultureUserService from "./AgricultureUserService";
 import CorporativeUserService from "./CorporativeUserService";
 import WeddingUserService from "./WeddingUserService";
 import ArtUserService from "./ArtUserService";
+import PlumberUserService from "./PlumbarUserService";
+import RealEstateUserService from "./RealEstateUserService";
+import HomeUserService from "./Home&PersonalUserService";
 
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
@@ -76,13 +79,19 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
             case 18: // Daily wage services category ID
                 return `/add-daily-wage-service-form?subcategory=${sub}`;
             case 19: // Agriculture services category ID
-                return `/add-agriculture-service-form?subcategory=${sub}`; 
+                return `/add-agriculture-service-form?subcategory=${sub}`;
             case 20: // Corporative services category ID
                 return `/add-corporative-form?subcategory=${sub}`;
             case 21: // Wedding services category ID
                 return `/add-wedding-form?subcategory=${sub}`;
             case 22: // Art services category ID
                 return `/add-art-form?subcategory=${sub}`;
+            case 23: // Plumber services category ID
+                return `/add-plumber-form?subcategory=${sub}`;
+            case 24: // Real Estate services category ID
+                return `/add-real-estate-form?subcategory=${sub}`;
+                case 25: // Home services category ID
+                return `/add-home-service-form?subcategory=${sub}`;
             default:
                 return null;
         }
@@ -328,6 +337,30 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     hideEmptyState={true}
                                 />
                             )}
+                            {selectedCategoryId === 23 && (
+                                <PlumberUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 24 && (
+                                <RealEstateUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
+                            {selectedCategoryId === 25 && (
+                                <HomeUserService
+                                    userId={userId}
+                                    selectedSubcategory={selectedSubcategory}
+                                    hideHeader={false}
+                                    hideEmptyState={true}
+                                />
+                            )}
                         </>
                     ) : (
                         /* Show ALL cards from all categories - each in its own section */
@@ -350,6 +383,9 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                             <CorporativeUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <WeddingUserService userId={userId} hideHeader={false} hideEmptyState={true} />
                             <ArtUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <PlumberUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <RealEstateUserService userId={userId} hideHeader={false} hideEmptyState={true} />
+                            <HomeUserService userId={userId} hideHeader={false} hideEmptyState={true} />   
                         </>
                     )}
                 </div>

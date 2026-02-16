@@ -9,7 +9,16 @@ import SearchIcon from "../assets/icons/Search.png";
 import VoiceIcon from "../assets/icons/Voice.png";
 import MobileIcon from "../assets/icons/mobile.jpeg";
 
-const SearchContainer: React.FC = () => {
+interface SearchContainerProps {
+    onLocationChange?: (city: string, lat: number, lng: number) => void;
+    // ── New prop: fires every time the user types in the search box ──
+    onSearchChange?: (text: string) => void;
+}
+
+const SearchContainer: React.FC<SearchContainerProps> = ({
+    onLocationChange,
+    onSearchChange,
+}) => {
     const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
 
@@ -19,11 +28,9 @@ const SearchContainer: React.FC = () => {
         handleSearch,
         startVoiceRecognition,
         stopVoiceRecognition,
-        getCurrentLocation,
         handleLocationChange,
     } = useSearchController();
 
-    // Voice search handlers
     const handleVoiceClick = () => {
         setIsVoiceModalOpen(true);
         startVoiceRecognition();
@@ -38,6 +45,17 @@ const SearchContainer: React.FC = () => {
         handleSearch();
     };
 
+    // ── Fires on every keystroke — updates internal hook + notifies parent ──
+    const handleInputChange = (text: string) => {
+        handleSearchChange(text);      // update internal search controller
+        onSearchChange?.(text);        // bubble up to HomePage → AllJobs
+    };
+
+    const handleLocationSave = (city: string, lat: number, lng: number) => {
+        handleLocationChange({ city, latitude: lat, longitude: lng, address: city });
+        onLocationChange?.(city, lat, lng);
+    };
+
     return (
         <>
             <div className="w-full bg-secondary py-4 md:py-8 px-3 md:px-6">
@@ -46,10 +64,13 @@ const SearchContainer: React.FC = () => {
 
                         {/* Location Selector */}
                         <div className="w-full lg:w-72 flex-shrink-0">
-                            <LocationSelector />
+                            <LocationSelector
+                                onSaveLocation={handleLocationSave}
+                                autoDetect={true}
+                            />
                         </div>
 
-                        {/* Search Bar + Buttons */}
+                        {/* Search Bar */}
                         <div className="flex-1 space-y-3 md:space-y-4">
                             <div className="bg-white rounded-xl md:rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden focus-within:border-primary transition-colors">
                                 <div className="flex items-center">
@@ -64,7 +85,7 @@ const SearchContainer: React.FC = () => {
                                     <input
                                         type="text"
                                         value={state.searchText}
-                                        onChange={(e) => handleSearchChange(e.target.value)}
+                                        onChange={(e) => handleInputChange(e.target.value)}
                                         onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                                         placeholder="Search for services..."
                                         className="flex-1 px-3 md:px-4 py-3 md:py-4 outline-none text-gray-700 placeholder-gray-400 text-sm md:text-base"
@@ -76,11 +97,7 @@ const SearchContainer: React.FC = () => {
                                         className="p-2 md:p-4 hover:bg-secondary transition rounded-full"
                                         title="Voice search"
                                     >
-                                        <img
-                                            src={VoiceIcon}
-                                            alt="Voice"
-                                            className="w-5 md:w-6 h-5 md:h-6"
-                                        />
+                                        <img src={VoiceIcon} alt="Voice" className="w-5 md:w-6 h-5 md:h-6" />
                                     </button>
 
                                     {/* Search Button */}
@@ -98,11 +115,7 @@ const SearchContainer: React.FC = () => {
                                             </>
                                         ) : (
                                             <>
-                                                <img
-                                                    src={SearchIcon}
-                                                    alt="Search"
-                                                    className="w-4 md:w-5 h-4 md:h-5 invert"
-                                                />
+                                                <img src={SearchIcon} alt="Search" className="w-4 md:w-5 h-4 md:h-5 invert" />
                                                 <span className="text-white font-semibold text-xs md:text-base hidden sm:inline">
                                                     Search
                                                 </span>
@@ -113,7 +126,7 @@ const SearchContainer: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Download App - Desktop */}
+                        {/* Download App — Desktop */}
                         <button
                             className="hidden md:flex flex-shrink-0 items-center gap-2 bg-white border border-gray-300 rounded-xl px-4 lg:px-5 py-3 lg:py-3.5 hover:shadow-lg transition"
                             onClick={() => setShowDownloadModal(true)}
@@ -123,7 +136,7 @@ const SearchContainer: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Download App - Mobile */}
+                    {/* Download App — Mobile */}
                     <div className="md:hidden mt-3">
                         <button
                             className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-xl px-4 py-3 hover:shadow-lg transition"

@@ -48,7 +48,7 @@ import RaiseTicketUI from "./pages/RiseTicket";
 import ViewTicketsUI from "./pages/ViewTicket";
 import ReferAndEarnScreen from "./pages/Refer&earn";
 import AboutUs from "./pages/AboutUs";
-import MyBookings from "./pages/MyBookings";
+import MyBookings from "./pages/MyServices";
 import AddSkillsScreen from "./pages/AddSkills";
 import WorkerList from "./pages/WorkerList";
 import CreateWorkerProfile from "./pages/WorkerProfile";
@@ -67,7 +67,7 @@ import FoodServiceForm from "./pages/FoodServiceForm";
 import HospitalServiceList from "./pages/HospitalServiceList";
 import HotelServiceList from "./pages/HotelServiceList";
 import BeautyServicesList from "./pages/BeautyServiceList";
-import RealEstateList from "./pages/RealEstateList";
+
 import ShoppingList from "./pages/ShoppingList";
 import AutomotiveList from "./pages/AutomotiveList";
 import EducationList from "./pages/EducationList";
@@ -83,7 +83,6 @@ import AgricultureList from "./pages/AgricultureList";
 import DailyWagesList from "./pages/DailyWagesList";
 
 
-import PlumberServiceList from "./pages/PlumbarsList";
 import HomePersonalServiceList from "./pages/Home&PersonalServiceList";
 import HotelForm from "./pages/HotelForm";
 import BeautyServiceForm from "./pages/BeautySevriceForm";
@@ -127,7 +126,12 @@ import WeddingForm from "./pages/WeddingForm";
 import WeddingServiceList from "./pages/WeddingServiceList";
 import ArtForm from "./pages/ArtForm";
 import ArtServiceList from "./pages/ArtServiceList";
-
+import PlumberForm from "./pages/PlumbarForm";
+import PlumberServiceList from "./pages/PlumbarsList";
+import RealEstateList from "./pages/RealEstateList";
+import RealEstateForm from "./pages/RealEstateForm";
+import HomePersonalForm from "./pages/Home&personalForm";
+import HomePersonalList from "./pages/Home&PersonalServiceList";
 
 
 
@@ -190,15 +194,14 @@ const AppRoutes: React.FC = () => {
                     <Route path="/role-selection" element={<RoleSelection />} />
                     <Route path="/loginPage" element={<LoginPage />} />
                     <Route path="/worker-profile" element={<WorkerProfileScreen />} />
-                    <Route path="/jobs/:jobId" element={<JobDetails />} />
+                    <Route path="/job-details/:jobId" element={<JobDetails />} />
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
 
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
-                 
+
 
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
-                    <Route path="/worker-list/:id" element={<WorkerList />} />
                     <Route path="/worker-profile" element={<CreateWorkerProfile />} />
                     <Route path="/worker-details/:id" element={<WorkerDetails />} />
                     <Route path="/add-skills" element={<AddSkillsScreen />} />
@@ -252,6 +255,9 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-corporative-service-form" element={<CorporativeForm />} />
                     <Route path="/add-wedding-service-form" element={<WeddingForm />} />
                     <Route path="/add-art-service-form" element={<ArtForm />} />
+                    <Route path="/add-plumber-service-form" element={<PlumberForm />} />
+                    <Route path="/add-real-estate-form" element={<RealEstateForm />} />
+                    <Route path="/add-home-service-form" element={<HomePersonalForm />} />
 
 
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
@@ -327,6 +333,12 @@ const AppRoutes: React.FC = () => {
                     <Route path="/wedding" element={<WeddingServiceList />} />
                     <Route path="/art/:subcategory" element={<ArtServiceList />} />
                     <Route path="/art" element={<ArtServiceList />} />
+                    <Route path="/plumber/:subcategory" element={<PlumberServiceList />} />
+                    <Route path="/plumber" element={<PlumberServiceList />} />
+                    <Route path="/real-estate/:subcategory" element={<RealEstateList />} />
+                    <Route path="/real-estate" element={<RealEstateList />} />
+                    <Route path="/home-personal/:subcategory" element={<HomePersonalList />} />
+                    <Route path="/home-personal" element={<HomePersonalList />} />
 
 
                     <Route

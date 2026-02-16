@@ -120,14 +120,14 @@ const HospitalForm = () => {
                     userId: prev.userId,
                     hospitalName: data.name || '',
                     hospitalType: data.hospitalType || defaultType,
-                    departments: data.departments || '',
+                    departments: Array.isArray(data.departments) ? data.departments.join(', ') : (data.departments || ''),
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
                     pincode: data.pincode || '',
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
-                    services: data.services || '',
+                    services: Array.isArray(data.services) ? data.services.join(', ') : (data.services || ''),
                 }));
 
                 if (data.images && Array.isArray(data.images))
@@ -255,14 +255,14 @@ const HospitalForm = () => {
                 await updateHospital(editId, {
                     hospitalName: formData.hospitalName,
                     hospitalType: formData.hospitalType,
-                    departments: formData.departments,
+                    departments: Array.isArray(formData.departments) ? formData.departments.join(', ') : formData.departments,
                     area: formData.area,
                     city: formData.city,
                     state: formData.state,
                     pincode: formData.pincode,
                     latitude: parseFloat(formData.latitude),
                     longitude: parseFloat(formData.longitude),
-                    services: formData.services,
+                    services: Array.isArray(formData.services) ? formData.services.join(', ') : formData.services,
                     images: selectedImages,
                 });
                 setSuccessMessage('Hospital updated successfully!');
@@ -273,14 +273,14 @@ const HospitalForm = () => {
                     userId: formData.userId,
                     hospitalName: formData.hospitalName,
                     hospitalType: formData.hospitalType,
-                    departments: formData.departments,
+                    departments: Array.isArray(formData.departments) ? formData.departments.join(', ') : formData.departments,
                     area: formData.area,
                     city: formData.city,
                     state: formData.state,
                     pincode: formData.pincode,
                     latitude: parseFloat(formData.latitude),
                     longitude: parseFloat(formData.longitude),
-                    services: formData.services,
+                    services: Array.isArray(formData.services) ? formData.services.join(', ') : formData.services,
                     images: selectedImages,
                 };
                 await createHospital(payload);
@@ -311,6 +311,16 @@ const HospitalForm = () => {
     // ============================================================================
     // RENDER - Mobile First Design
     // ============================================================================
+
+    // Safety check: Ensure departments and services are strings to prevent .trim() crashes
+    const safeDepartments = Array.isArray(formData.departments)
+        ? (formData.departments as string[]).join(', ')
+        : (typeof formData.departments === 'string' ? formData.departments : '');
+
+    const safeServices = Array.isArray(formData.services)
+        ? (formData.services as string[]).join(', ')
+        : (typeof formData.services === 'string' ? formData.services : '');
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* ── Header - Fixed ── */}
@@ -397,7 +407,7 @@ const HospitalForm = () => {
                         <FieldLabel required>Available Departments</FieldLabel>
                         <textarea
                             name="departments"
-                            value={formData.departments}
+                            value={safeDepartments}
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="Cardiology, Orthopaedics, Neurology, Dermatology, Pediatrics"
@@ -409,13 +419,13 @@ const HospitalForm = () => {
                     </div>
 
                     {/* Department chips preview */}
-                    {formData.departments && formData.departments.trim() && (
+                    {safeDepartments && safeDepartments.trim() && (
                         <div className="mt-3">
                             <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Selected Departments ({formData.departments.split(',').filter(d => d.trim()).length}):
+                                Selected Departments ({safeDepartments.split(',').filter(d => d.trim()).length}):
                             </p>
                             <div className="flex flex-wrap gap-2">
-                                {formData.departments.split(',').map((d, i) => {
+                                {safeDepartments.split(',').map((d, i) => {
                                     const trimmed = d.trim();
                                     if (!trimmed) return null;
                                     return (
@@ -439,7 +449,7 @@ const HospitalForm = () => {
                         <FieldLabel required>Available Services</FieldLabel>
                         <textarea
                             name="services"
-                            value={formData.services}
+                            value={safeServices}
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="Emergency Care, ICU, Lab Tests, X-Ray, CT Scan, MRI, Surgery, Dialysis, Pharmacy"
@@ -451,13 +461,13 @@ const HospitalForm = () => {
                     </div>
 
                     {/* Service chips preview */}
-                    {formData.services && formData.services.trim() && (
+                    {safeServices && safeServices.trim() && (
                         <div className="mt-3">
                             <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Selected Services ({formData.services.split(',').filter(s => s.trim()).length}):
+                                Selected Services ({safeServices.split(',').filter(s => s.trim()).length}):
                             </p>
                             <div className="flex flex-wrap gap-2">
-                                {formData.services.split(',').map((s, i) => {
+                                {safeServices.split(',').map((s, i) => {
                                     const trimmed = s.trim();
                                     if (!trimmed) return null;
                                     return (

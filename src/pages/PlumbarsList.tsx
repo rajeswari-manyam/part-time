@@ -1,307 +1,473 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
-import { MoreVertical } from "lucide-react";
+import typography from "../styles/typography";
+import { getNearbyWorkers } from "../services/api.service";
 
-// Import plumber card components
-import PlumberCard from "../components/cards/Plumbers/NearByPlumbars";
-import ElectricianCard from "../components/cards/Plumbers/NearByElectricianCard";
-import PainterCard from "../components/cards/Plumbers/NearByPaintersCard";
-import CarpenterCard from "../components/cards/Plumbers/NearByCarpenterCard";
-import ACServiceCard from "../components/cards/Plumbers/NearByAcService";
+// ── Nearby card components with dummy data
+import NearByPlumbarsCard from "../components/cards/Plumbers/NearByPlumbars";
+import NearByElectricianCard from "../components/cards/Plumbers/NearByElectricianCard";
+import NearByPaintersCard from "../components/cards/Plumbers/NearByPaintersCard";
+import NearByCarpenterCard from "../components/cards/Plumbers/NearByCarpenterCard";
+import NearByAcServiceCard from "../components/cards/Plumbers/NearByAcService";
+import NearByFridgeRepairCard from "../components/cards/Plumbers/NearByFridgeRepair";
+import NearByWashingMachineRepairCard from "../components/cards/Plumbers/NearByWashingMachineRepair";
+import NearByGasRepairServiceCard from "../components/cards/Plumbers/NearByGasRepairServiceCard";
+import NearByWaterPurifierCard from "../components/cards/Plumbers/NearByWaterPurifier";
+import NearBySolarServiceCard from "../components/cards/Plumbers/NearBySolarService";
 
-import FridgeServiceCard from "../components/cards/Plumbers/NearByFridgeRepair";
-import WashingMachineServiceCard from "../components/cards/Plumbers/NearByWashingMachineRepair";
-import GasStoveServiceCard from "../components/cards/Plumbers/NearByGasRepairServiceCard";
-import ROWaterPurifierServiceCard from "../components/cards/Plumbers/NearByWaterPurifier";
-import NearbySolarServiceCard from "../components/cards/Plumbers/NearBySolarService";
-
-export interface PlumberServiceType {
-    id: string;
-    title: string;
-    location: string;
-    description: string;
-    distance?: number;
-    category: string;
-    serviceData?: {
-        rating?: number;
-        user_ratings_total?: number;
-        opening_hours?: { open_now: boolean };
-        geometry?: { location: { lat: number; lng: number } };
-        phone?: string;
-        photos?: string[];
-        verified?: boolean;
-        trending?: boolean;
-        response_time?: string;
-        is_verified?: boolean;
-        is_trending?: boolean;
-        is_popular?: boolean;
-        is_responsive?: boolean;
-        is_top_rated?: boolean;
-        is_trust?: boolean;
-        is_top_search?: boolean;
-        yearsInBusiness?: number;
-        startingPrice?: string;
-        suggestions?: number;
-        suggestion_text?: string;
-    };
+// ============================================================================
+// WORKER INTERFACE
+// ============================================================================
+export interface PlumberWorker {
+    _id: string;
+    userId: string;
+    workerId: string;
+    name: string;
+    category: string[];
+    subCategory: string;
+    skill: string;
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    profilePic?: string;
+    images?: string[];
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
-const ActionDropdown: React.FC<{
-    serviceId: string;
-    onEdit: (id: string, e: React.MouseEvent) => void;
-    onDelete: (id: string, e: React.MouseEvent) => void;
-}> = ({ serviceId, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
+// ============================================================================
+// SUBCATEGORY → CARD COMPONENT MAP
+// ============================================================================
+type CardKey =
+    | "plumber"
+    | "electrician"
+    | "painter"
+    | "carpenter"
+    | "ac"
+    | "fridge"
+    | "washing"
+    | "gas"
+    | "ro"
+    | "solar";
 
-    return (
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
-                className="p-2 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-full transition shadow-sm"
-                aria-label="More options"
-            >
-                <MoreVertical size={18} className="text-gray-700" />
-            </button>
-
-            {isOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-10"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                        }}
-                    />
-                    <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-20">
-                        <button
-                            onClick={(e) => {
-                                onEdit(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 flex items-center gap-2 text-blue-600 font-medium transition"
-                        >
-                            ✏️ Edit
-                        </button>
-                        <div className="border-t border-gray-100"></div>
-                        <button
-                            onClick={(e) => {
-                                onDelete(serviceId, e);
-                                setIsOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600 font-medium transition"
-                        >
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </>
-            )}
-        </div>
-    );
+const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
+    plumber: NearByPlumbarsCard,
+    electrician: NearByElectricianCard,
+    painter: NearByPaintersCard,
+    carpenter: NearByCarpenterCard,
+    ac: NearByAcServiceCard,
+    fridge: NearByFridgeRepairCard,
+    washing: NearByWashingMachineRepairCard,
+    gas: NearByGasRepairServiceCard,
+    ro: NearByWaterPurifierCard,
+    solar: NearBySolarServiceCard,
 };
 
+// ============================================================================
+// HELPERS
+// ============================================================================
+const normalizeSubcategory = (sub: string | undefined): string => {
+    if (!sub) return "";
+    const normalized = sub.toLowerCase();
+    console.log("📍 Raw subcategory:", sub);
+    console.log("📍 Normalized subcategory:", normalized);
+    return normalized;
+};
+
+const getCardComponentForSubcategory = (
+    subcategory: string | undefined
+): React.ComponentType<any> | null => {
+    if (!subcategory) return null;
+
+    const normalized = normalizeSubcategory(subcategory);
+
+    if (
+        normalized.includes("plumber") ||
+        normalized === "plumbing" ||
+        normalized === "plumbing-services"
+    ) {
+        console.log("✅ Matched to NearByPlumbarsCard");
+        return CARD_MAP.plumber;
+    }
+
+    if (
+        normalized.includes("electrician") ||
+        normalized === "electrical" ||
+        normalized === "electrical-services"
+    ) {
+        console.log("✅ Matched to NearByElectricianCard");
+        return CARD_MAP.electrician;
+    }
+
+    if (
+        normalized.includes("painter") ||
+        normalized.includes("painting") ||
+        normalized === "painting-contractors"
+    ) {
+        console.log("✅ Matched to NearByPaintersCard");
+        return CARD_MAP.painter;
+    }
+
+    if (normalized.includes("carpenter")) {
+        console.log("✅ Matched to NearByCarpenterCard");
+        return CARD_MAP.carpenter;
+    }
+
+    if (
+        (normalized.includes("ac") && normalized.includes("repair")) ||
+        normalized === "ac-repair" ||
+        normalized === "ac-service"
+    ) {
+        console.log("✅ Matched to NearByAcServiceCard");
+        return CARD_MAP.ac;
+    }
+
+    if (
+        normalized.includes("fridge") ||
+        normalized.includes("refrigerator") ||
+        normalized === "fridge-repair"
+    ) {
+        console.log("✅ Matched to NearByFridgeRepairCard");
+        return CARD_MAP.fridge;
+    }
+
+    if (
+        (normalized.includes("washing") && normalized.includes("machine")) ||
+        normalized === "washing-machine-repair"
+    ) {
+        console.log("✅ Matched to NearByWashingMachineRepairCard");
+        return CARD_MAP.washing;
+    }
+
+    if (
+        (normalized.includes("gas") && normalized.includes("stove")) ||
+        normalized === "gas-stove-repair"
+    ) {
+        console.log("✅ Matched to NearByGasRepairServiceCard");
+        return CARD_MAP.gas;
+    }
+
+    if (
+        (normalized.includes("water") && normalized.includes("purifier")) ||
+        normalized.includes("ro") ||
+        normalized === "ro-service" ||
+        normalized === "water-purifier-service"
+    ) {
+        console.log("✅ Matched to NearByWaterPurifierCard");
+        return CARD_MAP.ro;
+    }
+
+    if (
+        normalized.includes("solar") ||
+        normalized === "solar-panel-installation" ||
+        normalized === "solar-installation"
+    ) {
+        console.log("✅ Matched to NearBySolarServiceCard");
+        return CARD_MAP.solar;
+    }
+
+    console.warn(`⚠️ No matching card component for: "${subcategory}"`);
+    return CARD_MAP.plumber;
+};
+
+const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
+    if (!subcategory) return false;
+
+    const normalized = normalizeSubcategory(subcategory);
+
+    const keywords = [
+        "plumber", "plumbing",
+        "electrician", "electrical",
+        "painter", "painting",
+        "carpenter", "carpentry",
+        "ac", "air", "conditioning",
+        "fridge", "refrigerator",
+        "washing", "machine",
+        "gas", "stove",
+        "water", "purifier", "ro",
+        "solar", "panel",
+        "repair", "service", "fix"
+    ];
+
+    const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
+
+    console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
+
+    return hasMatch;
+};
+
+const getDisplayTitle = (subcategory: string | undefined) => {
+    if (!subcategory) return "All Plumber & Home Repair Services";
+    return subcategory
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 const PlumberServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
 
-    const [services, setServices] = useState<PlumberServiceType[]>([]);
-    const [loading] = useState(false);
-    const [error] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [nearbyWorkers, setNearbyWorkers] = useState<PlumberWorker[]>([]);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [locationError, setLocationError] = useState("");
+    const [fetchingLocation, setFetchingLocation] = useState(false);
 
-    const handleView = (service: any) => {
-        navigate(`/plumber-services/details/${service.id}`);
-    };
+    // ── Get user's location on component mount ──
+    useEffect(() => {
+        const getUserLocation = () => {
+            setFetchingLocation(true);
+            setLocationError("");
 
-    const handleEdit = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigate(`/add-plumber-service-form/${id}`);
-    };
+            if (!navigator.geolocation) {
+                setLocationError("Geolocation is not supported by your browser");
+                setFetchingLocation(false);
+                return;
+            }
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this service?")) return;
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ latitude, longitude });
+                    setFetchingLocation(false);
+                    console.log("📍 User location:", latitude, longitude);
+                },
+                (error) => {
+                    console.error("Location error:", error);
+                    setLocationError("Unable to retrieve your location. Please enable location services.");
+                    setFetchingLocation(false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        };
 
-        try {
-            setServices((prev) => prev.filter((s) => s.id !== id));
-            alert("Service deleted successfully");
-        } catch (err) {
-            console.error(err);
-            alert("Failed to delete service");
+        getUserLocation();
+    }, []);
+
+    // ── Fetch nearby workers when location is available ──
+    useEffect(() => {
+        const fetchNearbyWorkers = async () => {
+            if (!userLocation) return;
+
+            setLoading(true);
+            setError("");
+
+            try {
+                const response = await getNearbyWorkers(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    10,                  // range in km
+                    "plumber",           // category
+                    subcategory || ""    // subcategory from URL param
+                );
+
+                if (response.success && response.workers) {
+                    console.log("📊 Total workers from API:", response.workers.length);
+                    setNearbyWorkers(response.workers);
+                    console.log("✅ Nearby plumber workers:", response.workers);
+                } else {
+                    setNearbyWorkers([]);
+                }
+            } catch (err) {
+                console.error("Error fetching nearby workers:", err);
+                setError("Failed to load nearby workers");
+                setNearbyWorkers([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userLocation) {
+            fetchNearbyWorkers();
         }
+    }, [userLocation, subcategory]);
+
+    // ── Navigation handlers ──────────────────────────────────────────
+    const handleView = (worker: any) => {
+        const id = worker.id || worker._id;
+        console.log("Viewing worker details:", id);
+        navigate(`/plumber-services/worker/${id}`);
     };
 
     const handleAddPost = () => {
-        navigate("/add-plumber-service-form");
+        console.log("Adding new post. Subcategory:", subcategory);
+        navigate(
+            subcategory
+                ? `/add-plumber-service-form?subcategory=${subcategory}`
+                : "/add-plumber-service-form"
+        );
     };
 
-    const getDisplayTitle = () => {
-        if (!subcategory) return "All Plumber & Home Repair Services";
-        return subcategory
-            .split("-")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" ");
+    // ── Helper functions ──
+    const openDirections = (worker: PlumberWorker) => {
+        if (worker.latitude && worker.longitude) {
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${worker.latitude},${worker.longitude}`,
+                "_blank"
+            );
+        } else if (worker.area || worker.city) {
+            const addr = encodeURIComponent(
+                [worker.area, worker.city, worker.state].filter(Boolean).join(", ")
+            );
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+        }
     };
 
-    // ✅ Normalize subcategory to handle different route formats
-    const normalizeSubcategory = (sub: string | undefined): string => {
-        if (!sub) return "";
-
-        // Convert to lowercase for consistent comparison
-        const normalized = sub.toLowerCase();
-
-        // Log for debugging
-        console.log("📍 Raw subcategory:", sub);
-        console.log("📍 Normalized subcategory:", normalized);
-
-        return normalized;
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     };
 
-    // ✅ Smart matching function to handle route variations
-    const getCardComponentForSubcategory = (
-        subcategory: string | undefined
-    ): React.ComponentType<any> | null => {
-        if (!subcategory) return null;
+    // ── Render Worker Card ──
+    const renderWorkerCard = (worker: PlumberWorker) => {
+        const id = worker._id || "";
+        const location = [worker.area, worker.city, worker.state]
+            .filter(Boolean)
+            .join(", ") || "Location not set";
 
-        const normalized = normalizeSubcategory(subcategory);
-
-        // ✅ PLUMBERS MATCHING
-        if (
-            normalized.includes("plumber") ||
-            normalized === "plumbing" ||
-            normalized === "plumbing-services"
-        ) {
-            console.log("✅ Matched to PlumberCard");
-            return PlumberCard;
+        // Calculate distance if user location is available
+        let distance: string | null = null;
+        if (userLocation && worker.latitude && worker.longitude) {
+            const dist = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                worker.latitude,
+                worker.longitude
+            );
+            distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
         }
 
-        // ✅ ELECTRICIANS MATCHING
-        if (
-            normalized.includes("electrician") ||
-            normalized === "electrical" ||
-            normalized === "electrical-services"
-        ) {
-            console.log("✅ Matched to ElectricianCard");
-            return ElectricianCard;
-        }
+        return (
+            <div
+                key={id}
+                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative cursor-pointer"
+                style={{ border: "1px solid #e5e7eb" }}
+                onClick={() => handleView(worker)}
+            >
+                {/* Distance Badge */}
+                {distance && (
+                    <div className="absolute top-3 left-3 z-10">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-md">
+                            <span>📍</span> {distance} away
+                        </span>
+                    </div>
+                )}
 
-        // ✅ PAINTERS MATCHING
-        if (
-            normalized.includes("painter") ||
-            normalized.includes("painting") ||
-            normalized === "painting-contractors"
-        ) {
-            console.log("✅ Matched to PainterCard");
-            return PainterCard;
-        }
+                {/* Profile Image */}
+                {worker.profilePic && (
+                    <div className="w-full h-40 overflow-hidden bg-gray-100">
+                        <img
+                            src={worker.profilePic}
+                            alt={worker.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                )}
 
-        // ✅ CARPENTERS MATCHING
-        if (normalized.includes("carpenter")) {
-            console.log("✅ Matched to CarpenterCard");
-            return CarpenterCard;
-        }
+                {/* Body */}
+                <div className="p-5 flex flex-col flex-1 gap-3">
+                    {/* Name */}
+                    <h2 className="text-xl font-semibold text-gray-900 truncate">
+                        {worker.name || "Unnamed Worker"}
+                    </h2>
 
-        // ✅ AC REPAIR MATCHING
-        if (
-            normalized.includes("ac") && normalized.includes("repair") ||
-            normalized === "ac-repair" ||
-            normalized === "ac-service"
-        ) {
-            console.log("✅ Matched to ACServiceCard");
-            return ACServiceCard;
-        }
+                    {/* Location */}
+                    <p className="text-sm text-gray-500 flex items-start gap-1.5">
+                        <span className="shrink-0 mt-0.5">📍</span>
+                        <span className="line-clamp-1">{location}</span>
+                    </p>
 
-        // ✅ FRIDGE REPAIR MATCHING
-        if (
-            normalized.includes("fridge") ||
-            normalized.includes("refrigerator") ||
-            normalized === "fridge-repair"
-        ) {
-            console.log("✅ Matched to FridgeServiceCard");
-            return FridgeServiceCard;
-        }
+                    {/* Subcategory and Charge Type Badge */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {worker.subCategory && (
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
+                                <span className="shrink-0">🔧</span>
+                                <span className="truncate">{worker.subCategory}</span>
+                            </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium bg-blue-50 text-blue-700 border-blue-200 capitalize">
+                            {worker.chargeType}
+                        </span>
+                    </div>
 
-        // ✅ WASHING MACHINE MATCHING
-        if (
-            normalized.includes("washing") && normalized.includes("machine") ||
-            normalized === "washing-machine-repair"
-        ) {
-            console.log("✅ Matched to WashingMachineServiceCard");
-            return WashingMachineServiceCard;
-        }
+                    {/* Skill */}
+                    {worker.skill && (
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                            🛠️ {worker.skill}
+                        </p>
+                    )}
 
-        // ✅ GAS STOVE MATCHING
-        if (
-            normalized.includes("gas") && normalized.includes("stove") ||
-            normalized === "gas-stove-repair"
-        ) {
-            console.log("✅ Matched to GasStoveServiceCard");
-            return GasStoveServiceCard;
-        }
+                    {/* Charge Info */}
+                    <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                        <div>
+                            <p className="text-xs text-gray-500">Charge Type</p>
+                            <p className="text-sm font-semibold text-gray-900 capitalize">
+                                Per {worker.chargeType}
+                            </p>
+                        </div>
+                        {worker.serviceCharge && (
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                                    Charges
+                                </p>
+                                <p className="text-lg font-bold text-green-600">
+                                    ₹{worker.serviceCharge}
+                                </p>
+                            </div>
+                        )}
+                    </div>
 
-        // ✅ WATER PURIFIER MATCHING
-        if (
-            normalized.includes("water") && normalized.includes("purifier") ||
-            normalized.includes("ro") ||
-            normalized === "ro-service" ||
-            normalized === "water-purifier-service"
-        ) {
-            console.log("✅ Matched to ROWaterPurifierServiceCard");
-            return ROWaterPurifierServiceCard;
-        }
-
-        // ✅ SOLAR PANEL MATCHING
-        if (
-            normalized.includes("solar") ||
-            normalized === "solar-panel-installation" ||
-            normalized === "solar-installation"
-        ) {
-            console.log("✅ Matched to NearbySolarServiceCard");
-            return NearbySolarServiceCard;
-        }
-
-        console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-        return null;
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                openDirections(worker);
+                            }}
+                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                            <span>📍</span> Directions
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                handleView(worker);
+                            }}
+                            className="w-full sm:flex-1 justify-center gap-1.5"
+                        >
+                            <span className="shrink-0">👁️</span>
+                            <span>View Details</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
-    // Helper function to check if subcategory should show nearby cards
-    const shouldShowNearbyCards = (): boolean => {
-        if (!subcategory) return false;
-
-        const normalized = normalizeSubcategory(subcategory);
-
-        // Check if any of the keywords match
-        const keywords = [
-            "plumber",
-            "electrician",
-            "painter",
-            "ac",
-            "fridge",
-            "refrigerator",
-            "washing",
-            "machine",
-            "gas",
-            "stove",
-            "water",
-            "purifier",
-            "ro",
-            "solar",
-            "carpenter",
-            "repair",
-            "service",
-        ];
-
-        const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
-
-        console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
-
-        return hasMatch;
-    };
-
-    // Render nearby cards which have dummy data built-in
-    const renderNearbyCardsSection = () => {
+    // ── Render Cards Section (dummy data) ────────────────────────────
+    const renderCardsSection = () => {
         const CardComponent = getCardComponentForSubcategory(subcategory);
 
         if (!CardComponent) {
@@ -311,51 +477,83 @@ const PlumberServicesList: React.FC = () => {
 
         return (
             <div className="space-y-8">
-                {/* Nearby Card Components - renders built-in dummy data */}
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        🔧 Nearby {getDisplayTitle()}
+                    <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
+                        <span className="shrink-0">🔧</span>
+                        <span className="truncate">Nearby {getDisplayTitle(subcategory)}</span>
                     </h2>
                     <CardComponent onViewDetails={handleView} />
                 </div>
-
-                {/* Real API Services Section */}
-                {services.length > 0 && (
-                    <>
-                        <div className="my-8 flex items-center gap-4">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                            <span className="text-sm font-semibold text-gray-600 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
-                                🔧 Your Listed Services ({services.length})
-                            </span>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {services.map((service) => (
-                                <div key={service.id} className="relative">
-                                    <CardComponent plumber={service} onViewDetails={handleView} />
-                                    <div className="absolute top-3 right-3 z-10">
-                                        <ActionDropdown
-                                            serviceId={service.id}
-                                            onEdit={handleEdit}
-                                            onDelete={handleDelete}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
             </div>
         );
     };
 
-    if (loading) {
+    // ── Render Nearby Workers ────────────────────────────────────────
+    const renderNearbyWorkers = () => {
+        if (fetchingLocation) {
+            return (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Detecting your location...</p>
+                </div>
+            );
+        }
+
+        if (locationError) {
+            return (
+                <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-6 text-center">
+                    <div className="text-4xl mb-3">📍</div>
+                    <p className="text-yellow-800 font-medium mb-2">{locationError}</p>
+                    <p className="text-sm text-yellow-700">Enable location services to see nearby workers</p>
+                </div>
+            );
+        }
+
+        if (loading) {
+            return (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading nearby workers...</p>
+                </div>
+            );
+        }
+
+        if (nearbyWorkers.length === 0) {
+            return (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <div className="text-6xl mb-4">🔧</div>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
+                        No Nearby Workers Found
+                    </h3>
+                    <p className={`${typography.body.small} text-gray-500`}>
+                        Try exploring other areas or add your own service!
+                    </p>
+                </div>
+            );
+        }
+
+        return (
+            <div>
+                <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
+                    <span className="shrink-0">📍</span>
+                    <span className="truncate">Nearby Workers ({nearbyWorkers.length})</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {nearbyWorkers.map(renderWorkerCard)}
+                </div>
+            </div>
+        );
+    };
+
+    // ============================================================================
+    // MAIN RENDER
+    // ============================================================================
+    if (loading && !nearbyWorkers.length) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/30 to-white">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading services...</p>
+                    <p className="text-gray-600">Loading workers...</p>
                 </div>
             </div>
         );
@@ -363,13 +561,20 @@ const PlumberServicesList: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-                        {getDisplayTitle()}
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+
+                {/* ─── HEADER ── title + "+ Add Post" ─────────────────── */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
+                        {getDisplayTitle(subcategory)}
                     </h1>
-                    <Button variant="gradient-blue" size="md" onClick={handleAddPost}>
+
+                    <Button
+                        variant="primary"
+                        size="md"
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto justify-center"
+                    >
                         + Add Post
                     </Button>
                 </div>
@@ -381,108 +586,14 @@ const PlumberServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* Content Rendering */}
-                {shouldShowNearbyCards() ? (
-                    // Render nearby cards with dummy data built-in
-                    renderNearbyCardsSection()
-                ) : (
-                    // Regular display for other subcategories or no subcategory
-                    <>
-                        {services.length === 0 ? (
-                            <div className="text-center py-20">
-                                <div className="text-6xl mb-4">🔧</div>
-                                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                                    No Services Found
-                                </h3>
-                                <p className="text-gray-600">
-                                    Be the first to add a service in this category!
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {services.map((service) => (
-                                    <div
-                                        key={service.id}
-                                        className="relative group bg-white rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-lg transition cursor-pointer overflow-hidden"
-                                        onClick={() => handleView(service)}
-                                    >
-                                        {/* Dropdown */}
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <ActionDropdown
-                                                serviceId={service.id}
-                                                onEdit={handleEdit}
-                                                onDelete={handleDelete}
-                                            />
-                                        </div>
+                {/* ─── NEARBY WORKERS (LIVE DATA) ──────────────────── */}
+                {renderNearbyWorkers()}
 
-                                        {/* Service Badge */}
-                                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 z-10">
-                                            <span>🔧</span>
-                                            <span>{service.category}</span>
-                                        </div>
-
-                                        {/* Image Placeholder */}
-                                        <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="text-5xl mb-2">🔧</span>
-                                            <span className="text-sm">No Image</span>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="p-4 space-y-2">
-                                            <h2 className="text-lg font-bold text-gray-800 line-clamp-1">
-                                                {service.title}
-                                            </h2>
-                                            <p className="text-sm text-gray-600 line-clamp-1">
-                                                {service.location}
-                                            </p>
-                                            <p className="text-sm text-gray-600 line-clamp-2">
-                                                {service.description}
-                                            </p>
-
-                                            {service.distance && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-400">📍</span>
-                                                    <span className="text-blue-600 font-semibold">
-                                                        {service.distance} km away
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {service.serviceData?.rating && (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-yellow-500">⭐</span>
-                                                    <span className="font-semibold">
-                                                        {service.serviceData.rating}
-                                                    </span>
-                                                    {service.serviceData.user_ratings_total && (
-                                                        <span className="text-gray-500 text-sm">
-                                                            ({service.serviceData.user_ratings_total})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {service.serviceData?.opening_hours?.open_now !== undefined && (
-                                                <div className="flex items-center gap-2">
-                                                    <span
-                                                        className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${service.serviceData.opening_hours.open_now
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-red-100 text-red-800"
-                                                            }`}
-                                                    >
-                                                        <span className="mr-1">
-                                                            {service.serviceData.opening_hours.open_now ? "✓" : "✗"}
-                                                        </span>
-                                                        {service.serviceData.opening_hours.open_now ? "Open Now" : "Closed"}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
+                {/* ─── DUMMY CARD COMPONENTS ──────────────────────────── */}
+                {shouldShowNearbyCards(subcategory) && (
+                    <div className="mt-8">
+                        {renderCardsSection()}
+                    </div>
                 )}
             </div>
         </div>
