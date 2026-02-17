@@ -71,7 +71,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                 console.log("📍 Including location in worker update:", { latitude, longitude });
             }
 
-            const response = await fetch(`http://13.204.29.0:3001/updateUserById/${userId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/updateUserById/${userId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",

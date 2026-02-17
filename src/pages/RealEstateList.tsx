@@ -4,7 +4,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { getNearbyRealEstates, RealEstateWorker } from "../services/RealEstate.service";
 
-// ── Nearby card components with dummy data
+// ── Dummy Nearby Cards ───────────────────────────────────────────────────────
 import NearbyPropertyDealersCard from "../components/cards/RealEstate/NearProperty";
 import NearbyBuildersCard from "../components/cards/RealEstate/NearByBuilders";
 import NearbyInteriorDesignersCard from "../components/cards/RealEstate/NearByInteriorDesigns";
@@ -12,7 +12,7 @@ import NearbyRentLeaseCard from "../components/cards/RealEstate/NearByrental";
 import NearbyConstructionContractorsCard from "../components/cards/RealEstate/NearByConstructorContractors";
 
 // ============================================================================
-// SUBCATEGORY → CARD COMPONENT MAP
+// CARD MAP
 // ============================================================================
 type CardKey = "property" | "builder" | "interior" | "rental" | "construction";
 
@@ -27,78 +27,27 @@ const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
 // ============================================================================
 // HELPERS
 // ============================================================================
-const normalizeSubcategory = (sub: string | undefined): string => {
-    if (!sub) return "";
-    const normalized = sub.toLowerCase();
-    console.log("📍 Raw subcategory:", sub);
-    console.log("📍 Normalized subcategory:", normalized);
-    return normalized;
+const resolveCardKey = (subcategory?: string): CardKey => {
+    const n = (subcategory || "").toLowerCase();
+    if (n.includes("property") && (n.includes("dealer") || n.includes("agent"))) return "property";
+    if (n.includes("builder")) return "builder";
+    if (n.includes("interior") || n.includes("design")) return "interior";
+    if (n.includes("rent") || n.includes("lease") || n.includes("rental")) return "rental";
+    if (n.includes("construction") || n.includes("contractor")) return "construction";
+    return "property"; // default
 };
 
-const getCardComponentForSubcategory = (
-    subcategory: string | undefined
-): React.ComponentType<any> | null => {
-    if (!subcategory) return null;
-
-    const normalized = normalizeSubcategory(subcategory);
-
-    // Property dealers matching
-    if (normalized.includes("property") && (normalized.includes("dealer") || normalized.includes("agent"))) {
-        console.log("✅ Matched to NearbyPropertyDealersCard");
-        return CARD_MAP.property;
-    }
-
-    // Builders matching
-    if (normalized.includes("builder") || normalized.includes("construction")) {
-        console.log("✅ Matched to NearbyBuildersCard");
-        return CARD_MAP.builder;
-    }
-
-    // Interior designers matching
-    if (normalized.includes("interior") && (normalized.includes("design") || normalized.includes("decorator"))) {
-        console.log("✅ Matched to NearbyInteriorDesignersCard");
-        return CARD_MAP.interior;
-    }
-
-    // Rent/Lease matching
-    if (normalized.includes("rent") || normalized.includes("lease") || normalized.includes("rental")) {
-        console.log("✅ Matched to NearbyRentLeaseCard");
-        return CARD_MAP.rental;
-    }
-
-    // Construction contractors matching
-    if (normalized.includes("contractor")) {
-        console.log("✅ Matched to NearbyConstructionContractorsCard");
-        return CARD_MAP.construction;
-    }
-
-    console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-    return CARD_MAP.property; // Default to property card
-};
-
-const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
-    if (!subcategory) return false;
-
-    const normalized = normalizeSubcategory(subcategory);
-
-    const keywords = [
-        "property", "builder", "interior", "rent", "lease", "rental",
-        "construction", "contractor", "dealer", "agent", "design"
-    ];
-
-    const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
-
-    console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
-
-    return hasMatch;
-};
-
-const getDisplayTitle = (subcategory: string | undefined) => {
+const getDisplayTitle = (subcategory?: string): string => {
     if (!subcategory) return "All Real Estate Services";
-    return subcategory
-        .split("-")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    return subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+};
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 // ============================================================================
@@ -115,228 +64,145 @@ const RealEstateList: React.FC = () => {
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
 
-    // ── Get user's location on component mount ──
+    // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
-        const getUserLocation = () => {
-            setFetchingLocation(true);
-            setLocationError("");
-
-            if (!navigator.geolocation) {
-                setLocationError("Geolocation is not supported by your browser");
+        setFetchingLocation(true);
+        if (!navigator.geolocation) { setLocationError("Geolocation not supported"); setFetchingLocation(false); return; }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setUserLocation({ latitude, longitude });
-                    setFetchingLocation(false);
-                    console.log("📍 User location:", latitude, longitude);
-                },
-                (error) => {
-                    console.error("Location error:", error);
-                    setLocationError("Unable to retrieve your location. Please enable location services.");
-                    setFetchingLocation(false);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        };
-
-        getUserLocation();
+                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
+            },
+            (err) => { console.error(err); setLocationError("Unable to retrieve your location."); setFetchingLocation(false); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     }, []);
 
-    // ── Fetch nearby real estates when location is available ──
+    // ── Fetch nearby when location ready ─────────────────────────────────────
     useEffect(() => {
-        const fetchNearbyRealEstates = async () => {
-            if (!userLocation) return;
-
-            setLoading(true);
-            setError("");
-
+        if (!userLocation) return;
+        const fetch_ = async () => {
+            setLoading(true); setError("");
             try {
-                const response = await getNearbyRealEstates(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    10 // 10 km range
-                );
-
-                if (response.success && response.data) {
-                    const dataArray = Array.isArray(response.data) ? response.data : [response.data];
-                    setNearbyRealEstates(dataArray);
-                    console.log("✅ Nearby real estates:", dataArray);
-                } else {
-                    setNearbyRealEstates([]);
-                }
-            } catch (err) {
-                console.error("Error fetching nearby real estates:", err);
+                console.log("🏠 Fetching nearby real estates...");
+                // GET /getNearbyRealEstates?latitude=X&longitude=Y&range=10
+                const res = await getNearbyRealEstates(userLocation.latitude, userLocation.longitude, 10);
+                console.log("🏠 API Response:", res);
+                console.log("🏠 Total records:", res?.data ? (Array.isArray(res.data) ? res.data.length : 1) : 0);
+                if (res?.success && res.data) {
+                    const all = Array.isArray(res.data) ? res.data : [res.data];
+                    console.log("✅ Displaying", all.length, "properties");
+                    setNearbyRealEstates(all);
+                } else { setNearbyRealEstates([]); }
+            } catch (e) {
+                console.error("❌ Error:", e);
                 setError("Failed to load nearby properties");
                 setNearbyRealEstates([]);
-            } finally {
-                setLoading(false);
-            }
+            } finally { setLoading(false); }
         };
+        fetch_();
+    }, [userLocation]); // ✅ no subcategory filter
 
-        if (userLocation) {
-            fetchNearbyRealEstates();
-        }
-    }, [userLocation]);
-
-    // ── navigation handlers ─────────────────────────────────────────
-    const handleView = (realEstate: any) => {
-        const id = realEstate.id || realEstate._id;
-        console.log("Viewing real estate details:", id);
-        navigate(`/real-estate/details/${id}`);
+    const handleView = (re: any) => navigate(`/real-estate/details/${re._id || re.id}`);
+    const handleAddPost = () => navigate(subcategory ? `/add-real-estate-form?subcategory=${subcategory}` : "/add-real-estate-form");
+    const openDirections = (re: RealEstateWorker) => {
+        if (re.latitude && re.longitude) window.open(`https://www.google.com/maps/dir/?api=1&destination=${re.latitude},${re.longitude}`, "_blank");
+        else if (re.area || re.city) window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([re.address, re.area, re.city, re.state].filter(Boolean).join(", "))}`, "_blank");
     };
+    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
-    const handleAddPost = () => {
-        console.log("Adding new listing. Subcategory:", subcategory);
-        navigate(
-            subcategory
-                ? `/add-real-estate-form?subcategory=${subcategory}`
-                : "/add-real-estate-form"
-        );
-    };
+    // ============================================================================
+    // REAL API CARD — matches courier screenshot style
+    // ============================================================================
+    const renderRealEstateCard = (re: RealEstateWorker) => {
+        const id = re._id || "";
+        const location = [re.area, re.city].filter(Boolean).join(", ") || "Location not set";
+        const amenitiesList: string[] = typeof re.amenities === 'string'
+            ? re.amenities.split(',').map(a => a.trim()).filter(Boolean)
+            : Array.isArray(re.amenities) ? re.amenities : [];
+        const imageUrls = (re.images || []).filter(Boolean) as string[];
 
-    // ── Helper functions ──
-    const openDirections = (realEstate: RealEstateWorker) => {
-        if (realEstate.latitude && realEstate.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${realEstate.latitude},${realEstate.longitude}`,
-                "_blank"
-            );
-        } else if (realEstate.area || realEstate.city) {
-            const addr = encodeURIComponent(
-                [realEstate.address, realEstate.area, realEstate.city, realEstate.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
-    };
-
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
-    };
-
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-        const R = 6371; // Earth's radius in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-    // ── Render Real Estate Card ──
-    const renderRealEstateCard = (realEstate: RealEstateWorker) => {
-        const id = realEstate._id || "";
-        const location = [realEstate.area, realEstate.city, realEstate.state]
-            .filter(Boolean)
-            .join(", ") || "Location not set";
-        const amenitiesList: string[] = (realEstate.amenities && typeof realEstate.amenities === 'string')
-            ? realEstate.amenities.split(',').map(a => a.trim()).filter(Boolean)
-            : (Array.isArray(realEstate.amenities) ? realEstate.amenities : []);
-
-        // Calculate distance if user location is available
         let distance: string | null = null;
-        if (userLocation && realEstate.latitude && realEstate.longitude) {
-            const dist = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                realEstate.latitude,
-                realEstate.longitude
-            );
-            distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+        if (userLocation && re.latitude && re.longitude) {
+            const d = calculateDistance(userLocation.latitude, userLocation.longitude, re.latitude, re.longitude);
+            distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
 
         return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative cursor-pointer"
-                style={{ border: '1px solid #e5e7eb' }}
-                onClick={() => handleView(realEstate)}
-            >
-                {/* Distance Badge */}
-                {distance && (
+            <div key={id}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                onClick={() => handleView(re)}>
+
+                {/* ── Image ── */}
+                <div className="relative h-48 bg-gradient-to-br from-green-600/5 to-green-600/10 overflow-hidden">
+                    {imageUrls.length > 0 ? (
+                        <img src={imageUrls[0]} alt={re.name || "Property"} className="w-full h-full object-cover"
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <span className="text-5xl">🏠</span>
+                        </div>
+                    )}
+
+                    {/* Live Data — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-md">
-                            <span>📍</span> {distance} away
+                        <span className="inline-flex items-center px-2.5 py-1 bg-green-600 text-white text-xs font-bold rounded-md shadow-md">
+                            Live Data
                         </span>
                     </div>
-                )}
 
-                {/* Body */}
-                <div className="p-5 flex flex-col flex-1 gap-3">
-                    {/* Title */}
-                    <h2 className="text-xl font-semibold text-gray-900 truncate">
-                        {realEstate.propertyType} - {realEstate.listingType}
+                    {/* Availability — top right */}
+                    <div className="absolute top-3 right-3 z-10">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${re.availabilityStatus === 'Available'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-red-500 text-white'
+                            }`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                            {re.availabilityStatus || 'Available'}
+                        </span>
+                    </div>
+
+                    {imageUrls.length > 1 && (
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                            1 / {imageUrls.length}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Body ── */}
+                <div className="p-4 flex flex-col gap-2.5">
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                        {re.propertyType} — {re.listingType}
                     </h2>
 
-                    {/* Owner Name */}
-                    <p className="text-sm font-medium text-gray-700">
-                        {realEstate.name}
-                    </p>
+                    {re.name && <p className="text-sm font-medium text-gray-700">{re.name}</p>}
 
-                    {/* Location */}
                     <p className="text-sm text-gray-500 flex items-start gap-1.5">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {/* Property Type and Availability Badge */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {realEstate.propertyType && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
-                                <span className="shrink-0">🏠</span>
-                                <span className="truncate">{realEstate.propertyType}</span>
-                            </span>
-                        )}
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium ${realEstate.availabilityStatus === 'Available'
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${realEstate.availabilityStatus === 'Available' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            {realEstate.availabilityStatus}
-                        </span>
-                    </div>
-
-                    {/* Description */}
-                    {realEstate.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                            {realEstate.description}
+                    {distance && (
+                        <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
+                            <span>📍</span> {distance} away
                         </p>
                     )}
 
-                    {/* Property Details */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                        <div className="flex items-center gap-4">
-                            {realEstate.bedrooms > 0 && (
-                                <div className="flex items-center gap-1">
-                                    <span className="text-gray-500 text-sm">🛏️</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {realEstate.bedrooms} BHK
-                                    </span>
-                                </div>
+                    {/* Bedrooms + Area + Price */}
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                        <div className="flex items-center gap-3">
+                            {re.bedrooms > 0 && (
+                                <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">🛏️ {re.bedrooms} BHK</span>
                             )}
-                            {realEstate.areaSize && (
-                                <div className="flex items-center gap-1">
-                                    <span className="text-gray-500 text-sm">📏</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {realEstate.areaSize} sq ft
-                                    </span>
-                                </div>
+                            {re.areaSize && (
+                                <span className="text-sm text-gray-600 flex items-center gap-1">📏 {re.areaSize} sq ft</span>
                             )}
                         </div>
-                        {realEstate.price && (
+                        {re.price && (
                             <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">
-                                    {realEstate.listingType}
-                                </p>
-                                <p className="text-lg font-bold text-green-600">
-                                    ₹{realEstate.price.toLocaleString()}
-                                </p>
+                                <p className="text-xs text-gray-500 uppercase">{re.listingType}</p>
+                                <p className="text-base font-bold text-green-600">₹{Number(re.price).toLocaleString()}</p>
                             </div>
                         )}
                     </div>
@@ -344,132 +210,74 @@ const RealEstateList: React.FC = () => {
                     {/* Amenities */}
                     {amenitiesList.length > 0 && (
                         <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Amenities
-                            </p>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Amenities</p>
                             <div className="flex flex-wrap gap-1.5">
-                                {amenitiesList.slice(0, 3).map((amenity, idx) => (
-                                    <span
-                                        key={`${id}-${idx}`}
-                                        className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2.5 py-1 rounded-md border border-gray-200"
-                                    >
-                                        <span className="text-green-500">●</span> {amenity}
+                                {amenitiesList.slice(0, 3).map((a, i) => (
+                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200">
+                                        <span className="text-green-500">●</span> {a}
                                     </span>
                                 ))}
-                                {amenitiesList.length > 3 && (
-                                    <span className="text-xs text-gray-500 px-2 py-1">
-                                        +{amenitiesList.length - 3} more
-                                    </span>
-                                )}
+                                {amenitiesList.length > 3 && <span className="text-xs text-green-600 font-medium px-1 py-1">+{amenitiesList.length - 3} more</span>}
                             </div>
                         </div>
                     )}
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                openDirections(realEstate);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
-                        >
+                    {/* Directions + Call */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        <button
+                            onClick={e => { e.stopPropagation(); openDirections(re); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-medium text-sm hover:bg-green-50 transition-colors">
                             <span>📍</span> Directions
-                        </Button>
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                realEstate.phone && openCall(realEstate.phone);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                        >
-                            <span className="shrink-0">📞</span>
-                            <span className="truncate">{realEstate.phone || "No Phone"}</span>
-                        </Button>
+                        </button>
+                        <button
+                            onClick={e => { e.stopPropagation(); re.phone && openCall(re.phone); }}
+                            disabled={!re.phone}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${re.phone ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}>
+                            <span>📞</span> Call
+                        </button>
                     </div>
                 </div>
             </div>
         );
     };
 
-    // ── Render Cards Section ─────────────────────────────────────────
-    const renderCardsSection = () => {
-        const CardComponent = getCardComponentForSubcategory(subcategory);
-
-        if (!CardComponent) {
-            console.error(`❌ No card component available for subcategory: "${subcategory}"`);
-            return null;
-        }
-
-        return (
-            <div className="space-y-8">
-                {/* Nearby Card Components - renders built-in dummy data */}
-                <div>
-                    <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                        <span className="shrink-0">🏠</span>
-                        <span className="truncate">Nearby {getDisplayTitle(subcategory)}</span>
-                    </h2>
-                    <CardComponent onViewDetails={handleView} />
-                </div>
-            </div>
-        );
+    // ── DUMMY CARDS — always renders first ───────────────────────────────────
+    const renderDummyCards = () => {
+        const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
+        return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── Render Nearby Real Estates ──────────────────────────────────
-    const renderNearbyRealEstates = () => {
-        if (fetchingLocation) {
-            return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Detecting your location...</p>
-                </div>
-            );
-        }
-
-        if (locationError) {
-            return (
-                <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-3">📍</div>
-                    <p className="text-yellow-800 font-medium mb-2">{locationError}</p>
-                    <p className="text-sm text-yellow-700">Enable location services to see nearby properties</p>
-                </div>
-            );
-        }
-
+    // ── NEARBY SERVICES SECTION — renders second ─────────────────────────────
+    const renderNearbyServices = () => {
         if (loading) {
             return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading nearby properties...</p>
+                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
                 </div>
             );
         }
 
         if (nearbyRealEstates.length === 0) {
             return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="text-6xl mb-4">🏠</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Nearby Properties Found
-                    </h3>
-                    <p className={`${typography.body.small} text-gray-500`}>
-                        Try exploring other areas or add your own listing!
-                    </p>
+                <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+                    <div className="text-5xl mb-3">🏠</div>
+                    <p className="text-gray-500 font-medium">No properties found in your area.</p>
+                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
                 </div>
             );
         }
 
         return (
-            <div>
-                <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                    <span className="shrink-0">📍</span>
-                    <span className="truncate">Nearby Properties ({nearbyRealEstates.length})</span>
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-4">
+                {/* "Nearby Services" header with count — mirrors courier screenshot */}
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-green-600 text-white text-sm font-bold rounded-full px-2.5">
+                        {nearbyRealEstates.length}
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {nearbyRealEstates.map(renderRealEstateCard)}
                 </div>
             </div>
@@ -477,55 +285,52 @@ const RealEstateList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER
+    // MAIN RENDER — DUMMY FIRST, API SECOND
     // ============================================================================
-    if (loading && !nearbyRealEstates.length) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading properties...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-b from-green-50/30 to-white">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* ─── HEADER ── title  +  "+ Add Listing" ─────────────── */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                        {getDisplayTitle(subcategory)}
-                    </h1>
-
-                    <Button
-                        variant="primary"
-                        size="md"
-                        onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-green-600 hover:bg-green-700"
-                    >
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
+                            {getDisplayTitle(subcategory)}
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">Find properties near you</p>
+                    </div>
+                    <Button variant="primary" size="md" onClick={handleAddPost}
+                        className="w-full sm:w-auto justify-center bg-green-600 hover:bg-green-700">
                         + Add Listing
                     </Button>
                 </div>
 
-                {/* Error */}
+                {/* Location status */}
+                {fetchingLocation && (
+                    <div className="bg-green-600/10 border border-green-600/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
+                        <span className="text-sm text-green-700">Getting your location...</span>
+                    </div>
+                )}
+                {locationError && (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                        <p className="text-yellow-700 text-sm">{locationError}</p>
+                    </div>
+                )}
                 {error && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium">{error}</p>
+                        <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
 
-                {/* ─── NEARBY REAL ESTATES (LIVE DATA) ─────────────────── */}
-                {renderNearbyRealEstates()}
+                {/* ✅ 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">
+                    {renderDummyCards()}
+                </div>
 
-                {/* ─── DUMMY CARD COMPONENTS ─────────────────────────────── */}
-                {shouldShowNearbyCards(subcategory) && (
-                    <div className="mt-8">
-                        {renderCardsSection()}
-                    </div>
-                )}
+                {/* ✅ 2. API DATA SECOND */}
+                {userLocation && !fetchingLocation && renderNearbyServices()}
+
             </div>
         </div>
     );

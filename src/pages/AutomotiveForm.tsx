@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createAutomotive, updateAutomotive, getAutomotiveById, CreateAutomotiveData } from "../services/AutomotiveServcie.service";
 import Button from "../components/ui/Buttons";
@@ -9,10 +9,12 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', '24/7', 'Weekends Only'];
 
-// ── Pull automotive subcategories from JSON (categoryId 2) ────────────────
+// ── Pull automotive subcategories from JSON (categoryId 9) ────────────────
 const getAutomotiveSubcategories = () => {
-    const automotiveCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 9);
-    return automotiveCategory ? automotiveCategory.items.map(item => item.name) : [];
+    const automotiveCategory = subcategoriesData.subcategories.find(
+        (cat: any) => cat.categoryId === 9
+    );
+    return automotiveCategory ? automotiveCategory.items.map((item: any) => item.name) : [];
 };
 
 // ============================================================================
@@ -49,29 +51,6 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 );
 
 // ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
-// ============================================================================
-const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await response.json();
-
-        if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
-        }
-        return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
-    }
-};
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 const AutomotiveForm = () => {
@@ -82,7 +61,7 @@ const AutomotiveForm = () => {
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
         return sub
-            ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+            ? sub.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
             : null;
     };
 
@@ -105,7 +84,7 @@ const AutomotiveForm = () => {
         email: '',
         phone: '',
         description: '',
-        services: [] as string[],
+        services: '',           // ← now a plain string (comma-separated)
         priceRange: '',
         area: '',
         city: '',
@@ -122,15 +101,8 @@ const AutomotiveForm = () => {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
 
-    // ── service input ────────────────────────────────────────────────────────
-    const [serviceInput, setServiceInput] = useState('');
-
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
-
-    // ── FIX: flag to prevent geocoding useEffect from overwriting GPS coords ─
-    const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -142,7 +114,7 @@ const AutomotiveForm = () => {
                 const data = response.data;
                 if (!data) throw new Error('Service not found');
 
-                setFormData(prev => ({
+                setFormData((prev) => ({
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
@@ -150,7 +122,9 @@ const AutomotiveForm = () => {
                     email: data.email || '',
                     phone: data.phone || '',
                     description: data.description || '',
-                    services: data.services || [],
+                    services: Array.isArray(data.services)
+                        ? data.services.join(', ')
+                        : (data.services || ''),
                     priceRange: data.priceRange || '',
                     area: data.area || '',
                     city: data.city || '',
@@ -162,7 +136,8 @@ const AutomotiveForm = () => {
                     availability: data.availability || availabilityOptions[0],
                 }));
 
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+                if (data.images && Array.isArray(data.images))
+                    setExistingImages(data.images);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -173,52 +148,12 @@ const AutomotiveForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when address is typed manually ───────────────
-    useEffect(() => {
-        const detectCoordinates = async () => {
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
-            }
-
-            if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
-                    .replace(/, ,/g, ',')
-                    .replace(/^,|,$/g, '');
-
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
-            }
-        };
-
-        const timer = setTimeout(detectCoordinates, 1000);
-        return () => clearTimeout(timer);
-    }, [formData.area, formData.city, formData.state, formData.pincode]);
-
     // ── generic input ────────────────────────────────────────────────────────
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // ── service helpers ──────────────────────────────────────────────────────
-    const handleAddService = () => {
-        if (serviceInput.trim() && !formData.services.includes(serviceInput.trim())) {
-            setFormData(prev => ({ ...prev, services: [...prev.services, serviceInput.trim()] }));
-            setServiceInput('');
-        }
-    };
-
-    const handleRemoveService = (index: number) => {
-        setFormData(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     // ── image helpers ────────────────────────────────────────────────────────
@@ -232,7 +167,7 @@ const AutomotiveForm = () => {
             return;
         }
 
-        const validFiles = files.slice(0, availableSlots).filter(file => {
+        const validFiles = files.slice(0, availableSlots).filter((file) => {
             if (!file.type.startsWith('image/')) {
                 setError(`${file.name} is not a valid image`);
                 return false;
@@ -243,36 +178,33 @@ const AutomotiveForm = () => {
             }
             return true;
         });
-
         if (!validFiles.length) return;
 
         const newPreviews: string[] = [];
-        validFiles.forEach(file => {
+        validFiles.forEach((file) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 newPreviews.push(reader.result as string);
                 if (newPreviews.length === validFiles.length)
-                    setImagePreviews(prev => [...prev, ...newPreviews]);
+                    setImagePreviews((prev) => [...prev, ...newPreviews]);
             };
             reader.readAsDataURL(file);
         });
-        setSelectedImages(prev => [...prev, ...validFiles]);
+        setSelectedImages((prev) => [...prev, ...validFiles]);
         setError('');
     };
 
     const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
-        setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+        setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
+        setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
     };
-
     const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+        setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
 
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
-
         if (!navigator.geolocation) {
             setError('Geolocation not supported');
             setLocationLoading(false);
@@ -281,24 +213,17 @@ const AutomotiveForm = () => {
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-
-                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
+                setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
                     );
                     const data = await res.json();
-
                     if (data.address) {
-                        setFormData(prev => ({
+                        setFormData((prev) => ({
                             ...prev,
-                            latitude: lat,
-                            longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
@@ -308,7 +233,6 @@ const AutomotiveForm = () => {
                 } catch (e) {
                     console.error(e);
                 }
-
                 setLocationLoading(false);
             },
             (err) => {
@@ -321,26 +245,72 @@ const AutomotiveForm = () => {
 
     // ── submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
         setError('');
         setSuccessMessage('');
 
+        // ── Field-by-field validation before touching the API ────────────────
+        const trimmedName = formData.name.trim();
+        const trimmedPhone = formData.phone.trim();
+        const trimmedEmail = formData.email.trim();
+        const trimmedServices = safeServices.trim();
+        const trimmedArea = formData.area.trim();
+        const trimmedCity = formData.city.trim();
+        const trimmedState = formData.state.trim();
+        const trimmedPincode = formData.pincode.trim();
+        const trimmedExperience = formData.experience.trim();
+        const trimmedPriceRange = formData.priceRange.trim();
+
+        if (!trimmedName) { setError('Business name is required.'); return; }
+        if (!trimmedPhone) { setError('Phone number is required.'); return; }
+        if (!/^[0-9+\-\s]{7,15}$/.test(trimmedPhone)) { setError('Please enter a valid phone number.'); return; }
+        if (!trimmedEmail) { setError('Email address is required.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { setError('Please enter a valid email address.'); return; }
+        if (!trimmedServices) { setError('Please add at least one service.'); return; }
+        if (!trimmedArea) { setError('Area is required.'); return; }
+        if (!trimmedCity) { setError('City is required.'); return; }
+        if (!trimmedState) { setError('State is required.'); return; }
+        if (!trimmedPincode) { setError('PIN code is required.'); return; }
+        if (!/^\d{6}$/.test(trimmedPincode)) { setError('PIN code must be exactly 6 digits.'); return; }
+        if (!formData.latitude || !formData.longitude) {
+            setError('Location coordinates are required. Please use Auto Detect or enter your address to generate them.');
+            return;
+        }
+
+        const parsedLat = parseFloat(formData.latitude);
+        const parsedLng = parseFloat(formData.longitude);
+        if (isNaN(parsedLat) || isNaN(parsedLng)) {
+            setError('Invalid location coordinates. Please re-detect your location.');
+            return;
+        }
+
+        // ── Build validated services array ───────────────────────────────────
+        const servicesArray = trimmedServices
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+        const payload: CreateAutomotiveData = {
+            userId: formData.userId,
+            name: trimmedName,
+            businessType: formData.businessType,
+            phone: trimmedPhone,
+            email: trimmedEmail,
+            services: servicesArray,
+            experience: trimmedExperience,
+            availability: formData.availability,
+            area: trimmedArea,
+            city: trimmedCity,
+            state: trimmedState,
+            pincode: trimmedPincode,
+            latitude: parsedLat.toString(),
+            longitude: parsedLng.toString(),
+            priceRange: trimmedPriceRange,
+            description: formData.description.trim(),
+            images: selectedImages,
+        };
+
+        setLoading(true);
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (formData.services.length === 0)
-                throw new Error('Please add at least one service');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
-
-            const payload: CreateAutomotiveData = {
-                ...formData,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
-                experience: formData.experience,
-                images: selectedImages
-            };
-
             if (isEditMode && editId) {
                 await updateAutomotive(editId, payload);
                 setSuccessMessage('Service updated successfully!');
@@ -351,7 +321,7 @@ const AutomotiveForm = () => {
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to submit form');
+            setError(err.message || 'Failed to submit form. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -370,6 +340,14 @@ const AutomotiveForm = () => {
             </div>
         );
     }
+
+    // Safety check: ensure services is always a string
+    const safeServices =
+        typeof formData.services === 'string'
+            ? formData.services
+            : Array.isArray(formData.services)
+                ? (formData.services as string[]).join(', ')
+                : '';
 
     // ============================================================================
     // RENDER - Mobile First Design
@@ -392,7 +370,7 @@ const AutomotiveForm = () => {
                             {isEditMode ? 'Update Service' : 'Add New Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
+                            {isEditMode ? 'Update your automotive service' : 'Register your automotive business'}
                         </p>
                     </div>
                 </div>
@@ -413,7 +391,7 @@ const AutomotiveForm = () => {
                     </div>
                 )}
 
-                {/* ─── 1. BUSINESS NAME ──────────────────────────────────────── */}
+                {/* ─── 1. BUSINESS NAME ──────────────────────────────── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Business Name</FieldLabel>
@@ -422,39 +400,13 @@ const AutomotiveForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="Enter business name"
+                            placeholder="e.g., SpeedPro Auto Services"
                             className={inputBase}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. BUSINESS TYPE ────────────────────────── */}
+                {/* ─── 2. BUSINESS TYPE ──────────────────────────────── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Business Type</FieldLabel>
@@ -468,59 +420,87 @@ const AutomotiveForm = () => {
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'right 0.75rem center',
                                 backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
+                                paddingRight: '2.5rem',
                             }}
                         >
-                            {businessTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {businessTypes.map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                            ))}
                         </select>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. SERVICES OFFERED ────────────────────────── */}
-                <SectionCard title="Services Offered">
-                    <div className="flex gap-2">
+                {/* ─── 3. CONTACT INFORMATION ────────────────────────── */}
+                <SectionCard title="Contact Information">
+                    <div>
+                        <FieldLabel required>Phone</FieldLabel>
                         <input
-                            type="text"
-                            value={serviceInput}
-                            onChange={(e) => setServiceInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddService())}
-                            className={`flex-1 ${inputBase}`}
-                            placeholder="Enter a service (e.g., Oil Change)"
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 9876543210"
+                            className={inputBase}
                         />
-                        <Button variant="primary" size="md" onClick={handleAddService}>
-                            Add
-                        </Button>
+                    </div>
+                    <div>
+                        <FieldLabel required>Email</FieldLabel>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            placeholder="e.g., contact@autobusiness.com"
+                            className={inputBase}
+                        />
+                    </div>
+                </SectionCard>
+
+                {/* ─── 4. SERVICES OFFERED ───────────────────────────── */}
+                <SectionCard title="Services Offered">
+                    <div>
+                        <FieldLabel required>Available Services</FieldLabel>
+                        <textarea
+                            name="services"
+                            value={safeServices}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="Oil Change, Tyre Rotation, Engine Tuning, Brake Repair, AC Service"
+                            className={inputBase + ' resize-none'}
+                        />
+                        <p className={`${typography.misc.caption} mt-2`}>
+                            💡 Separate each service with a comma
+                        </p>
                     </div>
 
-                    {/* Service Chips */}
-                    {formData.services.length > 0 && (
+                    {/* Service chips preview */}
+                    {safeServices && safeServices.trim() && (
                         <div className="mt-3">
-                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
+                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                Selected Services ({safeServices.split(',').filter((s) => s.trim()).length}):
+                            </p>
                             <div className="flex flex-wrap gap-2">
-                                {formData.services.map((service, i) => (
-                                    <span
-                                        key={i}
-                                        className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                    >
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                        {service}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveService(i)}
-                                            className="ml-1 hover:text-red-600"
+                                {safeServices.split(',').map((s, i) => {
+                                    const trimmed = s.trim();
+                                    if (!trimmed) return null;
+                                    return (
+                                        <span
+                                            key={i}
+                                            className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
                                         >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </span>
-                                ))}
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            {trimmed}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 5. PROFESSIONAL DETAILS ───────────────────────── */}
+                {/* ─── 5. PROFESSIONAL DETAILS ──────────────────────── */}
                 <SectionCard title="Professional Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -542,7 +522,7 @@ const AutomotiveForm = () => {
                                 name="priceRange"
                                 value={formData.priceRange}
                                 onChange={handleInputChange}
-                                placeholder="e.g., 1000-5000"
+                                placeholder="e.g., 500-5000"
                                 className={inputBase}
                             />
                         </div>
@@ -560,44 +540,32 @@ const AutomotiveForm = () => {
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'right 0.75rem center',
                                 backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
+                                paddingRight: '2.5rem',
                             }}
                         >
-                            {availabilityOptions.map(option => (
+                            {availabilityOptions.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                             ))}
                         </select>
                     </div>
+                </SectionCard>
 
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
-                        >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                            />
-                        </button>
+                {/* ─── 6. DESCRIPTION ───────────────────────────────── */}
+                <SectionCard title="Description">
+                    <div>
+                        <FieldLabel>About Your Business</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Tell customers about your business, specializations, and what makes you stand out..."
+                            className={inputBase + ' resize-none'}
+                        />
                     </div>
                 </SectionCard>
 
-                {/* ─── 6. DESCRIPTION ──────────────────────────────────────── */}
-                <SectionCard title="Description">
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Tell us about your business and services..."
-                        className={inputBase + ' resize-none'}
-                    />
-                </SectionCard>
-
-                {/* ─── 7. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 7. LOCATION DETAILS ──────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -630,7 +598,7 @@ const AutomotiveForm = () => {
                                 name="area"
                                 value={formData.area}
                                 onChange={handleInputChange}
-                                placeholder="Area name"
+                                placeholder="e.g., Jubilee Hills"
                                 className={inputBase}
                             />
                         </div>
@@ -641,7 +609,7 @@ const AutomotiveForm = () => {
                                 name="city"
                                 value={formData.city}
                                 onChange={handleInputChange}
-                                placeholder="City"
+                                placeholder="e.g., Hyderabad"
                                 className={inputBase}
                             />
                         </div>
@@ -655,7 +623,7 @@ const AutomotiveForm = () => {
                                 name="state"
                                 value={formData.state}
                                 onChange={handleInputChange}
-                                placeholder="State"
+                                placeholder="e.g., Telangana"
                                 className={inputBase}
                             />
                         </div>
@@ -666,7 +634,7 @@ const AutomotiveForm = () => {
                                 name="pincode"
                                 value={formData.pincode}
                                 onChange={handleInputChange}
-                                placeholder="PIN code"
+                                placeholder="e.g., 500033"
                                 className={inputBase}
                             />
                         </div>
@@ -684,13 +652,15 @@ const AutomotiveForm = () => {
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                                <span className="ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 8. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* ─── 8. PORTFOLIO PHOTOS ──────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -701,10 +671,12 @@ const AutomotiveForm = () => {
                             className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
+                                }`}
+                        >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
                                     <Upload className="w-8 h-8 text-blue-600" />
@@ -715,7 +687,7 @@ const AutomotiveForm = () => {
                                             ? 'Maximum limit reached'
                                             : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · Max 5 MB each</p>
                                 </div>
                             </div>
                         </div>
@@ -767,24 +739,31 @@ const AutomotiveForm = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${loading
                             ? 'bg-blue-400 cursor-not-allowed'
                             : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
                             } shadow-sm ${typography.body.base}`}
                     >
+                        {loading && (
+                            <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        )}
                         {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                            ? isEditMode ? 'Updating...' : 'Creating...'
+                            : isEditMode ? 'Update Service' : 'Create Service'}
                     </button>
                     <button
                         onClick={handleCancel}
+                        disabled={loading}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''} ${typography.body.base}`}
                     >
                         Cancel
                     </button>

@@ -1,7 +1,6 @@
 // src/services/automotiveApi.ts
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://13.204.29.0:3001';
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ;
 export interface AutomotiveService {
     _id: string;
     userId: string;
@@ -235,40 +234,7 @@ export const deleteAutomotive = async (id: string): Promise<any> => {
         throw error;
     }
 };
-// Get nearby automotive services
-export const getNearbyAutomotive = async (
-    latitude: number,
-    longitude: number,
-  distance: number
-): Promise<AutomotiveResponse> => {
-  if (!distance || distance <= 0) {
-    throw new Error("Please provide a valid distance in km");
-  }
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/getNearbyAutomotive?lat=${latitude}&lng=${longitude}&radius=${distance}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Nearby API Error:', errorText);
-            throw new Error('Failed to fetch nearby automotive services');
-        }
-
-        const result: AutomotiveResponse = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Error fetching nearby automotive services:', error);
-        throw error;
-    }
-};
-// Get automotive services by user ID
 export const getUserAutomotives = async (
   userId: string
 ): Promise<AutomotiveResponse> => {
@@ -296,4 +262,40 @@ export const getUserAutomotives = async (
     console.error("Error fetching user automotive services:", error);
     throw error;
   }
+};
+
+// ── FIX: API expects ?latitude=&longitude=&distance= (NOT lat/lng/radius) ──
+export const getNearbyAutomotive = async (
+    latitude: number,
+    longitude: number,
+    distance: number
+): Promise<AutomotiveResponse> => {
+    if (!distance || distance <= 0) {
+        throw new Error('Please provide a valid distance in km');
+    }
+    if (!isFinite(latitude) || !isFinite(longitude)) {
+        throw new Error('Latitude and Longitude are required and must be numbers');
+    }
+
+    try {
+        const url = `${API_BASE_URL}/getNearbyAutomotive?latitude=${latitude}&longitude=${longitude}&distance=${distance}`;
+        console.log('📍 Nearby Automotive API call:', url);
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Nearby API Error:', errorText);
+            throw new Error('Failed to fetch nearby automotive services');
+        }
+
+        const result: AutomotiveResponse = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Error fetching nearby automotive services:', error);
+        throw error;
+    }
 };

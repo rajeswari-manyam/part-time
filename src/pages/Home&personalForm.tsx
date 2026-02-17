@@ -6,21 +6,33 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Job type options ─────────────────────────────────────────────────────
+// ── Job type options ──────────────────────────────────────────────────────────
 const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
 
-// ── Pull Home & Personal subcategories from JSON (categoryId 4) ────────────────
-const getHomePersonalSubcategories = () => {
-    const homeCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 10);
-    return homeCategory ? homeCategory.items.map(item => item.name) : [];
+// ── Pull Home & Personal subcategories from JSON (categoryId 10) ──────────────
+const getHomePersonalSubcategories = (): string[] => {
+    const homeCategory = subcategoriesData.subcategories.find(
+        (cat: any) => cat.categoryId === 10
+    );
+    return homeCategory
+        ? homeCategory.items.map((item: any) => item.name)
+        : ['Maid Services', 'Cook', 'Plumber', 'Electrician', 'Carpenter'];
 };
 
+const HOME_SUBCATEGORIES = getHomePersonalSubcategories();
+
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `${typography.form.input} bg-white`;
+
+const inputError =
+    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
+    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -49,17 +61,15 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 );
 
 // ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
+// GEOCODING HELPER  (fixed: removed stray space before ${encodeURIComponent})
 // ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
         const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
         const response = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
         );
         const data = await response.json();
-
         if (data.status === 'OK' && data.results.length > 0) {
             const location = data.results[0].geometry.location;
             return { lat: location.lat, lng: location.lng };
@@ -72,12 +82,78 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 };
 
 // ============================================================================
+// VALIDATION HELPER  (mirrors AgricultureForm exactly)
+// ============================================================================
+interface FieldErrors {
+    userId?: string;
+    title?: string;
+    description?: string;
+    servicecharges?: string;
+    startDate?: string;
+    endDate?: string;
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    location?: string;
+}
+
+const validateForm = (
+    formData: {
+        userId: string; title: string; description: string;
+        servicecharges: string; startDate: string; endDate: string;
+        area: string; city: string; state: string; pincode: string;
+        latitude: string; longitude: string;
+    },
+    isEditMode: boolean
+): FieldErrors => {
+    const errors: FieldErrors = {};
+
+    if (!isEditMode && !formData.userId.trim())
+        errors.userId = 'User not logged in. Please log in to add a service.';
+
+    if (!formData.title.trim())
+        errors.title = 'Service title is required';
+    else if (formData.title.trim().length < 3)
+        errors.title = 'Title must be at least 3 characters';
+
+    if (!formData.description.trim())
+        errors.description = 'Description is required';
+    else if (formData.description.trim().length < 10)
+        errors.description = 'Description must be at least 10 characters';
+
+    if (!formData.servicecharges.trim()) {
+        errors.servicecharges = 'Service charge is required';
+    } else {
+        const charge = parseFloat(formData.servicecharges);
+        if (isNaN(charge)) errors.servicecharges = 'Service charge must be a valid number';
+        else if (charge < 0) errors.servicecharges = 'Service charge cannot be negative';
+        else if (charge === 0) errors.servicecharges = 'Service charge must be greater than 0';
+    }
+
+    if (!formData.startDate) errors.startDate = 'Start date is required';
+    if (!formData.endDate) errors.endDate = 'End date is required';
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate)
+        errors.endDate = 'End date must be after start date';
+
+    if (!formData.area.trim()) errors.area = 'Area is required';
+    if (!formData.city.trim()) errors.city = 'City is required';
+    if (!formData.state.trim()) errors.state = 'State is required';
+    if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
+    else if (!/^\d{6}$/.test(formData.pincode.trim())) errors.pincode = 'PIN code must be exactly 6 digits';
+
+    if (!formData.latitude || !formData.longitude)
+        errors.location = 'Location is required — use Auto Detect or enter your address';
+
+    return errors;
+};
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 const HomePersonalForm = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -86,7 +162,6 @@ const HomePersonalForm = () => {
             : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -95,9 +170,9 @@ const HomePersonalForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-    const homePersonalSubcategories = getHomePersonalSubcategories();
-    const defaultSubcategory = getSubcategoryFromUrl() || homePersonalSubcategories[0] || 'Maid Services';
+    const defaultSubcategory = getSubcategoryFromUrl() || HOME_SUBCATEGORIES[0] || 'Maid Services';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
@@ -117,15 +192,16 @@ const HomePersonalForm = () => {
         longitude: '',
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
+    // ── images ────────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);  // for edit mode
 
-    // ── geo ──────────────────────────────────────────────────────────────────
+    // ── geo — gpsCoords ref prevents auto-geocode overwriting GPS fix ─────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+    const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
+    // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -152,6 +228,11 @@ const HomePersonalForm = () => {
                     latitude: job.latitude?.toString() || '',
                     longitude: job.longitude?.toString() || '',
                 }));
+
+                // ── Restore existing images from edit data ──
+                if (job.images && Array.isArray(job.images)) {
+                    setExistingImages(job.images);
+                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -162,52 +243,50 @@ const HomePersonalForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when address is typed manually ───────────────
+    // ── Auto-geocode ONLY when: area typed, lat/lng empty, not from GPS ───────
     useEffect(() => {
-        const detectCoordinates = async () => {
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
+        const { area, city, state, latitude, longitude } = formData;
+
+        if (!area.trim()) return;
+        if (latitude && longitude) return;
+        if (
+            gpsCoords.current &&
+            gpsCoords.current.lat === latitude &&
+            gpsCoords.current.lng === longitude
+        ) return;
+
+        const fullAddress = [area, city, state].filter(Boolean).join(', ');
+        if (!fullAddress.trim()) return;
+
+        const timer = setTimeout(async () => {
+            const coords = await geocodeAddress(fullAddress);
+            if (coords) {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: coords.lat.toString(),
+                    longitude: coords.lng.toString(),
+                }));
             }
-
-            if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
-                    .replace(/, ,/g, ',')
-                    .replace(/^,|,$/g, '');
-
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
-            }
-        };
-
-        const timer = setTimeout(detectCoordinates, 1000);
+        }, 1000);
         return () => clearTimeout(timer);
-    }, [formData.area, formData.city, formData.state, formData.pincode]);
+    }, [formData.area, formData.city, formData.state]);
 
-    // ── generic input ────────────────────────────────────────────────────────
+    // ── generic input — clears field error on change ──────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name as keyof FieldErrors]) {
+            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        const availableSlots = 5 - selectedImages.length;
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
+        const availableSlots = 5 - (selectedImages.length + existingImages.length);
+        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
 
         const validFiles = files.slice(0, availableSlots).filter(file => {
             if (!file.type.startsWith('image/')) {
@@ -220,9 +299,9 @@ const HomePersonalForm = () => {
             }
             return true;
         });
-
         if (!validFiles.length) return;
 
+        // Generate previews
         const newPreviews: string[] = [];
         validFiles.forEach(file => {
             const reader = new FileReader();
@@ -235,6 +314,8 @@ const HomePersonalForm = () => {
         });
         setSelectedImages(prev => [...prev, ...validFiles]);
         setError('');
+        // Clear input so same file can be re-selected
+        e.target.value = '';
     };
 
     const handleRemoveNewImage = (i: number) => {
@@ -242,11 +323,15 @@ const HomePersonalForm = () => {
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
 
-    // ── geolocation ──────────────────────────────────────────────────────────
+    const handleRemoveExistingImage = (i: number) =>
+        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+
+    // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
         setLocationWarning('');
+        setFieldErrors(prev => ({ ...prev, location: undefined, area: undefined, city: undefined, state: undefined }));
 
         if (!navigator.geolocation) {
             setError('Geolocation not supported by your browser');
@@ -256,41 +341,37 @@ const HomePersonalForm = () => {
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
                 const accuracy = pos.coords.accuracy;
 
                 if (accuracy > 500) {
                     setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
-                        `The address fields below may be approximate — please verify and correct if needed.`
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). The address fields below may be approximate — please verify and correct if needed.`
                     );
                 }
 
+                // Record GPS coords in ref BEFORE setting state
+                gpsCoords.current = { lat, lng };
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
+                    // Fixed: removed stray space in URL
                     const res = await fetch(
                         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
                     );
                     const data = await res.json();
-
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
-                            latitude: lat,
-                            longitude: lng,
+                            latitude: lat, longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
+                } catch (e) { console.error('Reverse geocode error:', e); }
 
                 setLocationLoading(false);
             },
@@ -302,48 +383,61 @@ const HomePersonalForm = () => {
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
         setError('');
         setSuccessMessage('');
 
-        try {
-            if (!formData.title || !formData.description)
-                throw new Error('Please fill in all required fields (Title, Description)');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
+        // Run full validation before touching the API
+        const errors = validateForm(formData, isEditMode);
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            const firstError = Object.values(errors)[0];
+            setError(firstError || 'Please fix the errors below before submitting');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
 
+        setFieldErrors({});
+        setLoading(true);
+
+        try {
             const jobPayload: CreateJobPayload = {
                 userId: formData.userId,
-                title: formData.title,
-                description: formData.description,
+                title: formData.title.trim(),
+                description: formData.description.trim(),
                 category: formData.category,
                 subcategory: formData.subcategory,
                 jobType: formData.jobType,
-                servicecharges: formData.servicecharges,
+                servicecharges: formData.servicecharges.trim(),
                 startDate: formData.startDate,
                 endDate: formData.endDate,
-                area: formData.area,
-                city: formData.city,
-                state: formData.state,
-                pincode: formData.pincode,
+                area: formData.area.trim(),
+                city: formData.city.trim(),
+                state: formData.state.trim(),
+                pincode: formData.pincode.trim(),
                 latitude: formData.latitude,
                 longitude: formData.longitude,
                 images: selectedImages,
             };
 
             if (isEditMode && editId) {
-                const response = await updateJob(editId, jobPayload);
+                await updateJob(editId, {
+                    ...jobPayload,
+                    existingImages: existingImages,  // pass remaining existing images
+                });
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                const response = await createJob(jobPayload);
+                await createJob(jobPayload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to submit form');
+
+            setTimeout(() => navigate('/listed-jobs'), 1500);
+        } catch (err: unknown) {
+            console.error('Submit error:', err);
+            if (err instanceof Error) setError(err.message);
+            else if (typeof err === 'string') setError(err);
+            else setError('Failed to submit form. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -351,37 +445,34 @@ const HomePersonalForm = () => {
 
     const handleCancel = () => window.history.back();
 
-    // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
+                    <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
         );
     }
 
     // ============================================================================
-    // RENDER - Mobile First Design
+    // RENDER — Mobile First
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
+
+            {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+                    <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Home Service' : 'Add New Home Service'}
+                            {isEditMode ? 'Update Home Service' : 'Add Home Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
                             {isEditMode ? 'Update your service listing' : 'Create new service listing'}
@@ -393,90 +484,107 @@ const HomePersonalForm = () => {
             {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
-                {/* ── Alerts ── */}
+                {/* Global error banner */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        {successMessage}
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* ─── 1. TITLE & DESCRIPTION ──────────────────────────────────────── */}
+                {/* Success banner */}
+                {successMessage && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <div className="flex items-center gap-2">
+                            <span className="text-green-600 text-lg">✓</span>
+                            <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Not logged in warning */}
+                {!formData.userId && !isEditMode && (
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <p className={`${typography.body.small} text-orange-700`}>
+                            ⚠️ You must be logged in to add a service.
+                        </p>
+                    </div>
+                )}
+
+                {/* ─── 1. TITLE & DESCRIPTION ─────────────────────────────── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Title</FieldLabel>
                         <input
-                            type="text"
-                            name="title"
-                            value={formData.title}
+                            type="text" name="title" value={formData.title}
                             onChange={handleInputChange}
                             placeholder="e.g., Professional Maid Services"
-                            className={inputBase}
+                            className={fieldErrors.title ? inputError : inputBase}
                         />
+                        {fieldErrors.title && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.title}
+                            </p>
+                        )}
                     </div>
+
                     <div>
                         <FieldLabel required>Description</FieldLabel>
                         <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
+                            name="description" value={formData.description}
+                            onChange={handleInputChange} rows={4}
                             placeholder="Describe your services, experience, and specializations..."
-                            className={inputBase + ' resize-none'}
+                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
+                        {fieldErrors.description && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.description}
+                            </p>
+                        )}
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CATEGORY & SUBCATEGORY ────────────────────────── */}
+                {/* ─── 2. SUBCATEGORY ─────────────────────────────────────── */}
                 <SectionCard title="Service Category">
                     <div>
                         <FieldLabel required>Subcategory</FieldLabel>
                         <select
-                            name="subcategory"
-                            value={formData.subcategory}
-                            onChange={handleInputChange}
+                            name="subcategory" value={formData.subcategory} onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
+                                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem'
                             }}
                         >
-                            {homePersonalSubcategories.map(sub => (
+                            {HOME_SUBCATEGORIES.map(sub => (
                                 <option key={sub} value={sub}>{sub}</option>
                             ))}
                         </select>
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. JOB DETAILS ───────────────────────── */}
+                {/* ─── 3. JOB DETAILS ─────────────────────────────────────── */}
                 <SectionCard title="Job Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Job Type</FieldLabel>
                             <select
-                                name="jobType"
-                                value={formData.jobType}
-                                onChange={handleInputChange}
+                                name="jobType" value={formData.jobType} onChange={handleInputChange}
                                 className={inputBase + ' appearance-none bg-white'}
                                 style={{
                                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
+                                    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center',
+                                    backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem'
                                 }}
                             >
                                 {jobTypeOptions.map(type => (
-                                    <option key={type} value={type}>
-                                        {type.replace('_', ' ')}
-                                    </option>
+                                    <option key={type} value={type}>{type.replace('_', ' ')}</option>
                                 ))}
                             </select>
                         </div>
@@ -484,13 +592,15 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Service Charges (₹)</FieldLabel>
                             <input
-                                type="text"
-                                name="servicecharges"
-                                value={formData.servicecharges}
-                                onChange={handleInputChange}
-                                placeholder="5000"
-                                className={inputBase}
+                                type="number" name="servicecharges" value={formData.servicecharges}
+                                onChange={handleInputChange} placeholder="5000" min="1" step="0.01"
+                                className={fieldErrors.servicecharges ? inputError : inputBase}
                             />
+                            {fieldErrors.servicecharges && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.servicecharges}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -498,122 +608,119 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Start Date</FieldLabel>
                             <input
-                                type="date"
-                                name="startDate"
-                                value={formData.startDate}
+                                type="date" name="startDate" value={formData.startDate}
                                 onChange={handleInputChange}
-                                className={inputBase}
+                                className={fieldErrors.startDate ? inputError : inputBase}
                             />
+                            {fieldErrors.startDate && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.startDate}
+                                </p>
+                            )}
                         </div>
 
                         <div>
                             <FieldLabel required>End Date</FieldLabel>
                             <input
-                                type="date"
-                                name="endDate"
-                                value={formData.endDate}
+                                type="date" name="endDate" value={formData.endDate}
                                 onChange={handleInputChange}
-                                className={inputBase}
+                                className={fieldErrors.endDate ? inputError : inputBase}
                             />
+                            {fieldErrors.endDate && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.endDate}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 4. LOCATION DETAILS ────────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="!py-1.5 !px-3"
-                        >
-                            {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
-                            )}
+                        <Button variant="success" size="sm" onClick={getCurrentLocation}
+                            disabled={locationLoading} className="!py-1.5 !px-3">
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
+                            }
                         </Button>
                     }
                 >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>
-                                {locationWarning}
-                            </p>
+                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
+                                placeholder="e.g. Madhapur"
+                                className={fieldErrors.area ? inputError : inputBase} />
+                            {fieldErrors.area && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.area}</p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                                placeholder="e.g. Hyderabad"
+                                className={fieldErrors.city ? inputError : inputBase} />
+                            {fieldErrors.city && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.city}</p>
+                            )}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
+                                placeholder="e.g. Telangana"
+                                className={fieldErrors.state ? inputError : inputBase} />
+                            {fieldErrors.state && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
+                                placeholder="e.g. 500081"
+                                className={fieldErrors.pincode ? inputError : inputBase} />
+                            {fieldErrors.pincode && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.pincode}</p>
+                            )}
                         </div>
                     </div>
 
-                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-purple-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter address manually.
-                        </p>
-                    </div>
+                    {/* Location error (coordinates missing) */}
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-700 flex items-center gap-1.5">
+                                <span>⚠️</span> {fieldErrors.location}
+                            </p>
+                        </div>
+                    )}
 
+                    {/* Tip box */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-purple-800`}>
+                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">
+                        <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-purple-800`}>
+                                <span className="font-semibold">✓ Location set:</span>
+                                <span className="ml-1 font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -621,18 +728,15 @@ const HomePersonalForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 5. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* ─── 5. SERVICE PHOTOS ────────────────────────────────────── */}
                 <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length >= 5}
+                            type="file" accept="image/*" multiple
+                            onChange={handleImageSelect} className="hidden"
+                            disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length >= 5
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50'
                             }`}>
@@ -642,32 +746,59 @@ const HomePersonalForm = () => {
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length >= 5
-                                            ? 'Maximum limit reached'
+                                        {selectedImages.length + existingImages.length >= 5
+                                            ? 'Maximum 5 images reached'
                                             : 'Tap to upload service photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                        JPG, PNG, WebP — max 5 MB each, up to 5 images
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {imagePreviews.length > 0 && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
+                    {/* Total count indicator */}
+                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                        <p className={`${typography.body.small} text-gray-500 text-right`}>
+                            {existingImages.length + selectedImages.length} / 5 images
+                        </p>
+                    )}
+
+                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                        <div className="grid grid-cols-3 gap-3 mt-2">
+                            {/* Existing images (edit mode) */}
+                            {existingImages.map((url, i) => (
+                                <div key={`ex-${i}`} className="relative aspect-square">
+                                    <img
+                                        src={url} alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
+                                    />
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-purple-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        Saved
+                                    </span>
+                                </div>
+                            ))}
+
+                            {/* New image previews */}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
+                                        src={preview} alt={`New ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-purple-400"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
                                         <X className="w-4 h-4" />
                                     </button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -675,24 +806,32 @@ const HomePersonalForm = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
-                        disabled={loading}
+                        disabled={loading || !!successMessage}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading || successMessage
                             ? 'bg-purple-400 cursor-not-allowed'
-                            : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
-                            } shadow-sm ${typography.body.base}`}
+                            : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 shadow-md hover:shadow-lg'
+                            } ${typography.body.base}`}
                     >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span>✓</span> Done
+                            </span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
                     </button>
                     <button
-                        onClick={handleCancel}
-                        type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        onClick={handleCancel} type="button" disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

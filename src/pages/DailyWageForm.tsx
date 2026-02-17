@@ -9,22 +9,25 @@ import { X, Upload, MapPin } from 'lucide-react';
 // ── Charge type options matching API ─────────────────────────────────────────
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Task', 'Fixed Rate'];
 
-// ── Pull daily wage subcategories from JSON (adjust categoryId as needed) ────
+// ── Pull daily wage subcategories from JSON ───────────────────────────────────
 const getDailyWageSubcategories = () => {
-    // Adjust this categoryId to match your daily wage category in subcategories.json
-    const dailyWageCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 18);
-    return dailyWageCategory ? dailyWageCategory.items.map(item => item.name) : [
-        'Loading/Unloading Workers',
-        'Cleaning Helpers',
-        'Construction Labor',
-        'Garden Workers',
-        'Event Helpers',
-        'Watchmen'
-    ];
+    const dailyWageCategory = subcategoriesData.subcategories.find(
+        (cat: any) => cat.categoryId === 18
+    );
+    return dailyWageCategory
+        ? dailyWageCategory.items.map((item: any) => item.name)
+        : [
+            'Loading/Unloading Workers',
+            'Cleaning Helpers',
+            'Construction Labor',
+            'Garden Workers',
+            'Event Helpers',
+            'Watchmen',
+        ];
 };
 
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
@@ -33,7 +36,7 @@ const inputBase =
     `${typography.form.input} bg-white`;
 
 // ============================================================================
-// REUSABLE LABEL
+// REUSABLE COMPONENTS
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -41,9 +44,6 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -57,7 +57,7 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 );
 
 // ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
+// GEOCODING HELPER
 // ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
@@ -83,7 +83,6 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 const DailyWageForm: React.FC = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -92,7 +91,6 @@ const DailyWageForm: React.FC = () => {
             : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -124,25 +122,23 @@ const DailyWageForm: React.FC = () => {
         availability: true,
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
+    // selectedImages holds File objects — passed directly to service functions
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
 
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
+    // ── Fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
             setLoadingData(true);
             try {
                 const response = await getLabourById(editId);
-                if (!response || !response.success || !response.data) {
+                if (!response || !response.success || !response.data)
                     throw new Error('Service not found');
-                }
 
                 const data = response.data;
 
@@ -166,9 +162,8 @@ const DailyWageForm: React.FC = () => {
                     availability: data.availability !== undefined ? data.availability : true,
                 }));
 
-                if (data.images && Array.isArray(data.images)) {
+                if (data.images && Array.isArray(data.images))
                     setExistingImages(data.images);
-                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load worker data');
@@ -182,10 +177,7 @@ const DailyWageForm: React.FC = () => {
     // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
-            }
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
                 const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
                     .replace(/, ,/g, ',').replace(/^,|,$/g, '');
@@ -205,7 +197,7 @@ const DailyWageForm: React.FC = () => {
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
+    // ── Generic input ────────────────────────────────────────────────────────
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
@@ -213,29 +205,19 @@ const DailyWageForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
         const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
+        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
 
         const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
             return true;
         });
-
         if (!validFiles.length) return;
 
         const newPreviews: string[] = [];
@@ -260,7 +242,7 @@ const DailyWageForm: React.FC = () => {
     const handleRemoveExistingImage = (i: number) =>
         setExistingImages(prev => prev.filter((_, idx) => idx !== i));
 
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── Geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
@@ -282,7 +264,7 @@ const DailyWageForm: React.FC = () => {
 
                 if (accuracy > 500) {
                     setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). ` +
                         `The address fields below may be approximate — please verify and correct if needed.`
                     );
                 }
@@ -305,9 +287,7 @@ const DailyWageForm: React.FC = () => {
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
+                } catch (e) { console.error(e); }
 
                 setLocationLoading(false);
             },
@@ -319,7 +299,7 @@ const DailyWageForm: React.FC = () => {
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
@@ -337,7 +317,7 @@ const DailyWageForm: React.FC = () => {
                 throw new Error('Please provide location (use Auto Detect or enter address)');
 
             if (isEditMode && editId) {
-                // Update existing labour
+                // ── Scalar payload — NO images here ─────────────────────────
                 const payload = {
                     description: formData.description,
                     category: formData.category,
@@ -356,7 +336,9 @@ const DailyWageForm: React.FC = () => {
                     availability: formData.availability,
                 };
 
-                const response = await updateLabour(editId, payload);
+                // selectedImages = new File[] to upload via FormData
+                // Existing image URLs stay on the server — no need to re-send
+                const response = await updateLabour(editId, payload, selectedImages);
                 if (response.success) {
                     setSuccessMessage('Worker updated successfully!');
                     setTimeout(() => navigate('/listed-jobs'), 1500);
@@ -364,7 +346,7 @@ const DailyWageForm: React.FC = () => {
                     throw new Error(response.message || 'Failed to update worker');
                 }
             } else {
-                // Create new labour
+                // ── Scalar payload — NO images here ─────────────────────────
                 const payload = {
                     userId: formData.userId,
                     description: formData.description,
@@ -381,10 +363,10 @@ const DailyWageForm: React.FC = () => {
                     name: formData.name || undefined,
                     phone: formData.phone || undefined,
                     email: formData.email || undefined,
-                    images: selectedImages.length > 0 ? selectedImages : undefined,
                 };
 
-                const response = await addLabour(payload);
+                // selectedImages passed as dedicated File[] argument
+                const response = await addLabour(payload, selectedImages);
                 if (response.success) {
                     setSuccessMessage('Worker created successfully!');
                     setTimeout(() => navigate('/listed-jobs'), 1500);
@@ -402,7 +384,7 @@ const DailyWageForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // ── loading screen ───────────────────────────────────────────────────────
+    // ── Loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -415,7 +397,7 @@ const DailyWageForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER — Mobile First
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -442,7 +424,6 @@ const DailyWageForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Alerts */}
@@ -466,7 +447,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. WORKER CATEGORY ───────────────────────────── */}
+                {/* ─── 1. WORKER CATEGORY ─── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Worker Type</FieldLabel>
@@ -490,7 +471,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. DESCRIPTION ────────────────────────────────── */}
+                {/* ─── 2. WORKER DETAILS ─── */}
                 <SectionCard title="Worker Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -503,7 +484,6 @@ const DailyWageForm: React.FC = () => {
                             className={inputBase + ' resize-none'}
                         />
                     </div>
-
                     <div>
                         <FieldLabel>Worker Name (Optional)</FieldLabel>
                         <input
@@ -517,7 +497,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. CONTACT (optional) ─────────────────────────── */}
+                {/* ─── 3. CONTACT ─── */}
                 <SectionCard title="Contact Information (Optional)">
                     <div>
                         <FieldLabel>Phone</FieldLabel>
@@ -543,7 +523,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. WAGE DETAILS ───────────────────────────────── */}
+                {/* ─── 4. WAGE DETAILS ─── */}
                 <SectionCard title="Wage Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -582,10 +562,14 @@ const DailyWageForm: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
+                        <span className={`${typography.body.small} font-semibold text-gray-800`}>
+                            Currently Available
+                        </span>
                         <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
+                            onClick={() =>
+                                setFormData(prev => ({ ...prev, availability: !prev.availability }))
+                            }
                             className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-emerald-500' : 'bg-gray-300'
                                 }`}
                         >
@@ -597,7 +581,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. LOCATION ─────────────────────────────────────── */}
+                {/* ─── 5. LOCATION ─── */}
                 <SectionCard
                     title="Work Location"
                     action={
@@ -608,11 +592,9 @@ const DailyWageForm: React.FC = () => {
                             disabled={locationLoading}
                             className="!py-1.5 !px-3"
                         >
-                            {locationLoading ? (
-                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
-                            )}
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
                         </Button>
                     }
                 >
@@ -635,7 +617,6 @@ const DailyWageForm: React.FC = () => {
                                 onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
@@ -658,8 +639,8 @@ const DailyWageForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set:</span>
-                                <span className="ml-1">
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -667,7 +648,7 @@ const DailyWageForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 6. PHOTOS ───────────────────────────────────────── */}
+                {/* ─── 6. PHOTOS ─── */}
                 <SectionCard title="Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -686,11 +667,11 @@ const DailyWageForm: React.FC = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum 5 images'
+                                            ? 'Maximum 5 images reached'
                                             : 'Tap to upload photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload work photos (max 5 images)
+                                        JPG, PNG, WebP — max 5 MB each
                                     </p>
                                 </div>
                             </div>
@@ -753,8 +734,7 @@ const DailyWageForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

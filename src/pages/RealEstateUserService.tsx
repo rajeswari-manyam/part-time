@@ -5,6 +5,14 @@ import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
 
+// ── Helper: parse amenities string or array ───────────────────────────────────
+const ensureArray = (input: any): string[] => {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    if (typeof input === "string") return input.split(",").map(s => s.trim()).filter(Boolean);
+    return [];
+};
+
 interface RealEstateUserServiceProps {
     userId: string;
     selectedSubcategory?: string | null;
@@ -16,252 +24,62 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
     userId,
     selectedSubcategory,
     hideHeader = false,
-    hideEmptyState = false
+    hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
     const [realEstates, setRealEstates] = useState<RealEstateWorker[]>([]);
     const [loading, setLoading] = useState(true);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-    // ── Fetch Real Estates API ──
-    useEffect(() => {
-        const fetchRealEstates = async () => {
-            if (!userId) {
+    // ── Fetch ─────────────────────────────────────────────────────────────────
+    const fetchRealEstates = async () => {
+        if (!userId) { setRealEstates([]); setLoading(false); return; }
+        setLoading(true);
+        try {
+            const response = await getUserRealEstates(userId);
+            console.log("User real estates response:", response);
+            if (response.success && response.data) {
+                setRealEstates(Array.isArray(response.data) ? response.data : [response.data]);
+            } else {
                 setRealEstates([]);
-                setLoading(false);
-                return;
             }
+        } catch (error) {
+            console.error("Error fetching real estates:", error);
+            setRealEstates([]);
+        } finally { setLoading(false); }
+    };
 
-            setLoading(true);
-            try {
-                const response = await getUserRealEstates(userId);
+    useEffect(() => { fetchRealEstates(); }, [userId]);
 
-                // Handle both single object and array responses
-                if (response.success && response.data) {
-                    const dataArray = Array.isArray(response.data) ? response.data : [response.data];
-                    setRealEstates(dataArray);
-                } else {
-                    setRealEstates([]);
-                }
-            } catch (error) {
-                console.error("Error fetching real estates:", error);
-                setRealEstates([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchRealEstates();
-    }, [userId]);
-
-    // ── Filter by subcategory (property type) ──
+    // ── Filter by subcategory — mirrors HotelUserService ─────────────────────
     const filteredRealEstates = selectedSubcategory
         ? realEstates.filter(re =>
-            re.propertyType &&
-            selectedSubcategory.toLowerCase().includes(re.propertyType.toLowerCase())
+            re.propertyType && re.propertyType.toLowerCase().includes(selectedSubcategory.toLowerCase())
         )
         : realEstates;
 
-    // ── Delete Real Estate API ──
-    const handleDelete = async (realEstateId: string) => {
-        if (!window.confirm("Delete this property listing?")) return;
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const handleEdit = (id: string) => navigate(`/add-real-estate-form?id=${id}`);
 
-        setDeletingId(realEstateId);
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this listing?")) return;
+        setDeleteLoading(id);
         try {
-            const result = await deleteRealEstateService(realEstateId);
-            if (result.success) {
-                setRealEstates(prev => prev.filter(re => re._id !== realEstateId));
+            const res = await deleteRealEstateService(id);
+            if (res.success) {
+                setRealEstates(prev => prev.filter(re => re._id !== id));
             } else {
-                alert("Failed to delete listing. Please try again.");
+                alert(res.message || "Failed to delete listing. Please try again.");
             }
         } catch (error) {
             console.error("Error deleting real estate:", error);
             alert("Failed to delete listing. Please try again.");
-        } finally {
-            setDeletingId(null);
-        }
+        } finally { setDeleteLoading(null); }
     };
 
-    // ── Helper functions ──
-    const openDirections = (realEstate: RealEstateWorker) => {
-        if (realEstate.latitude && realEstate.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${realEstate.latitude},${realEstate.longitude}`,
-                "_blank"
-            );
-        } else if (realEstate.area || realEstate.city) {
-            const addr = encodeURIComponent(
-                [realEstate.address, realEstate.area, realEstate.city, realEstate.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
-    };
+    const handleView = (id: string) => navigate(`/real-estate/details/${id}`);
 
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
-    };
-
-    // ── Render Real Estate Card ──
-    const renderRealEstateCard = (realEstate: RealEstateWorker) => {
-        const id = realEstate._id || "";
-        const location = [realEstate.area, realEstate.city, realEstate.state]
-            .filter(Boolean)
-            .join(", ") || "Location not set";
-        const amenitiesList: string[] = (realEstate.amenities && typeof realEstate.amenities === 'string')
-            ? realEstate.amenities.split(',').map(a => a.trim()).filter(Boolean)
-            : (Array.isArray(realEstate.amenities) ? realEstate.amenities : []);
-
-        return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative"
-                style={{ border: '1px solid #e5e7eb' }}
-            >
-                {/* Three Dots Menu */}
-                <div className="absolute top-3 right-3 z-10">
-                    <ActionDropdown
-                        onEdit={(e) => {
-                            e.stopPropagation();
-                            navigate(`/add-real-estate-form?id=${id}`);
-                        }}
-                        onDelete={(e) => {
-                            e.stopPropagation();
-                            handleDelete(id);
-                        }}
-                    />
-                </div>
-
-                {/* Body */}
-                <div className="p-5 flex flex-col flex-1 gap-3">
-                    {/* Title */}
-                    <h2 className="text-xl font-semibold text-gray-900 truncate pr-8">
-                        {realEstate.propertyType} - {realEstate.listingType}
-                    </h2>
-
-                    {/* Owner Name */}
-                    <p className="text-sm font-medium text-gray-700">
-                        {realEstate.name}
-                    </p>
-
-                    {/* Location */}
-                    <p className="text-sm text-gray-500 flex items-start gap-1.5">
-                        <span className="shrink-0 mt-0.5">📍</span>
-                        <span className="line-clamp-1">{location}</span>
-                    </p>
-
-                    {/* Property Type and Availability Badge */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {realEstate.propertyType && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
-                                <span className="shrink-0">🏠</span>
-                                <span className="truncate">{realEstate.propertyType}</span>
-                            </span>
-                        )}
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium ${realEstate.availabilityStatus === 'Available'
-                                ? 'bg-green-50 text-green-700 border-green-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${realEstate.availabilityStatus === 'Available' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            {realEstate.availabilityStatus}
-                        </span>
-                    </div>
-
-                    {/* Description */}
-                    {realEstate.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                            {realEstate.description}
-                        </p>
-                    )}
-
-                    {/* Property Details */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                        <div className="flex items-center gap-4">
-                            {realEstate.bedrooms > 0 && (
-                                <div className="flex items-center gap-1">
-                                    <span className="text-gray-500 text-sm">🛏️</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {realEstate.bedrooms} BHK
-                                    </span>
-                                </div>
-                            )}
-                            {realEstate.areaSize && (
-                                <div className="flex items-center gap-1">
-                                    <span className="text-gray-500 text-sm">📏</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {realEstate.areaSize} sq ft
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                        {realEstate.price && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">
-                                    {realEstate.listingType}
-                                </p>
-                                <p className="text-lg font-bold text-green-600">
-                                    ₹{realEstate.price.toLocaleString()}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Amenities */}
-                    {amenitiesList.length > 0 && (
-                        <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Amenities
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {amenitiesList.slice(0, 3).map((amenity, idx) => (
-                                    <span
-                                        key={`${id}-${idx}`}
-                                        className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 px-2.5 py-1 rounded-md border border-gray-200"
-                                    >
-                                        <span className="text-green-500">●</span> {amenity}
-                                    </span>
-                                ))}
-                                {amenitiesList.length > 3 && (
-                                    <span className="text-xs text-gray-500 px-2 py-1">
-                                        +{amenitiesList.length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                openDirections(realEstate);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
-                        >
-                            <span>📍</span> Directions
-                        </Button>
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                realEstate.phone && openCall(realEstate.phone);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                            disabled={deletingId === id}
-                        >
-                            <span className="shrink-0">📞</span>
-                            <span className="truncate">{realEstate.phone || "No Phone"}</span>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    // ── Loading State ──
+    // ── Loading ───────────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div>
@@ -271,16 +89,15 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
                 </div>
             </div>
         );
     }
 
-    // ── Empty State ──
+    // ── Empty ─────────────────────────────────────────────────────────────────
     if (filteredRealEstates.length === 0) {
         if (hideEmptyState) return null;
-
         return (
             <div>
                 {!hideHeader && (
@@ -290,18 +107,12 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">🏠</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Property Listings Yet
-                    </h3>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Property Listings Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your property listings to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
-                        onClick={() => navigate('/add-real-estate-form')}
-                        className="gap-1.5"
-                    >
+                    <Button variant="primary" size="md" onClick={() => navigate('/add-real-estate-form')}
+                        className="gap-1.5 bg-green-600 hover:bg-green-700">
                         + Add Property
                     </Button>
                 </div>
@@ -309,7 +120,9 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
         );
     }
 
-    // ── Render ──
+    // ============================================================================
+    // RENDER — mirrors HotelUserService card structure exactly
+    // ============================================================================
     return (
         <div>
             {!hideHeader && (
@@ -317,8 +130,141 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     <span>🏠</span> Real Estate Listings ({filteredRealEstates.length})
                 </h2>
             )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {filteredRealEstates.map(renderRealEstateCard)}
+                {filteredRealEstates.map((re) => {
+                    const id = re._id || "";
+                    const location = [re.area, re.city, re.state].filter(Boolean).join(", ") || "Location not specified";
+                    const amenitiesList = ensureArray(re.amenities);
+                    const imageUrls = (re.images || []).filter(Boolean) as string[];
+
+                    return (
+                        <div key={id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+
+                            {/* ── Image — mirrors HotelUserService image section ── */}
+                            <div className="relative h-48 bg-gradient-to-br from-green-600/10 to-green-600/5">
+                                {imageUrls.length > 0 ? (
+                                    <img src={imageUrls[0]} alt={re.name || "Property"}
+                                        className="w-full h-full object-cover"
+                                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <span className="text-6xl">🏠</span>
+                                    </div>
+                                )}
+
+                                {/* Property Type Badge — top left, mirrors hotel.type badge */}
+                                <div className="absolute top-3 left-3">
+                                    <span className={`${typography.misc.badge} bg-green-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                                        {re.propertyType || "Property"}
+                                    </span>
+                                </div>
+
+                                {/* Action Dropdown — top right, mirrors HotelUserService */}
+                                <div className="absolute top-3 right-3">
+                                    {deleteLoading === id ? (
+                                        <div className="bg-white rounded-lg p-2 shadow-lg">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                        </div>
+                                    ) : (
+                                        <ActionDropdown
+                                            onEdit={() => handleEdit(id)}
+                                            onDelete={() => handleDelete(id)}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ── Details ── */}
+                            <div className="p-4">
+                                {/* Title */}
+                                <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+                                    {re.propertyType} — {re.listingType}
+                                </h3>
+
+                                {/* Owner name */}
+                                {re.name && (
+                                    <p className="text-sm font-medium text-gray-700 mb-2">{re.name}</p>
+                                )}
+
+                                {/* Location — mirrors HotelUserService SVG pin */}
+                                <div className="flex items-start gap-2 mb-3">
+                                    <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
+                                    <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                                </div>
+
+                                {/* Description */}
+                                {re.description && (
+                                    <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
+                                        {re.description}
+                                    </p>
+                                )}
+
+                                {/* Availability badge + Listing type */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium ${re.availabilityStatus === 'Available'
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-red-50 text-red-700 border-red-200'
+                                        }`}>
+                                        <span className={`w-2 h-2 rounded-full ${re.availabilityStatus === 'Available' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        {re.availabilityStatus || 'Available'}
+                                    </span>
+                                    {re.listingType && (
+                                        <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
+                                            {re.listingType}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Bedrooms + Area + Price — mirrors HotelUserService rating+price row */}
+                                <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
+                                    <div className="flex items-center gap-3">
+                                        {re.bedrooms > 0 && (
+                                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">🛏️ {re.bedrooms} BHK</span>
+                                        )}
+                                        {re.areaSize && (
+                                            <span className="text-xs text-gray-500">📏 {re.areaSize} sq ft</span>
+                                        )}
+                                    </div>
+                                    {re.price && (
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide">{re.listingType}</p>
+                                            <p className="text-base font-bold text-green-600">₹{Number(re.price).toLocaleString()}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Amenities Tags — mirrors HotelUserService services tags */}
+                                {amenitiesList.length > 0 && (
+                                    <div className="mb-3">
+                                        <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Amenities:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {amenitiesList.slice(0, 3).map((a, idx) => (
+                                                <span key={idx}
+                                                    className={`${typography.fontSize.xs} bg-green-600/5 text-green-700 px-2 py-0.5 rounded-full`}>
+                                                    {a}
+                                                </span>
+                                            ))}
+                                            {amenitiesList.length > 3 && (
+                                                <span className={`${typography.fontSize.xs} text-gray-500`}>
+                                                    +{amenitiesList.length - 3} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* View Details — mirrors HotelUserService */}
+                                <Button variant="outline" size="sm" onClick={() => handleView(id)}
+                                    className="w-full mt-2 border-green-600 text-green-600 hover:bg-green-600/10">
+                                    View Details
+                                </Button>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

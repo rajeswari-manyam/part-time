@@ -43,6 +43,7 @@ export interface SingleLabourResponse {
   data: LabourWorker;
 }
 
+// images removed from payload types — passed as a separate File[] arg
 export interface AddLabourPayload {
   userId: string;
   description: string;
@@ -59,7 +60,6 @@ export interface AddLabourPayload {
   name?: string;
   phone?: string;
   email?: string;
-  images?: File[];
 }
 
 export interface UpdateLabourPayload {
@@ -81,13 +81,17 @@ export interface UpdateLabourPayload {
 }
 
 /**
- * Add a new labour worker
- * @param payload AddLabourPayload
- * @returns Promise<any>
+ * Add a new labour worker.
+ * Scalar fields in payload; image File objects passed as separate imageFiles arg.
+ * Backend: formdata.append("images", file) — plain "images" key, no Content-Type header.
  */
-export const addLabour = async (payload: AddLabourPayload): Promise<any> => {
+export const addLabour = async (
+  payload: AddLabourPayload,
+  imageFiles?: File[]
+): Promise<any> => {
   try {
     const formdata = new FormData();
+
     formdata.append("userId", payload.userId);
     formdata.append("description", payload.description);
     formdata.append("category", payload.category);
@@ -104,28 +108,21 @@ export const addLabour = async (payload: AddLabourPayload): Promise<any> => {
     if (payload.name) formdata.append("name", payload.name);
     if (payload.phone) formdata.append("phone", payload.phone);
     if (payload.email) formdata.append("email", payload.email);
-    
-    // Append images if provided
-    if (payload.images && payload.images.length > 0) {
-      payload.images.forEach((image, index) => {
-        formdata.append("images", image);
+
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formdata.append("images", file, file.name);
       });
     }
 
-    const requestOptions: RequestInit = {
+    const response = await fetch(`${API_BASE_URL}/addLabour`, {
       method: "POST",
       body: formdata,
-      redirect: "follow"
-    };
+      redirect: "follow",
+    });
 
-    const response = await fetch(`${API_BASE_URL}/addLabour`, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result;
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (error) {
     console.error("Error adding labour:", error);
     throw error;
@@ -133,187 +130,132 @@ export const addLabour = async (payload: AddLabourPayload): Promise<any> => {
 };
 
 /**
- * Get all labour workers
- * @returns Promise<LabourWorkerResponse>
- */
-export const getAllLabours = async (): Promise<LabourWorkerResponse> => {
-  try {
-    const requestOptions: RequestInit = {
-      method: "GET",
-      redirect: "follow"
-    };
-
-    const response = await fetch(`${API_BASE_URL}/getAllLabours`, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result: LabourWorkerResponse = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error fetching all labours:", error);
-    return { success: false, count: 0, data: [] };
-  }
-};
-
-/**
- * Get labour worker by ID
- * @param labourId string
- * @returns Promise<SingleLabourResponse>
- */
-export const getLabourById = async (labourId: string): Promise<SingleLabourResponse | null> => {
-  try {
-    const requestOptions: RequestInit = {
-      method: "GET",
-      redirect: "follow"
-    };
-
-    const response = await fetch(`${API_BASE_URL}/getLabourById/${labourId}`, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result: SingleLabourResponse = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error fetching labour by ID:", error);
-    return null;
-  }
-};
-
-/**
- * Delete labour worker by ID
- * @param labourId string
- * @returns Promise<any>
- */
-export const deleteLabour = async (labourId: string): Promise<any> => {
-  try {
-    const requestOptions: RequestInit = {
-      method: "DELETE",
-      redirect: "follow"
-    };
-
-    const response = await fetch(`${API_BASE_URL}/deleteLabour/${labourId}`, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error deleting labour:", error);
-    throw error;
-  }
-};
-
-/**
- * Update labour worker by ID
- * @param labourId string
- * @param payload UpdateLabourPayload
- * @returns Promise<any>
+ * Update a labour worker by ID.
+ * Uses FormData (not JSON) so new image files can be included.
+ * Existing server images are preserved — only new files need to be sent.
  */
 export const updateLabour = async (
   labourId: string,
-  payload: UpdateLabourPayload
+  payload: UpdateLabourPayload,
+  imageFiles?: File[]
 ): Promise<any> => {
   try {
-    const requestOptions: RequestInit = {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      redirect: "follow"
-    };
+    const formdata = new FormData();
 
-    const response = await fetch(`${API_BASE_URL}/updateLabour/${labourId}`, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (payload.description !== undefined) formdata.append("description", payload.description);
+    if (payload.category !== undefined) formdata.append("category", payload.category);
+    if (payload.subCategory !== undefined) formdata.append("subCategory", payload.subCategory);
+    if (payload.dailyWage !== undefined) formdata.append("dailyWage", payload.dailyWage);
+    if (payload.chargeType !== undefined) formdata.append("chargeType", payload.chargeType);
+    if (payload.latitude !== undefined) formdata.append("latitude", payload.latitude);
+    if (payload.longitude !== undefined) formdata.append("longitude", payload.longitude);
+    if (payload.area !== undefined) formdata.append("area", payload.area);
+    if (payload.city !== undefined) formdata.append("city", payload.city);
+    if (payload.state !== undefined) formdata.append("state", payload.state);
+    if (payload.pincode !== undefined) formdata.append("pincode", payload.pincode);
+    if (payload.name !== undefined) formdata.append("name", payload.name);
+    if (payload.phone !== undefined) formdata.append("phone", payload.phone);
+    if (payload.email !== undefined) formdata.append("email", payload.email);
+    if (payload.availability !== undefined)
+      formdata.append("availability", payload.availability.toString());
+
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formdata.append("images", file, file.name);
+      });
     }
 
-    const result = await response.json();
-    return result;
+    const response = await fetch(`${API_BASE_URL}/updateLabour/${labourId}`, {
+      method: "PUT",
+      body: formdata,
+      redirect: "follow",
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (error) {
     console.error("Error updating labour:", error);
     throw error;
   }
 };
 
-/**
- * Get user's labour workers with optional subcategory filter
- * @param userId string
- * @param subCategory string (optional)
- * @returns Promise<LabourWorkerResponse>
- */
+export const getAllLabours = async (): Promise<LabourWorkerResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/getAllLabours`, {
+      method: "GET", redirect: "follow",
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching all labours:", error);
+    return { success: false, count: 0, data: [] };
+  }
+};
+
+export const getLabourById = async (
+  labourId: string
+): Promise<SingleLabourResponse | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/getLabourById/${labourId}`, {
+      method: "GET", redirect: "follow",
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching labour by ID:", error);
+    return null;
+  }
+};
+
+export const deleteLabour = async (labourId: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/deleteLabour/${labourId}`, {
+      method: "DELETE", redirect: "follow",
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting labour:", error);
+    throw error;
+  }
+};
+
 export const getUserLabours = async (
   userId: string,
   subCategory?: string
 ): Promise<LabourWorkerResponse> => {
   try {
     let url = `${API_BASE_URL}/getUserLabours?userId=${userId}`;
-    
-    if (subCategory) {
-      url += `&subCategory=${encodeURIComponent(subCategory)}`;
-    }
-
-    const requestOptions: RequestInit = {
-      method: "GET",
-      redirect: "follow"
-    };
-
-    const response = await fetch(url, requestOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result: LabourWorkerResponse = await response.json();
-    return result;
+    if (subCategory) url += `&subCategory=${encodeURIComponent(subCategory)}`;
+    const response = await fetch(url, { method: "GET", redirect: "follow" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (error) {
     console.error("Error fetching user labours:", error);
     return { success: false, count: 0, data: [] };
   }
 };
 
-/**
- * Fetch nearby labour service workers
- * @param latitude number
- * @param longitude number
- * @param distance number in km (any distance)
- * @returns Promise<LabourWorkerResponse>
- */
 export const getNearbyLabourWorkers = async (
   latitude: number,
   longitude: number,
   distance: number
 ): Promise<LabourWorkerResponse> => {
-  if (!distance || distance <= 0) {
+  if (!distance || distance <= 0)
     throw new Error("Please provide a valid distance in km");
-  }
-
   try {
     const response = await fetch(
       `${API_BASE_URL}/getNearbyLabours?latitude=${latitude}&longitude=${longitude}&distance=${distance}`,
       { method: "GET", redirect: "follow" }
     );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: LabourWorkerResponse = await response.json();
-    return data;
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (error) {
     console.error("Error fetching labour workers:", error);
     return { success: false, count: 0, data: [] };
   }
 };
 
-// Export all functions as a service object
 const LabourService = {
   addLabour,
   getAllLabours,
@@ -321,7 +263,7 @@ const LabourService = {
   deleteLabour,
   updateLabour,
   getUserLabours,
-  getNearbyLabourWorkers
+  getNearbyLabourWorkers,
 };
 
 export default LabourService;

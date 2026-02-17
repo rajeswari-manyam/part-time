@@ -73,7 +73,7 @@ import AutomotiveList from "./pages/AutomotiveList";
 import EducationList from "./pages/EducationList";
 import BusinessList from "./pages/BusinessList";
 
-import TechDigitalServiceList from "./pages/DegitalServiceList";
+import TechDigitalServiceList from "./pages/DigitalServiceList";
 import EventList from "./pages/EventList";
 import CourierList from "./pages/CourierServiceList";
 
@@ -91,10 +91,10 @@ import HospitalServicesList from "./pages/HospitalServiceList";
 import HospitalForm from "./pages/HospitalForm";
 
 import SportsServiceForm from "./pages/SportsServiceForm";
-import ShoppingForm from "./pages/SoppingForm";
+import ShoppingForm from "./pages/ShoppingForm";
 import MyBusiness from "./pages/MyBusiness";
 import DigitalServiceForm from "./pages/DigitalServiceForm";
-import DigitalServiceList from "./pages/DegitalServiceList";
+import DigitalServiceList from "./pages/DigitalServiceList";
 import EducationForm from "./pages/EducationForm";
 import EducationServiceList from "./pages/EducationList";
 

@@ -29,7 +29,7 @@ const getCorporateSubcategories = () => {
 };
 
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
@@ -38,7 +38,7 @@ const inputBase =
     `${typography.form.input} bg-white`;
 
 // ============================================================================
-// REUSABLE LABEL
+// REUSABLE COMPONENTS
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -46,9 +46,6 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -62,7 +59,7 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 );
 
 // ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
+// GEOCODING HELPER
 // ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
@@ -88,7 +85,6 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 const CorporateForm: React.FC = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -97,7 +93,6 @@ const CorporateForm: React.FC = () => {
             : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -125,16 +120,15 @@ const CorporateForm: React.FC = () => {
         longitude: '',
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
+    // selectedImages holds File objects — passed directly to service functions
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
 
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
+    // ── Fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -142,7 +136,7 @@ const CorporateForm: React.FC = () => {
             try {
                 const response = await getCorporateById(editId);
                 const data = response.data;
-                
+
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
@@ -159,9 +153,8 @@ const CorporateForm: React.FC = () => {
                     longitude: data.longitude?.toString() || '',
                 }));
 
-                if (data.images && Array.isArray(data.images)) {
+                if (data.images && Array.isArray(data.images))
                     setExistingImages(data.images);
-                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -198,7 +191,7 @@ const CorporateForm: React.FC = () => {
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
+    // ── Generic input handler ────────────────────────────────────────────────
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
@@ -206,29 +199,19 @@ const CorporateForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
         const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
+        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
 
         const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
             return true;
         });
-
         if (!validFiles.length) return;
 
         const newPreviews: string[] = [];
@@ -253,7 +236,7 @@ const CorporateForm: React.FC = () => {
     const handleRemoveExistingImage = (i: number) =>
         setExistingImages(prev => prev.filter((_, idx) => idx !== i));
 
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── Geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
@@ -275,7 +258,7 @@ const CorporateForm: React.FC = () => {
 
                 if (accuracy > 500) {
                     setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). ` +
                         `The address fields below may be approximate — please verify and correct if needed.`
                     );
                 }
@@ -298,9 +281,7 @@ const CorporateForm: React.FC = () => {
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
+                } catch (e) { console.error(e); }
 
                 setLocationLoading(false);
             },
@@ -312,7 +293,7 @@ const CorporateForm: React.FC = () => {
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
@@ -320,60 +301,41 @@ const CorporateForm: React.FC = () => {
 
         try {
             // Validation
-            if (!formData.serviceName.trim())
-                throw new Error('Please enter service name');
-            if (!formData.description.trim())
-                throw new Error('Please enter a description');
-            if (!formData.serviceCharge.trim())
-                throw new Error('Please enter service charge');
+            if (!formData.serviceName.trim()) throw new Error('Please enter service name');
+            if (!formData.description.trim()) throw new Error('Please enter a description');
+            if (!formData.serviceCharge.trim()) throw new Error('Please enter service charge');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide location (use Auto Detect or enter address)');
-            if (!formData.pincode.trim())
-                throw new Error('Please enter PIN code');
+            if (!formData.pincode.trim()) throw new Error('Please enter PIN code');
+
+            // ── Scalar payload — NO images here ─────────────────────────────
+            const payload: AddCorporateServicePayload | UpdateCorporateServicePayload = {
+                userId: formData.userId,
+                serviceName: formData.serviceName,
+                description: formData.description,
+                subCategory: formData.subCategory,
+                serviceCharge: parseFloat(formData.serviceCharge),
+                chargeType: formData.chargeType,
+                latitude: parseFloat(formData.latitude),
+                longitude: parseFloat(formData.longitude),
+                area: formData.area,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode,
+            };
 
             if (isEditMode && editId) {
-                // Update existing service
-                const payload: UpdateCorporateServicePayload = {
-                    userId: formData.userId,
-                    serviceName: formData.serviceName,
-                    description: formData.description,
-                    subCategory: formData.subCategory,
-                    serviceCharge: parseFloat(formData.serviceCharge),
-                    chargeType: formData.chargeType,
-                    latitude: parseFloat(formData.latitude),
-                    longitude: parseFloat(formData.longitude),
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
-                    images: selectedImages.length > 0 ? selectedImages : undefined,
-                };
-
-                await updateCorporateService(editId, payload);
+                // selectedImages = new File[] to upload.
+                // Existing image URLs stay on the server — no need to re-send.
+                await updateCorporateService(editId, payload, selectedImages);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                // Create new service
-                const payload: AddCorporateServicePayload = {
-                    userId: formData.userId,
-                    serviceName: formData.serviceName,
-                    description: formData.description,
-                    subCategory: formData.subCategory,
-                    serviceCharge: parseFloat(formData.serviceCharge),
-                    chargeType: formData.chargeType,
-                    latitude: parseFloat(formData.latitude),
-                    longitude: parseFloat(formData.longitude),
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
-                    images: selectedImages,
-                };
-
-                await addCorporateService(payload);
+                await addCorporateService(payload, selectedImages);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
+
+            setTimeout(() => navigate('/listed-jobs'), 1500);
+
         } catch (err: any) {
             console.error('Submit error:', err);
             setError(err.message || 'Failed to submit form');
@@ -384,7 +346,7 @@ const CorporateForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // ── loading screen ───────────────────────────────────────────────────────
+    // ── Loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -397,7 +359,7 @@ const CorporateForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER — Mobile First
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -405,10 +367,7 @@ const CorporateForm: React.FC = () => {
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+                    <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
@@ -424,7 +383,6 @@ const CorporateForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Alerts */}
@@ -448,7 +406,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. SERVICE NAME ──────────────────────────────────────── */}
+                {/* ─── 1. SERVICE NAME ─── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
@@ -463,7 +421,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CATEGORY ──────────────────────────────────── */}
+                {/* ─── 2. CATEGORY ─── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Category</FieldLabel>
@@ -487,7 +445,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. DESCRIPTION ─────────────────────────────────── */}
+                {/* ─── 3. DESCRIPTION ─── */}
                 <SectionCard title="Service Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -502,7 +460,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. PRICING ───────────────────────────────────── */}
+                {/* ─── 4. PRICING ─── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -540,7 +498,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. LOCATION ─────────────────────────────────────── */}
+                {/* ─── 5. LOCATION ─── */}
                 <SectionCard
                     title="Service Location"
                     action={
@@ -551,11 +509,9 @@ const CorporateForm: React.FC = () => {
                             disabled={locationLoading}
                             className="!py-1.5 !px-3"
                         >
-                            {locationLoading ? (
-                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
-                            )}
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
                         </Button>
                     }
                 >
@@ -578,7 +534,6 @@ const CorporateForm: React.FC = () => {
                                 onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
@@ -588,7 +543,7 @@ const CorporateForm: React.FC = () => {
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode}
-                                onChange={handleInputChange} placeholder="e.g. 560034" className={inputBase} />
+                                onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
                         </div>
                     </div>
 
@@ -601,8 +556,8 @@ const CorporateForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set:</span>
-                                <span className="ml-1">
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -610,7 +565,7 @@ const CorporateForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 6. PHOTOS ───────────────────────────────────────── */}
+                {/* ─── 6. PHOTOS ─── */}
                 <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -629,11 +584,11 @@ const CorporateForm: React.FC = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum 5 images'
+                                            ? 'Maximum 5 images reached'
                                             : 'Tap to upload photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload service or facility photos (max 5 images)
+                                        JPG, PNG, WebP — max 5 MB each
                                     </p>
                                 </div>
                             </div>
@@ -696,8 +651,7 @@ const CorporateForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

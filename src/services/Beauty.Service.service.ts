@@ -20,7 +20,7 @@ export interface BeautyWorker {
   pincode?: string;
   latitude?: number;
   longitude?: number;
-  availability?: boolean;
+  availability?: boolean | string;
   rating?: number;
   status?: boolean;
   createdAt?: string;
@@ -62,26 +62,53 @@ export const getNearbyBeautyWorkers = async (
     return { success: false, count: 0, data: [] };
   }
 };
-export const createBeautyWorker = async (worker: Partial<BeautyWorker>): Promise<any> => {
+
+/**
+ * Create a beauty worker.
+ * Uses multipart/form-data so image files can be sent.
+ * services array is sent as repeated services[] keys — matching backend expectation.
+ */
+export const createBeautyWorker = async (
+  worker: Partial<BeautyWorker>,
+  imageFiles?: File[]
+): Promise<any> => {
   try {
-    const formData = new URLSearchParams();
-    
-    // Append all provided fields dynamically
-    Object.entries(worker).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => formData.append(`${key}[]`, v.toString()));
-      } else if (value !== undefined && value !== null) {
-        formData.append(key, value.toString());
+    const formData = new FormData();
+
+    // Append scalar fields
+    const scalarFields = [
+      "userId", "name", "email", "phone", "category",
+      "experience", "serviceCharge", "bio",
+      "area", "city", "state", "pincode",
+      "latitude", "longitude", "availability",
+    ];
+
+    scalarFields.forEach((key) => {
+      const value = worker[key];
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, String(value));
       }
     });
 
+    // services → repeated services[] keys  e.g. services[]="Makeup Artist"
+    if (Array.isArray(worker.services)) {
+      worker.services.forEach((s) => {
+        formData.append("services[]", s);
+      });
+    }
+
+    // Attach image files
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formData.append("images", file, file.name);
+      });
+    }
+
     const response = await fetch(`${API_BASE_URL}/beautycreate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
+      // Do NOT set Content-Type — browser sets it with boundary automatically
       body: formData,
-      redirect: "follow"
+      redirect: "follow",
     });
 
     if (!response.ok) {
@@ -91,12 +118,12 @@ export const createBeautyWorker = async (worker: Partial<BeautyWorker>): Promise
     const data = await response.json();
     return data;
   } catch (err: unknown) {
-    // Type narrowing for unknown error
     const message = err instanceof Error ? err.message : String(err);
     console.error("Error creating beauty worker:", message);
     return { success: false, message };
   }
 };
+
 /**
  * Fetch all beauty & wellness workers
  */
@@ -119,10 +146,9 @@ export const getAllBeautyWorkers = async (): Promise<BeautyWorkerResponse> => {
     return { success: false, count: 0, data: [] };
   }
 };
+
 /**
  * Fetch a single beauty worker by ID
- * @param id string - Worker ID
- * @returns Promise<BeautyWorker | null>
  */
 export const getBeautyWorkerById = async (id: string): Promise<BeautyWorker | null> => {
   try {
@@ -143,35 +169,48 @@ export const getBeautyWorkerById = async (id: string): Promise<BeautyWorker | nu
     return null;
   }
 };
+
 /**
- * Update a beauty worker by ID
- * @param id string - Worker ID
- * @param worker Partial<BeautyWorker> - Fields to update
- * @param imageFile optional File - Image to upload
- * @returns Promise<any>
+ * Update a beauty worker by ID.
+ * Sends multipart/form-data with services[] keys and optional new image files.
+ * existingImages are NOT forwarded to the backend — the server keeps them as-is
+ * unless you have a dedicated "remove image" endpoint.
  */
 export const updateBeautyWorker = async (
   id: string,
   worker: Partial<BeautyWorker>,
-  imageFile?: File
+  imageFiles?: File[]
 ): Promise<any> => {
   try {
     const formData = new FormData();
 
-    // Append all worker fields dynamically
-    Object.entries(worker).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          value.forEach((v) => formData.append(key, v.toString()));
-        } else {
-          formData.append(key, value.toString());
-        }
+    // Append scalar fields
+    const scalarFields = [
+      "userId", "name", "email", "phone", "category",
+      "experience", "serviceCharge", "bio",
+      "area", "city", "state", "pincode",
+      "latitude", "longitude", "availability",
+    ];
+
+    scalarFields.forEach((key) => {
+      const value = worker[key];
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, String(value));
       }
     });
 
-    // Append image file if provided
-    if (imageFile) {
-      formData.append("images", imageFile, imageFile.name);
+    // services → repeated services[] keys
+    if (Array.isArray(worker.services)) {
+      worker.services.forEach((s) => {
+        formData.append("services[]", s);
+      });
+    }
+
+    // Attach new image files only
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        formData.append("images", file, file.name);
+      });
     }
 
     const response = await fetch(`${API_BASE_URL}/updatebeautyworker/${id}`, {
@@ -192,10 +231,9 @@ export const updateBeautyWorker = async (
     return { success: false, message };
   }
 };
+
 /**
  * Delete a beauty worker by ID
- * @param id string - Worker ID
- * @returns Promise<any>
  */
 export const deleteById = async (id: string): Promise<any> => {
   try {
@@ -216,12 +254,9 @@ export const deleteById = async (id: string): Promise<any> => {
     return { success: false, message };
   }
 };
+
 /**
  * Fetch beauty workers for a specific user filtered by category and services
- * @param userId string - User ID
- * @param category string - Category (optional)
- * @param services string - Service name (optional)
- * @returns Promise<BeautyWorkerResponse>
  */
 export const getUserBeautyWorkers = async (
   userId: string,

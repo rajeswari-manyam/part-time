@@ -98,7 +98,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A5F9E]"></div>
                 </div>
             </div>
         );
@@ -126,7 +126,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate('/add-hospital-service-form')}
-                        className="gap-1.5"
+                        className="gap-1.5 bg-[#1A5F9E] hover:bg-[#154a7e]"
                     >
                         + Add Hospital Service
                     </Button>
@@ -149,7 +149,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                         className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
                     >
                         {/* Hospital Image */}
-                        <div className="relative h-48 bg-gradient-to-br from-emerald-50 to-blue-50">
+                        <div className="relative h-48 bg-gradient-to-br from-[#1A5F9E]/10 to-[#1A5F9E]/5">
                             {hospital.images && hospital.images.length > 0 ? (
                                 <img
                                     src={hospital.images[0]}
@@ -164,7 +164,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
 
                             {/* Type Badge */}
                             <div className="absolute top-3 left-3">
-                                <span className={`${typography.misc.badge} bg-emerald-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                                <span className={`${typography.misc.badge} bg-[#1A5F9E] text-white px-3 py-1 rounded-full shadow-md`}>
                                     {hospital.hospitalType || 'Hospital'}
                                 </span>
                             </div>
@@ -212,7 +212,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                                         {ensureArray(hospital.departments).slice(0, 3).map((dept, idx) => (
                                             <span
                                                 key={idx}
-                                                className={`${typography.fontSize.xs} bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full`}
+                                                className={`${typography.fontSize.xs} bg-[#1A5F9E]/5 text-[#1A5F9E] px-2 py-0.5 rounded-full`}
                                             >
                                                 {dept}
                                             </span>
@@ -236,7 +236,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                                         {ensureArray(hospital.services).slice(0, 2).map((service, idx) => (
                                             <span
                                                 key={idx}
-                                                className={`${typography.fontSize.xs} bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full`}
+                                                className={`${typography.fontSize.xs} bg-[#1A5F9E]/10 text-[#1A5F9E] px-2 py-0.5 rounded-full`}
                                             >
                                                 {service}
                                             </span>
@@ -255,7 +255,7 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleView(hospital.id!)}
-                                className="w-full mt-2"
+                                className="w-full mt-2 border-[#1A5F9E] text-[#1A5F9E] hover:bg-[#1A5F9E]/10"
                             >
                                 View Details
                             </Button>

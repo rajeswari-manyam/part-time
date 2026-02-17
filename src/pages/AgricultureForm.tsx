@@ -16,24 +16,30 @@ import { X, Upload, MapPin } from 'lucide-react';
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Service', 'Fixed Rate'];
 
 // ── Pull agriculture subcategories from JSON ─────────────────────────────────
-const getAgricultureSubcategories = () => {
-    const agricultureCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 19);
-    return agricultureCategory ? agricultureCategory.items.map(item => item.name) : [
-        'Tractor Service',
-        'Water Pump Service',
-        'Fertilizer Dealer',
-        'Seed Dealer',
-        'Farming Tools',
-        'Veterinary Services'
-    ];
+const getAgricultureSubcategories = (): string[] => {
+    const agricultureCategory = subcategoriesData.subcategories.find(
+        (cat: any) => cat.categoryId === 19
+    );
+    return agricultureCategory
+        ? agricultureCategory.items.map((item: any) => item.name)
+        : ['Tractor Service', 'Water Pump Service', 'Fertilizer Dealer', 'Seed Dealer', 'Farming Tools', 'Veterinary Services'];
 };
 
+// ── Constant so it's not recomputed on every render ──────────────────────────
+const AGRICULTURE_CATEGORIES = getAgricultureSubcategories();
+
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-green-500 focus:border-green-500 ` +
+    `focus:ring-2 focus:ring-[#1A5F9E] focus:border-[#1A5F9E] ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `${typography.form.input} bg-white`;
+
+const inputError =
+    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
+    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -83,6 +89,83 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 };
 
 // ============================================================================
+// VALIDATION HELPER
+// ============================================================================
+interface FieldErrors {
+    serviceName?: string;
+    description?: string;
+    serviceCharge?: string;
+    area?: string;
+    city?: string;
+    state?: string;
+    location?: string;
+    userId?: string;
+}
+
+const validateForm = (formData: {
+    userId: string;
+    serviceName: string;
+    description: string;
+    serviceCharge: string;
+    area: string;
+    city: string;
+    state: string;
+    latitude: string;
+    longitude: string;
+}, isEditMode: boolean): FieldErrors => {
+    const errors: FieldErrors = {};
+
+    // FIX 5: Validate userId for new submissions
+    if (!isEditMode && !formData.userId.trim()) {
+        errors.userId = 'User not logged in. Please log in to add a service.';
+    }
+
+    if (!formData.serviceName.trim()) {
+        errors.serviceName = 'Service name is required';
+    } else if (formData.serviceName.trim().length < 3) {
+        errors.serviceName = 'Service name must be at least 3 characters';
+    }
+
+    if (!formData.description.trim()) {
+        errors.description = 'Description is required';
+    } else if (formData.description.trim().length < 10) {
+        errors.description = 'Description must be at least 10 characters';
+    }
+
+    // FIX 1 & 7: Proper number validation — not just .trim()
+    if (!formData.serviceCharge.trim()) {
+        errors.serviceCharge = 'Service charge is required';
+    } else {
+        const charge = parseFloat(formData.serviceCharge);
+        if (isNaN(charge)) {
+            errors.serviceCharge = 'Service charge must be a valid number';
+        } else if (charge < 0) {
+            errors.serviceCharge = 'Service charge cannot be negative';
+        } else if (charge === 0) {
+            errors.serviceCharge = 'Service charge must be greater than 0';
+        }
+    }
+
+    // FIX 2: Validate address fields (marked required in UI but were never checked)
+    if (!formData.area.trim()) {
+        errors.area = 'Area is required';
+    }
+    if (!formData.city.trim()) {
+        errors.city = 'City is required';
+    }
+    if (!formData.state.trim()) {
+        errors.state = 'State is required';
+    }
+
+    // Validate coordinates
+    if (!formData.latitude || !formData.longitude) {
+        errors.location = 'Location is required — use Auto Detect or enter your address';
+    }
+
+    return errors;
+};
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 const AgricultureForm: React.FC = () => {
@@ -107,8 +190,8 @@ const AgricultureForm: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
 
-    const agricultureCategories = getAgricultureSubcategories();
-    const defaultCategory = getSubcategoryFromUrl() || agricultureCategories[0] || 'Tractor Service';
+    // FIX 9: defaultCategory derived from the module-level constant, not re-evaluated lazily
+    const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_CATEGORIES[0] || 'Tractor Service';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
@@ -124,6 +207,9 @@ const AgricultureForm: React.FC = () => {
         longitude: '',
     });
 
+    // Per-field validation errors
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
     // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -131,7 +217,11 @@ const AgricultureForm: React.FC = () => {
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+
+    // FIX 3 & 4: Use a ref to track whether GPS just set coordinates,
+    // so we never auto-geocode over freshly detected GPS coordinates.
+    // We store the coords themselves (not just a boolean) so we can compare.
+    const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -140,10 +230,10 @@ const AgricultureForm: React.FC = () => {
             setLoadingData(true);
             try {
                 const data = await getAgricultureById(editId);
-                
+
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
+                    userId: data.userId || prev.userId,
                     serviceName: data.serviceName || '',
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
@@ -169,38 +259,53 @@ const AgricultureForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
+    // ── FIX 3 & 4: Auto-geocode ONLY when all these are true: ────────────────
+    //   • area/city/state changed
+    //   • lat/lng are genuinely empty (never set)
+    //   • the change was NOT caused by GPS detection (compare against gpsCoords ref)
     useEffect(() => {
-        const detectCoordinates = async () => {
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
+        const { area, city, state, latitude, longitude } = formData;
+
+        // Skip if no area typed yet
+        if (!area.trim()) return;
+
+        // Skip if coordinates already exist
+        if (latitude && longitude) return;
+
+        // Skip if these coords were set by GPS (prevent geocoding over GPS)
+        if (
+            gpsCoords.current &&
+            gpsCoords.current.lat === latitude &&
+            gpsCoords.current.lng === longitude
+        ) return;
+
+        const fullAddress = [area, city, state].filter(Boolean).join(', ');
+        if (!fullAddress.trim()) return;
+
+        const timer = setTimeout(async () => {
+            const coords = await geocodeAddress(fullAddress);
+            if (coords) {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: coords.lat.toString(),
+                    longitude: coords.lng.toString(),
+                }));
             }
-            if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}`
-                    .replace(/, ,/g, ',').replace(/^,|,$/g, '');
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
-            }
-        };
-        const timer = setTimeout(detectCoordinates, 1000);
+        }, 1000);
+
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state]);
 
-    // ── generic input ────────────────────────────────────────────────────────
+    // ── generic input — clears field error on change ─────────────────────────
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear the specific field error as user corrects it
+        if (fieldErrors[name as keyof FieldErrors]) {
+            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
     };
 
     // ── image helpers ────────────────────────────────────────────────────────
@@ -255,6 +360,7 @@ const AgricultureForm: React.FC = () => {
         setLocationLoading(true);
         setError('');
         setLocationWarning('');
+        setFieldErrors(prev => ({ ...prev, location: undefined, area: undefined, city: undefined, state: undefined }));
 
         if (!navigator.geolocation) {
             setError('Geolocation not supported by your browser');
@@ -264,18 +370,19 @@ const AgricultureForm: React.FC = () => {
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
                 const accuracy = pos.coords.accuracy;
 
                 if (accuracy > 500) {
                     setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
-                        `The address fields below may be approximate — please verify and correct if needed.`
+                        `⚠️ Low accuracy (~${Math.round(accuracy)}m). Please verify the address fields below.`
                     );
                 }
+
+                // FIX 3 & 4: Record GPS coords in ref BEFORE setting state,
+                // so the geocode useEffect sees them and skips auto-geocoding.
+                gpsCoords.current = { lat, lng };
 
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
@@ -295,7 +402,7 @@ const AgricultureForm: React.FC = () => {
                         }));
                     }
                 } catch (e) {
-                    console.error(e);
+                    console.error('Reverse geocode error:', e);
                 }
 
                 setLocationLoading(false);
@@ -310,64 +417,83 @@ const AgricultureForm: React.FC = () => {
 
     // ── submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
         setError('');
         setSuccessMessage('');
 
+        // FIX 1, 2, 5, 7: Run full validation before touching the API
+        const errors = validateForm(formData, isEditMode);
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            // Show the first error as a toast too, for visibility
+            const firstError = Object.values(errors)[0];
+            setError(firstError || 'Please fix the errors below before submitting');
+            // Scroll to top so user sees the error banner
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setFieldErrors({});
+        setLoading(true);
+
         try {
-            // Validation
-            if (!formData.serviceName.trim())
-                throw new Error('Please enter service name');
-            if (!formData.description.trim())
-                throw new Error('Please enter a description');
-            if (!formData.serviceCharge.trim())
-                throw new Error('Please enter service charge');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide location (use Auto Detect or enter address)');
+            // FIX 7: Parse once and reuse — guaranteed non-NaN because validation passed
+            const charge = parseFloat(formData.serviceCharge);
+            const lat = parseFloat(formData.latitude);
+            const lng = parseFloat(formData.longitude);
 
             if (isEditMode && editId) {
-                // Update existing service
-                const payload: UpdateAgriculturePayload = {
-                    serviceName: formData.serviceName,
-                    description: formData.description,
+                // FIX 6: In update mode, pass existingImages URLs so backend keeps them
+                const payload: UpdateAgriculturePayload & { existingImages?: string[] } = {
+                    serviceName: formData.serviceName.trim(),
+                    description: formData.description.trim(),
                     subCategory: formData.subCategory,
-                    serviceCharge: parseFloat(formData.serviceCharge),
+                    serviceCharge: charge,
                     chargeType: formData.chargeType,
-                    latitude: parseFloat(formData.latitude),
-                    longitude: parseFloat(formData.longitude),
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
+                    latitude: lat,
+                    longitude: lng,
+                    area: formData.area.trim(),
+                    city: formData.city.trim(),
+                    state: formData.state.trim(),
+                    // Only send new File images if any were added
                     images: selectedImages.length > 0 ? selectedImages : undefined,
+                    // Send remaining existing image URLs so backend doesn't delete them
+                    existingImages: existingImages,
                 };
 
                 await updateAgricultureById(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                // Create new service
                 const payload: AddAgriculturePayload = {
-                    userId: formData.userId,
-                    serviceName: formData.serviceName,
-                    description: formData.description,
+                    userId: formData.userId.trim(),
+                    serviceName: formData.serviceName.trim(),
+                    description: formData.description.trim(),
                     subCategory: formData.subCategory,
-                    serviceCharge: parseFloat(formData.serviceCharge),
+                    serviceCharge: charge,
                     chargeType: formData.chargeType,
-                    latitude: parseFloat(formData.latitude),
-                    longitude: parseFloat(formData.longitude),
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
+                    latitude: lat,
+                    longitude: lng,
+                    area: formData.area.trim(),
+                    city: formData.city.trim(),
+                    state: formData.state.trim(),
                     images: selectedImages,
                 };
 
                 await addAgricultureService(payload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
-        } catch (err: any) {
+
+            setTimeout(() => navigate('/listed-jobs'), 1500);
+
+        } catch (err: unknown) {
+            // FIX 10: Handle errors that may not have .message
             console.error('Submit error:', err);
-            setError(err.message || 'Failed to submit form');
+            if (err instanceof Error) {
+                setError(err.message);
+            } else if (typeof err === 'string') {
+                setError(err);
+            } else {
+                setError('Failed to submit form. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -380,8 +506,8 @@ const AgricultureForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A5F9E] mx-auto mb-4" />
+                    <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
         );
@@ -418,24 +544,35 @@ const AgricultureForm: React.FC = () => {
             {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
-                {/* Alerts */}
+                {/* Global error banner */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
                         <div className="flex items-start gap-2">
                             <span className="text-red-600 mt-0.5">⚠️</span>
                             <div className="flex-1">
-                                <p className="font-semibold text-red-800 mb-1">Error</p>
+                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
                                 <p className="text-red-700">{error}</p>
                             </div>
                         </div>
                     </div>
                 )}
+
+                {/* Success banner */}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        <div className="flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">✓</span>
-                            <p>{successMessage}</p>
+                    <div className="p-4 bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[#1A5F9E] text-lg">✓</span>
+                            <p className={`${typography.body.small} text-[#1A5F9E] font-medium`}>{successMessage}</p>
                         </div>
+                    </div>
+                )}
+
+                {/* Not logged in warning */}
+                {!formData.userId && !isEditMode && (
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <p className={`${typography.body.small} text-orange-700`}>
+                            ⚠️ You must be logged in to add a service.
+                        </p>
                     </div>
                 )}
 
@@ -449,8 +586,13 @@ const AgricultureForm: React.FC = () => {
                             value={formData.serviceName}
                             onChange={handleInputChange}
                             placeholder="e.g. Krishna Tractor Service, Green Farm Equipment"
-                            className={inputBase}
+                            className={fieldErrors.serviceName ? inputError : inputBase}
                         />
+                        {fieldErrors.serviceName && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.serviceName}
+                            </p>
+                        )}
                     </div>
                 </SectionCard>
 
@@ -471,7 +613,7 @@ const AgricultureForm: React.FC = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {agricultureCategories.map(t => (
+                            {AGRICULTURE_CATEGORIES.map(t => (
                                 <option key={t} value={t}>{t}</option>
                             ))}
                         </select>
@@ -488,8 +630,13 @@ const AgricultureForm: React.FC = () => {
                             onChange={handleInputChange}
                             rows={4}
                             placeholder="Describe your agriculture service, equipment, or products..."
-                            className={inputBase + ' resize-none'}
+                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
+                        {fieldErrors.description && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.description}
+                            </p>
+                        )}
                     </div>
                 </SectionCard>
 
@@ -504,9 +651,15 @@ const AgricultureForm: React.FC = () => {
                                 value={formData.serviceCharge}
                                 onChange={handleInputChange}
                                 placeholder="Amount"
-                                min="0"
-                                className={inputBase}
+                                min="1"
+                                step="0.01"
+                                className={fieldErrors.serviceCharge ? inputError : inputBase}
                             />
+                            {fieldErrors.serviceCharge && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.serviceCharge}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
@@ -536,11 +689,11 @@ const AgricultureForm: React.FC = () => {
                     title="Service Location"
                     action={
                         <Button
-                            variant="success"
+                            variant="primary"
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="!py-1.5 !px-3 !bg-[#1A5F9E] hover:!bg-[#154a7e]"
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -560,33 +713,79 @@ const AgricultureForm: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="e.g. Vidyanagar" className={inputBase} />
+                            <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Vidyanagar"
+                                className={fieldErrors.area ? inputError : inputBase}
+                            />
+                            {fieldErrors.area && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.area}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="e.g. Hubli" className={inputBase} />
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Hubli"
+                                className={fieldErrors.city ? inputError : inputBase}
+                            />
+                            {fieldErrors.city && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.city}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     <div>
                         <FieldLabel required>State</FieldLabel>
-                        <input type="text" name="state" value={formData.state}
-                            onChange={handleInputChange} placeholder="e.g. Karnataka" className={inputBase} />
+                        <input
+                            type="text"
+                            name="state"
+                            value={formData.state}
+                            onChange={handleInputChange}
+                            placeholder="e.g. Karnataka"
+                            className={fieldErrors.state ? inputError : inputBase}
+                        />
+                        {fieldErrors.state && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.state}
+                            </p>
+                        )}
                     </div>
 
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-green-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
-                        </p>
-                    </div>
+                    {/* Location error (coordinates missing) */}
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-700 flex items-center gap-1.5">
+                                <span>⚠️</span> {fieldErrors.location}
+                            </p>
+                        </div>
+                    )}
 
+                    {/* Tip box */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-[#1A5F9E]`}>
+                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
+                        <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-[#1A5F9E]`}>
                                 <span className="font-semibold">✓ Location set:</span>
-                                <span className="ml-1">
+                                <span className="ml-1 font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -598,8 +797,11 @@ const AgricultureForm: React.FC = () => {
                 <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect} className="hidden"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
@@ -613,11 +815,11 @@ const AgricultureForm: React.FC = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum 5 images'
+                                            ? 'Maximum 5 images reached'
                                             : 'Tap to upload photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload equipment or service photos (max 5 images)
+                                        JPG, PNG, WebP — max 5 MB each, up to 5 images
                                     </p>
                                 </div>
                             </div>
@@ -626,28 +828,44 @@ const AgricultureForm: React.FC = () => {
 
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
+                            {/* Existing images from backend */}
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                    <img
+                                        src={url}
+                                        alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-[#1A5F9E] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
                                         Saved
                                     </span>
                                 </div>
                             ))}
+
+                            {/* New image previews */}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-green-400" />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                    <img
+                                        src={preview}
+                                        alt={`New ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-[#1A5F9E]"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-[#1A5F9E] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
                                         New
                                     </span>
                                 </div>
@@ -660,17 +878,21 @@ const AgricultureForm: React.FC = () => {
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
-                        disabled={loading}
+                        disabled={loading || !!successMessage}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading
-                            ? 'bg-green-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg'
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading || successMessage
+                            ? 'bg-[#1A5F9E]/70 cursor-not-allowed'
+                            : 'bg-[#1A5F9E] hover:bg-[#154a7e] active:bg-[#0f365d] shadow-md hover:shadow-lg'
                             } ${typography.body.base}`}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="animate-spin">⏳</span>
                                 {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span>✓</span> Done
                             </span>
                         ) : (
                             isEditMode ? 'Update Service' : 'Create Service'

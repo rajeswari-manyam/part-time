@@ -1,3 +1,5 @@
+// src/services/ShoppingService.service.ts
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 /* =========================
@@ -15,9 +17,8 @@ export interface ShoppingStore {
   city?: string;
   state?: string;
   pincode?: string;
-  
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | string;
+  longitude?: number | string;
   images?: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -42,40 +43,91 @@ export interface CreateShoppingResponse {
   data?: ShoppingStore;
 }
 
+export interface DeleteShoppingResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface UpdateShoppingResponse {
+  success: boolean;
+  message: string;
+  data?: ShoppingStore;
+}
+
+export interface UserStoresResponse {
+  success: boolean;
+  count: number;
+  data: ShoppingStore[];
+}
+
 /* =========================
    CREATE SHOPPING STORE
 ========================= */
 export const createShoppingStore = async (
-  payload: ShoppingStore
+  payload: ShoppingStore | FormData
 ): Promise<CreateShoppingResponse> => {
   try {
-    const formData = new URLSearchParams();
+    let body: BodyInit;
+    let headers: HeadersInit = {};
 
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
-      }
-    });
+    // Check if FormData is passed (for image uploads)
+    if (payload instanceof FormData) {
+      body = payload;
+      // Don't set Content-Type - browser will set it with boundary for multipart/form-data
+      console.log('📤 Creating store with FormData (includes images)');
+      const entries = Array.from(payload.entries());
+      entries.forEach(([key, value]) => {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      });
+    } else {
+      // Regular JSON payload (backward compatibility)
+      const formData = new URLSearchParams();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
+      body = formData;
+      headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      console.log('📤 Creating store with URLSearchParams (no images)');
+    }
 
     const response = await fetch(`${API_BASE_URL}/shoppingRetailCreate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData,
+      headers,
+      body,
       redirect: "follow",
     });
 
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let errorMessage = `HTTP ${response.status}: `;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+      } catch {
+        errorMessage += responseText || response.statusText;
+      }
+      throw new Error(errorMessage);
     }
 
-    return await response.json();
-  } catch (error) {
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
     console.error("Error creating shopping store:", error);
     return {
       success: false,
-      message: "Failed to create shopping store",
+      message: error.message || "Failed to create shopping store",
     };
   }
 };
@@ -162,14 +214,10 @@ export const getShoppingRetailById = async (
     };
   }
 };
+
 /* =========================
    DELETE SHOPPING RETAIL
 ========================= */
-export interface DeleteShoppingResponse {
-  success: boolean;
-  message: string;
-}
-
 export const deleteShoppingRetail = async (
   storeId: string
 ): Promise<DeleteShoppingResponse> => {
@@ -199,12 +247,10 @@ export const deleteShoppingRetail = async (
     };
   }
 };
-export interface UserStoresResponse {
-  success: boolean;
-  count: number;
-  data: ShoppingStore[];
-}
 
+/* =========================
+   GET USER STORES
+========================= */
 export const getUserStores = async (
   userId: string,
   storeType?: string,
@@ -216,7 +262,6 @@ export const getUserStores = async (
 
   try {
     const queryParams = new URLSearchParams();
-
     queryParams.append("userId", userId);
 
     if (storeType) {
@@ -249,16 +294,10 @@ export const getUserStores = async (
     };
   }
 };
+
 /* =========================
    UPDATE SHOPPING RETAIL
 ========================= */
-
-export interface UpdateShoppingResponse {
-  success: boolean;
-  message: string;
-  data?: ShoppingStore;
-}
-
 export const updateShoppingRetail = async (
   storeId: string,
   payload: ShoppingStore | FormData
@@ -270,13 +309,21 @@ export const updateShoppingRetail = async (
   try {
     let body: BodyInit;
 
-    // If FormData is passed directly (for images)
+    // Check if FormData is passed (for image uploads)
     if (payload instanceof FormData) {
       body = payload;
+      console.log('📤 Updating store with FormData (includes images)');
+      const entries = Array.from(payload.entries());
+      entries.forEach(([key, value]) => {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      });
     } else {
       // Convert object payload to FormData
       const formData = new FormData();
-
       Object.entries(payload).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
@@ -286,8 +333,8 @@ export const updateShoppingRetail = async (
           }
         }
       });
-
       body = formData;
+      console.log('📤 Updating store with FormData (from object)');
     }
 
     const response = await fetch(
@@ -299,16 +346,31 @@ export const updateShoppingRetail = async (
       }
     );
 
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let errorMessage = `HTTP ${response.status}: `;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+      } catch {
+        errorMessage += responseText || response.statusText;
+      }
+      throw new Error(errorMessage);
     }
 
-    return await response.json();
-  } catch (error) {
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
     console.error("Error updating shopping retail:", error);
     return {
       success: false,
-      message: "Failed to update shopping retail",
+      message: error.message || "Failed to update shopping retail",
     };
   }
 };

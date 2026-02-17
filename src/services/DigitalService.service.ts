@@ -1,6 +1,6 @@
 // src/services/DigitalService.service.ts
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
 export interface DigitalWorker {
   _id?: string;
@@ -12,6 +12,7 @@ export interface DigitalWorker {
   services?: string[];
   experience?: number;
   serviceCharge?: number;
+  chargeType?: string;
   bio?: string;
   images?: string[];
   area?: string;
@@ -34,21 +35,59 @@ export interface DigitalWorkerResponse {
   data: DigitalWorker[];
 }
 
-export interface AddDigitalServicePayload {
-  userId: string;
-  serviceName: string;
-  description: string;
-  category: string;
-  subCategory: string;
-  serviceCharge: string | number;
-  chargeType: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  latitude: number;
-  longitude: number;
-}
+/**
+ * Add a new digital service
+ * @param formData FormData containing service details and images
+ * @returns Promise<any>
+ */
+export const addDigitalService = async (formData: FormData): Promise<any> => {
+  try {
+    console.log('📤 Sending FormData to API:');
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      if (value instanceof File) {
+        console.log(`  ${key}: [File] ${value.name} (${value.size} bytes)`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
+
+    const response = await fetch(`${API_BASE_URL}/addDigitalService`, {
+      method: "POST",
+      body: formData,
+      redirect: "follow",
+    });
+
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: `;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+        return { success: false, message: errorMessage, details: errorData };
+      } catch {
+        errorMessage += responseText || response.statusText;
+        return { success: false, message: errorMessage };
+      }
+    }
+
+    try {
+      const result = JSON.parse(responseText);
+      return result;
+    } catch {
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
+    console.error("❌ Network or fetch error:", error);
+    return {
+      success: false,
+      message: error.message || "Network error - failed to connect to server"
+    };
+  }
+};
 
 /**
  * Fetch nearby digital service workers
@@ -78,42 +117,15 @@ export const getNearbyDigitalWorkers = async (
     const data: DigitalWorkerResponse = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching digital workers:", error);
+    console.error("Error fetching digital service workers:", error);
     return { success: false, count: 0, data: [] };
   }
 };
 
 /**
- * Add a new digital service
- * @param payload AddDigitalServicePayload
- * @returns Promise<any>
+ * Fetch all digital services
+ * @returns Promise<DigitalWorkerResponse>
  */
-export const addDigitalService = async (payload: AddDigitalServicePayload): Promise<any> => {
-  try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => formData.append(key, String(value)));
-
-    const response = await fetch(`${API_BASE_URL}/addDigitalService`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData,
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Error adding digital service:", error);
-    return { success: false, message: "Failed to add service" };
-  }
-};
-
 export const getAllDigitalServices = async (): Promise<DigitalWorkerResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/getAllDigitalServices`, {
@@ -134,13 +146,15 @@ export const getAllDigitalServices = async (): Promise<DigitalWorkerResponse> =>
 };
 
 /**
- * Fetch digital service by ID
- * @param id string
+ * Fetch a digital service by ID
+ * @param id string - the digital service _id
  * @returns Promise<DigitalWorker | null>
  */
 export const getDigitalServiceById = async (id: string): Promise<DigitalWorker | null> => {
+  if (!id) throw new Error("Digital service ID is required");
+
   try {
-    const response = await fetch(`${API_BASE_URL}/getDigitalServicesById/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/getDigitalServiceById/${id}`, {
       method: "GET",
       redirect: "follow",
     });
@@ -149,50 +163,82 @@ export const getDigitalServiceById = async (id: string): Promise<DigitalWorker |
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: DigitalWorker = await response.json();
-    return data;
+    const data: { success: boolean; data: DigitalWorker } = await response.json();
+    return data.success ? data.data : null;
   } catch (error) {
-    console.error(`Error fetching digital service by ID ${id}:`, error);
+    console.error(`Error fetching digital service by ID (${id}):`, error);
     return null;
   }
 };
 
-export interface AddOrUpdateDigitalServicePayload {
-  userId: string;
-  serviceName: string;
-  description: string;
-  category: string;
-  subCategory: string;
-  serviceCharge: string | number;
-  chargeType: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-  latitude: number;
-  longitude: number;
-}
-
 /**
  * Update an existing digital service by ID
- * @param id string - the digital service ID
- * @param payload AddOrUpdateDigitalServicePayload
+ * @param id string - the digital service _id
+ * @param formData FormData containing updated service details and images
  * @returns Promise<any>
  */
-export const updateDigitalService = async (
-  id: string,
-  payload: AddOrUpdateDigitalServicePayload
-): Promise<any> => {
+export const updateDigitalService = async (id: string, formData: FormData): Promise<any> => {
+  if (!id) throw new Error("Digital service ID is required");
+
   try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => formData.append(key, String(value)));
+    console.log('📤 Updating digital service with FormData:');
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      if (value instanceof File) {
+        console.log(`  ${key}: [File] ${value.name}`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
 
     const response = await fetch(`${API_BASE_URL}/updateDigitalService/${id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
       body: formData,
+      redirect: "follow",
+    });
+
+    const responseText = await response.text();
+    console.log('📥 Server response:', responseText);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: `;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage += errorData.message || errorData.error || 'Server error';
+        return { success: false, message: errorMessage, details: errorData };
+      } catch {
+        errorMessage += responseText || response.statusText;
+        return { success: false, message: errorMessage };
+      }
+    }
+
+    try {
+      const result = JSON.parse(responseText);
+      return result;
+    } catch {
+      return { success: false, message: "Invalid server response" };
+    }
+
+  } catch (error: any) {
+    console.error(`❌ Error updating digital service (${id}):`, error);
+    return {
+      success: false,
+      message: error.message || "Network error"
+    };
+  }
+};
+
+/**
+ * Delete a digital service by ID
+ * @param id string - the digital service _id
+ * @returns Promise<any>
+ */
+export const deleteDigitalService = async (id: string): Promise<any> => {
+  if (!id) throw new Error("Digital service ID is required");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/deleteDigitalService/${id}`, {
+      method: "DELETE",
       redirect: "follow",
     });
 
@@ -203,64 +249,42 @@ export const updateDigitalService = async (
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error(`Error updating digital service with ID ${id}:`, error);
-    return { success: false, message: "Failed to update service" };
+    console.error(`Error deleting digital service (${id}):`, error);
+    return { success: false, message: "Failed to delete digital service" };
   }
 };
 
+/**
+ * Fetch digital services for a specific user, optionally filtered by service name
+ * @param userId string - ID of the user
+ * @param serviceName string (optional) - filter by service name
+ * @returns Promise<DigitalWorkerResponse>
+ */
+export const getUserDigitalServices = async (
+  userId: string,
+  serviceName?: string
+): Promise<DigitalWorkerResponse> => {
+  if (!userId) throw new Error("User ID is required");
 
-export const deleteDigitalService = async (
-  id: string,
-  category: string,
-  serviceName: string
-): Promise<any> => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/getUserBusiness?category=${encodeURIComponent(
-        category
-      )}&serviceName=${encodeURIComponent(serviceName)}&_id=${id}`,
-      {
-        method: "DELETE",
-        redirect: "follow",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    let url = `${API_BASE_URL}/getUserDigitalServices?userId=${userId}`;
+    if (serviceName) {
+      url += `&serviceName=${encodeURIComponent(serviceName)}`;
     }
 
-    const result = await response.text();
-    return JSON.parse(result);
-  } catch (error) {
-    console.error(`Error deleting digital service with ID ${id}:`, error);
-    return { success: false, message: "Failed to delete service" };
-  }
-};
-
-export const getUserDigitalServices = async (userId: string): Promise<DigitalWorkerResponse> => {
-  try {
-    // Note: Assuming 'Tech & Digital Services' or similar category string is required. 
-    // If the endpoint returns all businesses for the user, we might need to filter client-side.
-    // However, the delete instructions imply querying by category is supported/required.
-    // Here we request all user businesses, filtering might happen on the backend or we filter here.
-    // For now, let's assume we fetch all and filter in the component or rely on backend.
-    // Or closer to other services:
-    const response = await fetch(`${API_BASE_URL}/getUserBusiness?userId=${userId}&category=Tech & Digital Services`, {
+    const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
     });
 
     if (!response.ok) {
-      // If 404 or similar, maybe just return empty
-      if (response.status === 404) return { success: true, count: 0, data: [] };
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data: DigitalWorkerResponse = await response.json();
     return data;
   } catch (error) {
-    console.error(`Error fetching digital services for user ${userId}:`, error);
+    console.error(`Error fetching digital services for user (${userId}):`, error);
     return { success: false, count: 0, data: [] };
   }
 };
-

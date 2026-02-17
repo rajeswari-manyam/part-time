@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// CORRECTED IMPORT PATH - should be CreativeArtService.service, not Corporate.service
-import {
-    getUserCreativeArts,
-    deleteCreativeArtService,
-    CreativeArtWorker
-} from "../services/Creative.service";
+import { getUserCreativeArts, deleteCreativeArtService, CreativeArtWorker } from "../services/Creative.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
+
+// ── Helper ────────────────────────────────────────────────────────────────────
+const getCategoryIcon = (subcategory?: string): string => {
+    const n = (subcategory || "").toLowerCase();
+    if (n.includes("caricature")) return "🎨";
+    if (n.includes("painting") || n.includes("painter")) return "🖌️";
+    if (n.includes("mural") || n.includes("wall")) return "🖼️";
+    if (n.includes("gift") || n.includes("handmade")) return "🎁";
+    if (n.includes("craft")) return "✂️";
+    return "🎨";
+};
 
 interface ArtUserServiceProps {
     userId: string;
@@ -21,219 +27,62 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
     userId,
     selectedSubcategory,
     hideHeader = false,
-    hideEmptyState = false
+    hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
     const [arts, setArts] = useState<CreativeArtWorker[]>([]);
     const [loading, setLoading] = useState(true);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-    // ── Fetch Arts API ──
+    // ── Fetch ─────────────────────────────────────────────────────────────────
     useEffect(() => {
         const fetchArts = async () => {
-            if (!userId) {
-                setArts([]);
-                setLoading(false);
-                return;
-            }
-
+            if (!userId) { setArts([]); setLoading(false); return; }
             setLoading(true);
             try {
                 const response = await getUserCreativeArts(userId);
-                setArts(response.success ? response.data || [] : []);
+                if (response.success && response.data) {
+                    setArts(Array.isArray(response.data) ? response.data : [response.data]);
+                } else { setArts([]); }
             } catch (error) {
                 console.error("Error fetching art services:", error);
                 setArts([]);
-            } finally {
-                setLoading(false);
-            }
+            } finally { setLoading(false); }
         };
-
         fetchArts();
     }, [userId]);
 
-    // ── Filter by subcategory ──
+    // ── Filter ────────────────────────────────────────────────────────────────
     const filteredArts = selectedSubcategory
-        ? arts.filter(a =>
-            a.subCategory &&
-            selectedSubcategory.toLowerCase().includes(a.subCategory.toLowerCase())
-        )
+        ? arts.filter(a => a.subCategory && selectedSubcategory.toLowerCase().includes(a.subCategory.toLowerCase()))
         : arts;
 
-    // ── Delete Art API ──
-    const handleDelete = async (artId: string) => {
-        if (!window.confirm("Delete this art service?")) return;
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleEdit = (id: string) => navigate(`/add-art-service-form?id=${id}`);
 
-        setDeletingId(artId);
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this service?")) return;
+        setDeleteLoading(id);
         try {
-            const result = await deleteCreativeArtService(artId);
-            if (result.success) {
-                setArts(prev => prev.filter(a => a._id !== artId));
-            } else {
-                alert("Failed to delete service. Please try again.");
-            }
+            const res = await deleteCreativeArtService(id);
+            if (res.success) setArts(prev => prev.filter(a => a._id !== id));
+            else alert(res.message || "Failed to delete service. Please try again.");
         } catch (error) {
-            console.error("Error deleting art service:", error);
+            console.error("Error deleting:", error);
             alert("Failed to delete service. Please try again.");
-        } finally {
-            setDeletingId(null);
-        }
+        } finally { setDeleteLoading(null); }
     };
 
-    // ── Helper functions ──
+    const handleView = (id: string) => navigate(`/art-services/details/${id}`);
+
     const openDirections = (art: CreativeArtWorker) => {
-        if (art.latitude && art.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${art.latitude},${art.longitude}`,
-                "_blank"
-            );
-        } else if (art.area || art.city) {
-            const addr = encodeURIComponent(
-                [art.area, art.city, art.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
+        if (art.latitude && art.longitude)
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${art.latitude},${art.longitude}`, "_blank");
+        else if (art.area || art.city)
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([art.area, art.city, art.state].filter(Boolean).join(", "))}`, "_blank");
     };
 
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
-    };
-
-    // ── Render Art Card ──
-    const renderArtCard = (art: CreativeArtWorker) => {
-        const id = art._id || "";
-        const location = [art.area, art.city, art.state]
-            .filter(Boolean)
-            .join(", ") || "Location not set";
-
-        return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative"
-                style={{ border: '1px solid #e5e7eb' }}
-            >
-                {/* Three Dots Menu */}
-                <div className="absolute top-3 right-3 z-10">
-                    <ActionDropdown
-                        onEdit={(e) => {
-                            e.stopPropagation();
-                            navigate(`/add-art-service-form?id=${id}`);
-                        }}
-                        onDelete={(e) => {
-                            e.stopPropagation();
-                            handleDelete(id);
-                        }}
-                    />
-                </div>
-
-                {/* Body */}
-                <div className="p-5 flex flex-col flex-1 gap-3">
-                    {/* Title */}
-                    <h2 className="text-xl font-semibold text-gray-900 truncate pr-8">
-                        {art.name || "Unnamed Service"}
-                    </h2>
-
-                    {/* Location */}
-                    <p className="text-sm text-gray-500 flex items-start gap-1.5">
-                        <span className="shrink-0 mt-0.5">📍</span>
-                        <span className="line-clamp-1">{location}</span>
-                    </p>
-
-                    {/* Type Badge */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {art.subCategory && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
-                                <span className="shrink-0">🎨</span>
-                                <span className="truncate">{art.subCategory}</span>
-                            </span>
-                        )}
-                        {art.experience && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded-md border border-amber-200 font-medium">
-                                <span className="shrink-0">📅</span> {art.experience}+ years
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Description */}
-                    {art.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                            {art.description}
-                        </p>
-                    )}
-
-                    {/* Rating and Price */}
-                    <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-yellow-400 text-base">⭐</span>
-                            <span className="text-sm font-semibold text-gray-900">
-                                {art.rating || "New"}
-                            </span>
-                        </div>
-                        {art.serviceCharge && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">
-                                    {art.chargeType || 'Starting at'}
-                                </p>
-                                <p className="text-lg font-bold text-amber-600">
-                                    ₹{art.serviceCharge}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Images Preview */}
-                    {art.images && art.images.length > 0 && (
-                        <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Portfolio
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {art.images.slice(0, 3).map((img: string, idx: number) => (
-                                    <img
-                                        key={`${id}-${idx}`}
-                                        src={img}
-                                        alt={`Art ${idx + 1}`}
-                                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                                    />
-                                ))}
-                                {art.images.length > 3 && (
-                                    <div className="w-20 h-20 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
-                                        <span className="text-xs text-gray-600 font-medium">
-                                            +{art.images.length - 3}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDirections(art)}
-                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
-                        >
-                            <span>📍</span> Directions
-                        </Button>
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => art.phone && openCall(art.phone)}
-                            className="w-full sm:flex-1 justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
-                            disabled={deletingId === id}
-                        >
-                            <span className="shrink-0">📞</span>
-                            <span className="truncate">{art.phone || "No Phone"}</span>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    // ── Loading State ──
+    // ── Loading ───────────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div>
@@ -243,16 +92,15 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                     </h2>
                 )}
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
                 </div>
             </div>
         );
     }
 
-    // ── Empty State ──
+    // ── Empty ─────────────────────────────────────────────────────────────────
     if (filteredArts.length === 0) {
         if (hideEmptyState) return null;
-
         return (
             <div>
                 {!hideHeader && (
@@ -262,18 +110,12 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">🎨</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Art Services Yet
-                    </h3>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Art Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your creative and art services to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
-                        onClick={() => navigate('/add-art-service-form')}
-                        className="gap-1.5 bg-amber-600 hover:bg-amber-700"
-                    >
+                    <Button variant="primary" size="md" onClick={() => navigate('/add-art-service-form')}
+                        className="gap-1.5 bg-amber-600 hover:bg-amber-700">
                         + Add Art Service
                     </Button>
                 </div>
@@ -281,7 +123,9 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
         );
     }
 
-    // ── Render ──
+    // ============================================================================
+    // RENDER — mirrors RealEstateUserService card structure exactly
+    // ============================================================================
     return (
         <div>
             {!hideHeader && (
@@ -289,8 +133,130 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                     <span>🎨</span> Creative & Art Services ({filteredArts.length})
                 </h2>
             )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {filteredArts.map(renderArtCard)}
+                {filteredArts.map((art) => {
+                    const id = art._id || "";
+                    const location = [art.area, art.city, art.state].filter(Boolean).join(", ") || "Location not specified";
+                    const imageUrls = (art.images || []).filter(Boolean) as string[];
+                    const icon = getCategoryIcon(art.subCategory);
+
+                    return (
+                        <div key={id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+
+                            {/* ── Image — mirrors RealEstateUserService image section exactly ── */}
+                            <div className="relative h-48 bg-gradient-to-br from-amber-600/10 to-amber-600/5">
+                                {imageUrls.length > 0 ? (
+                                    <img src={imageUrls[0]} alt={art.name || "Art Service"}
+                                        className="w-full h-full object-cover"
+                                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <span className="text-6xl">{icon}</span>
+                                    </div>
+                                )}
+
+                                {/* SubCategory Badge — top left, mirrors RealEstate propertyType badge */}
+                                <div className="absolute top-3 left-3">
+                                    <span className={`${typography.misc.badge} bg-amber-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                                        {art.subCategory || "Art Service"}
+                                    </span>
+                                </div>
+
+                                {/* ActionDropdown — top right, mirrors RealEstateUserService */}
+                                <div className="absolute top-3 right-3">
+                                    {deleteLoading === id ? (
+                                        <div className="bg-white rounded-lg p-2 shadow-lg">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                        </div>
+                                    ) : (
+                                        <ActionDropdown
+                                            onEdit={() => handleEdit(id)}
+                                            onDelete={() => handleDelete(id)}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Image count — bottom right if multiple */}
+                                {imageUrls.length > 1 && (
+                                    <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                                        1 / {imageUrls.length}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ── Details ── */}
+                            <div className="p-4">
+                                {/* Title */}
+                                <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+                                    {art.name || "Unnamed Service"}
+                                </h3>
+
+                                {/* Location — mirrors RealEstate SVG pin */}
+                                <div className="flex items-start gap-2 mb-3">
+                                    <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
+                                    <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                                </div>
+
+                                {/* Description */}
+                                {art.description && (
+                                    <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
+                                        {art.description}
+                                    </p>
+                                )}
+
+                                {/* Availability + chargeType badges — mirrors RealEstate availabilityStatus + listingType */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium ${art.availability !== false
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-red-50 text-red-700 border-red-200'
+                                        }`}>
+                                        <span className={`w-2 h-2 rounded-full ${art.availability !== false ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        {art.availability !== false ? 'Available' : 'Busy'}
+                                    </span>
+                                    {art.chargeType && (
+                                        <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
+                                            {art.chargeType}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Experience + Charge — mirrors RealEstate bedrooms+price row */}
+                                <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
+                                    <div className="flex items-center gap-3">
+                                        {art.experience != null && (
+                                            <span className="text-sm font-semibold text-gray-700">🏅 {art.experience} yrs</span>
+                                        )}
+                                        {art.rating && (
+                                            <span className="text-sm text-gray-500">⭐ {art.rating}</span>
+                                        )}
+                                    </div>
+                                    {art.serviceCharge != null && (
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide">{art.chargeType || 'Charge'}</p>
+                                            <p className="text-base font-bold text-amber-600">₹{art.serviceCharge}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Directions + View Details buttons — mirrors RealEstate */}
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <button
+                                        onClick={() => openDirections(art)}
+                                        className="flex items-center justify-center gap-1.5 px-3 py-2 border-2 border-amber-600 text-amber-600 rounded-lg font-medium text-sm hover:bg-amber-50 transition-colors">
+                                        📍 Directions
+                                    </button>
+                                    <Button variant="outline" size="sm" onClick={() => handleView(id)}
+                                        className="justify-center border-amber-600 text-amber-600 hover:bg-amber-600/10">
+                                        View Details
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

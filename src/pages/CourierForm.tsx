@@ -133,9 +133,15 @@ const CourierForm: React.FC = () => {
     });
 
     // ── images ───────────────────────────────────────────────────────────────
+    // NEW IMAGES: Files to be uploaded
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+    // EXISTING IMAGES: URLs from backend (for edit mode)
     const [existingImages, setExistingImages] = useState<string[]>([]);
+
+    // IMAGES TO DELETE: Track which existing images user wants to remove
+    const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
@@ -175,7 +181,11 @@ const CourierForm: React.FC = () => {
                     experience: data.experience?.toString() || '0',
                 }));
 
-                if (Array.isArray(data.images)) setExistingImages(data.images);
+                // Load existing images from backend
+                if (Array.isArray(data.images)) {
+                    setExistingImages(data.images);
+                    console.log('📸 Loaded existing images:', data.images.length);
+                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -225,14 +235,27 @@ const CourierForm: React.FC = () => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
+        // Calculate available slots: 5 - (existing that will be kept + new images)
+        const remainingExisting = existingImages.filter(img => !imagesToDelete.includes(img)).length;
+        const availableSlots = 5 - (remainingExisting + selectedImages.length);
+
+        if (availableSlots <= 0) {
+            setError('Maximum 5 images allowed');
+            return;
+        }
 
         const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
-            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
+            if (!file.type.startsWith('image/')) {
+                setError(`${file.name} is not a valid image`);
+                return false;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                setError(`${file.name} exceeds 5 MB`);
+                return false;
+            }
             return true;
         });
+
         if (!validFiles.length) return;
 
         const newPreviews: string[] = [];
@@ -245,6 +268,7 @@ const CourierForm: React.FC = () => {
             };
             reader.readAsDataURL(file);
         });
+
         setSelectedImages(prev => [...prev, ...validFiles]);
         setError('');
     };
@@ -253,8 +277,16 @@ const CourierForm: React.FC = () => {
         setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+
+    const handleRemoveExistingImage = (imageUrl: string) => {
+        // Mark for deletion instead of immediate removal
+        setImagesToDelete(prev => [...prev, imageUrl]);
+    };
+
+    const handleRestoreExistingImage = (imageUrl: string) => {
+        // Un-mark from deletion
+        setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
+    };
 
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
@@ -338,7 +370,7 @@ const CourierForm: React.FC = () => {
 
             const fd = new FormData();
 
-            // ✅ Required fields matching Postman example exactly
+            // ✅ Required fields matching backend API exactly
             fd.append('userId', formData.userId);
             fd.append('serviceName', formData.name);
             fd.append('subCategory', formData.category);
@@ -373,17 +405,33 @@ const CourierForm: React.FC = () => {
                 fd.append('experience', formData.experience);
             }
 
-            // Images
+            // ✅ IMAGES HANDLING - Match backend expectations
+            // 1. Append NEW image files (File objects)
             if (selectedImages.length > 0) {
-                selectedImages.forEach(img => fd.append('images', img));
+                selectedImages.forEach((img, index) => {
+                    fd.append('images', img, img.name);
+                    console.log(`📎 Appending new image ${index + 1}:`, img.name);
+                });
             }
 
-            if (isEditMode && existingImages.length > 0) {
-                fd.append('existingImages', JSON.stringify(existingImages));
+            // 2. For EDIT mode: Send remaining existing images that weren't deleted
+            if (isEditMode) {
+                const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
+                if (remainingExisting.length > 0) {
+                    // Send as JSON string or individual fields based on backend expectation
+                    fd.append('existingImages', JSON.stringify(remainingExisting));
+                    console.log('📎 Keeping existing images:', remainingExisting.length);
+                }
+
+                // Optionally tell backend which images to delete
+                if (imagesToDelete.length > 0) {
+                    fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
+                    console.log('🗑️ Marked for deletion:', imagesToDelete.length);
+                }
             }
 
             // Debug log - check console to see what's being sent
-            console.log('Submitting courier service with data:', {
+            console.log('📤 Submitting courier service with data:', {
                 userId: formData.userId,
                 serviceName: formData.name,
                 subCategory: formData.category,
@@ -391,7 +439,9 @@ const CourierForm: React.FC = () => {
                 chargeType: formData.chargeType,
                 location: `${formData.area}, ${formData.city}`,
                 coordinates: `${formData.latitude}, ${formData.longitude}`,
-                imagesCount: selectedImages.length
+                newImagesCount: selectedImages.length,
+                existingImagesCount: isEditMode ? existingImages.filter(url => !imagesToDelete.includes(url)).length : 0,
+                imagesToDeleteCount: imagesToDelete.length
             });
 
             let response;
@@ -416,6 +466,11 @@ const CourierForm: React.FC = () => {
     };
 
     const handleCancel = () => window.history.back();
+
+    // Calculate displayed images count
+    const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
+    const totalImagesCount = remainingExistingCount + selectedImages.length;
+    const maxImagesReached = totalImagesCount >= 5;
 
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
@@ -722,14 +777,18 @@ const CourierForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ─── 7. PORTFOLIO PHOTOS ─────────────────────────── */}
-                <SectionCard title="Service Photos (Optional)">
+                <SectionCard title={`Service Photos (${totalImagesCount}/5)`}>
+                    {/* Upload Area */}
                     <label className="cursor-pointer block">
                         <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50'
                             }`}>
@@ -739,46 +798,91 @@ const CourierForm: React.FC = () => {
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum 5 images'
-                                            : 'Tap to upload photos'}
+                                        {maxImagesReached
+                                            ? 'Maximum 5 images reached'
+                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload photos of your vehicles, packaging, or team (max 5 images)
+                                        Upload photos of your vehicles, packaging, or team
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                    {/* Images Grid - Shows both existing and new images */}
+                    {(existingImages.length > 0 || selectedImages.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                            {/* EXISTING IMAGES (not marked for deletion) */}
+                            {existingImages
+                                .filter(url => !imagesToDelete.includes(url))
+                                .map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img
+                                            src={url}
+                                            alt={`Saved ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                            onError={(e) => {
+                                                // Handle broken image URLs
+                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExistingImage(url)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+
+                            {/* NEW IMAGES (to be uploaded) */}
+                            {selectedImages.map((file, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img
+                                        src={imagePreviews[i]}
+                                        alt={`New ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-indigo-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-indigo-400" />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full`}>
                                         New
                                     </span>
+                                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                        {(file.size / 1024 / 1024).toFixed(1)}MB
+                                    </span>
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Deleted Images (Undo section) */}
+                    {imagesToDelete.length > 0 && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                            <p className={`${typography.body.small} text-red-700 mb-2`}>
+                                Images marked for deletion ({imagesToDelete.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {imagesToDelete.map((url, i) => (
+                                    <button
+                                        key={`del-${i}`}
+                                        onClick={() => handleRestoreExistingImage(url)}
+                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50"
+                                    >
+                                        <span>↩</span> Restore image {i + 1}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </SectionCard>

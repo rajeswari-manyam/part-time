@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createEducationService, updateEducationService, getEducationById, EducationService } from '../services/EducationService.service';
+import {
+    createEducationService,
+    updateEducationService,
+    getEducationById,
+    EducationService
+} from '../services/EducationService.service';
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Availability options ─────────────────────────────────────────────────────
-const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
+// ── Charge type options ─────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Month', 'Per Session', 'Per Course'];
 
-// ── Pull education subcategories from JSON (categoryId 7) ────────────────
+// ── Pull education subcategories from JSON (categoryId 8) ────────────────
 const getEducationSubcategories = () => {
-    const educationCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 8);
-    return educationCategory ? educationCategory.items.map(item => item.name) : [];
+    const educationCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 8);
+    return educationCategory ? educationCategory.items.map((item: any) => item.name) : [];
 };
 
 // ============================================================================
@@ -75,7 +79,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const EducationForm = () => {
+const EducationForm: React.FC = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -127,6 +131,7 @@ const EducationForm = () => {
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
@@ -164,7 +169,10 @@ const EducationForm = () => {
                 setSubjectsInput(data.subjects?.join(', ') || '');
                 setQualificationsInput(data.qualifications?.join(', ') || '');
 
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+                if (data.images && Array.isArray(data.images)) {
+                    setExistingImages(data.images);
+                    console.log('📸 Loaded existing images:', data.images.length);
+                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -228,7 +236,9 @@ const EducationForm = () => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
+        const remainingExisting = existingImages.filter(img => !imagesToDelete.includes(img)).length;
+        const availableSlots = 5 - (remainingExisting + selectedImages.length);
+
         if (availableSlots <= 0) {
             setError('Maximum 5 images allowed');
             return;
@@ -258,6 +268,7 @@ const EducationForm = () => {
             };
             reader.readAsDataURL(file);
         });
+
         setSelectedImages(prev => [...prev, ...validFiles]);
         setError('');
     };
@@ -267,8 +278,13 @@ const EducationForm = () => {
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
 
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+    const handleRemoveExistingImage = (imageUrl: string) => {
+        setImagesToDelete(prev => [...prev, imageUrl]);
+    };
+
+    const handleRestoreExistingImage = (imageUrl: string) => {
+        setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
+    };
 
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
@@ -330,19 +346,66 @@ const EducationForm = () => {
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const payload: EducationService = {
-                ...formData,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-                charges: formData.charges ? parseFloat(formData.charges) : undefined,
-            };
+            // Create FormData for multipart/form-data submission
+            const fd = new FormData();
+
+            // Append all text fields
+            fd.append('userId', formData.userId);
+            fd.append('name', formData.name);
+            fd.append('type', formData.type);
+            fd.append('email', formData.email);
+            fd.append('phone', formData.phone);
+            fd.append('description', formData.description || '');
+            fd.append('subjects', formData.subjects.join(', '));
+            fd.append('qualifications', formData.qualifications.join(', '));
+            fd.append('experience', formData.experience);
+            fd.append('charges', formData.charges);
+            fd.append('chargeType', formData.chargeType);
+            fd.append('area', formData.area);
+            fd.append('city', formData.city);
+            fd.append('state', formData.state);
+            fd.append('pincode', formData.pincode);
+            fd.append('latitude', formData.latitude);
+            fd.append('longitude', formData.longitude);
+
+            // ✅ IMAGES HANDLING - Match backend expectations
+            // 1. Append NEW image files (File objects)
+            if (selectedImages.length > 0) {
+                selectedImages.forEach((img, index) => {
+                    fd.append('images', img, img.name);
+                    console.log(`📎 Appending new image ${index + 1}:`, img.name);
+                });
+            }
+
+            // 2. For EDIT mode: Send remaining existing images that weren't deleted
+            if (isEditMode) {
+                const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
+                if (remainingExisting.length > 0) {
+                    fd.append('existingImages', JSON.stringify(remainingExisting));
+                    console.log('📎 Keeping existing images:', remainingExisting.length);
+                }
+
+                if (imagesToDelete.length > 0) {
+                    fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
+                    console.log('🗑️ Marked for deletion:', imagesToDelete.length);
+                }
+            }
+
+            // Debug log
+            console.log('📤 Submitting education service:', {
+                userId: formData.userId,
+                name: formData.name,
+                type: formData.type,
+                newImagesCount: selectedImages.length,
+                existingImagesCount: isEditMode ? existingImages.filter(url => !imagesToDelete.includes(url)).length : 0,
+            });
 
             if (isEditMode && editId) {
-                await updateEducationService(editId, payload);
+                await updateEducationService(editId, fd);
                 setSuccessMessage('Service updated successfully!');
                 setTimeout(() => navigate('/my-business'), 1500);
             } else {
-                await createEducationService(payload);
+                await createEducationService(fd);
                 setSuccessMessage('Service created successfully!');
                 setTimeout(() => navigate('/my-business'), 1500);
             }
@@ -354,6 +417,11 @@ const EducationForm = () => {
     };
 
     const handleCancel = () => window.history.back();
+
+    // Calculate displayed images count
+    const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
+    const totalImagesCount = remainingExistingCount + selectedImages.length;
+    const maxImagesReached = totalImagesCount >= 5;
 
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
@@ -467,7 +535,7 @@ const EducationForm = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {educationTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            {educationTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
@@ -582,7 +650,7 @@ const EducationForm = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                            {chargeTypeOptions.map((t: string) => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
@@ -693,7 +761,7 @@ const EducationForm = () => {
                 </SectionCard>
 
                 {/* ─── 8. PORTFOLIO PHOTOS ────────────────────────────── */}
-                <SectionCard title="Portfolio Photos (Optional)">
+                <SectionCard title={`Portfolio Photos (${totalImagesCount}/5)`}>
                     <label className="cursor-pointer block">
                         <input
                             type="file"
@@ -701,9 +769,9 @@ const EducationForm = () => {
                             multiple
                             onChange={handleImageSelect}
                             className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
+                            disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
                             }`}>
@@ -713,63 +781,96 @@ const EducationForm = () => {
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached'
-                                            : 'Tap to upload portfolio photos'}
+                                        {maxImagesReached
+                                            ? 'Maximum 5 images reached'
+                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                        Upload photos of your institution, certificates, or teaching
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {/* Image Previews */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                    {/* Images Grid - Shows both existing and new images */}
+                    {(existingImages.length > 0 || selectedImages.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                            {/* EXISTING IMAGES (not marked for deletion) */}
+                            {existingImages
+                                .filter(url => !imagesToDelete.includes(url))
+                                .map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img
+                                            src={url}
+                                            alt={`Saved ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExistingImage(url)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className={`absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+
+                            {/* NEW IMAGES (to be uploaded) */}
+                            {selectedImages.map((file, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square group">
                                     <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
+                                        src={imagePreviews[i]}
+                                        alt={`New ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full`}>
                                         New
+                                    </span>
+                                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                        {(file.size / 1024 / 1024).toFixed(1)}MB
                                     </span>
                                 </div>
                             ))}
                         </div>
                     )}
+
+                    {/* Deleted Images (Undo section) */}
+                    {imagesToDelete.length > 0 && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                            <p className={`${typography.body.small} text-red-700 mb-2`}>
+                                Images marked for deletion ({imagesToDelete.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {imagesToDelete.map((url, i) => (
+                                    <button
+                                        key={`del-${i}`}
+                                        onClick={() => handleRestoreExistingImage(url)}
+                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50"
+                                    >
+                                        <span>↩</span> Restore image {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}

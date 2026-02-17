@@ -11,9 +11,9 @@ import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
 // ── Charge type options ──────────────────────────────────────────────────────
-const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Project', 'Fixed Rate', 'Negotiable'];
+const chargeTypeOptions = ['per hour', 'per day', 'per project', 'fixed rate', 'negotiable', 'per event'];
 
-// ── Pull industrial subcategories from JSON (categoryId 1) ──────────────────
+// ── Pull industrial subcategories from JSON (categoryId 15) ─────────────────
 const getIndustrialSubcategories = () => {
     const industrialCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 15);
     return industrialCategory ? industrialCategory.items.map(item => item.name) : [
@@ -22,8 +22,28 @@ const getIndustrialSubcategories = () => {
     ];
 };
 
+// ── Scans all common localStorage keys to find userId ───────────────────────
+const resolveUserId = (): string => {
+    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+    for (const key of candidates) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        if (raw.length > 10 && !raw.startsWith('{')) {
+            console.log(`✅ userId from localStorage["${key}"] =`, raw);
+            return raw;
+        }
+        try {
+            const parsed = JSON.parse(raw);
+            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+            if (id) { console.log(`✅ userId from localStorage["${key}"] (JSON) =`, id); return String(id); }
+        } catch { }
+    }
+    console.warn("⚠️ userId not found. localStorage keys:", Object.keys(localStorage));
+    return '';
+};
+
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
@@ -31,8 +51,16 @@ const inputBase =
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem'
+};
+
 // ============================================================================
-// REUSABLE LABEL
+// REUSABLE SUB-COMPONENTS
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -40,9 +68,6 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -60,22 +85,17 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 // ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
+        const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
         );
-        const data = await response.json();
-
+        const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
+            const loc = data.results[0].geometry.location;
+            return { lat: loc.lat, lng: loc.lng };
         }
         return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
-    }
+    } catch { return null; }
 };
 
 // ============================================================================
@@ -101,18 +121,16 @@ const IndustrialForm = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-
-    // NEW: separate warning state for low-accuracy GPS (yellow banner)
     const [locationWarning, setLocationWarning] = useState('');
 
     const industrialTypes = getIndustrialSubcategories();
     const defaultType = getSubcategoryFromUrl() || industrialTypes[0] || 'Borewell Services';
 
     const [formData, setFormData] = useState({
-        userId: localStorage.getItem('userId') || '',
+        userId: resolveUserId(),
         serviceName: '',
-        category: defaultType,
-        subCategory: '',
+        category: 'Industrial',       // ✅ always "Industrial" per API curl
+        subCategory: defaultType,     // ✅ e.g. "Borewell Services"
         description: '',
         serviceCharge: '',
         chargeType: chargeTypeOptions[0],
@@ -132,8 +150,6 @@ const IndustrialForm = () => {
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const [isAvailable, setIsAvailable] = useState(true);
-
-    // FIX: Prevents geocoding useEffect from overwriting real GPS coordinates
     const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
@@ -144,15 +160,15 @@ const IndustrialForm = () => {
             try {
                 const response = await getIndustrialServiceById(editId);
                 if (!response.success || !response.data) throw new Error('Service not found');
-
                 const data = Array.isArray(response.data) ? response.data[0] : response.data;
+                if (!data) throw new Error('Service not found');
 
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
+                    userId: data.userId || prev.userId,
                     serviceName: data.serviceName || '',
-                    category: data.category || defaultType,
-                    subCategory: data.subCategory || '',
+                    category: 'Industrial',           // ✅ always fixed
+                    subCategory: data.subCategory || data.category || defaultType,  // ✅ real subcategory
                     description: data.description || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
                     chargeType: data.chargeType || chargeTypeOptions[0],
@@ -176,37 +192,19 @@ const IndustrialForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when address is typed manually ───────────────
-    // FIX: Skips geocoding when GPS was just used to prevent overwriting real coords
+    // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
-        const detectCoordinates = async () => {
-            // Skip geocoding if GPS just fired — real coords are already set
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
-            }
-
-            // Only auto-detect if we have area but no coordinates yet
+        const detect = async () => {
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
-                    .replace(/, ,/g, ',')
-                    .replace(/^,|,$/g, '');
-
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
+                const addr = [formData.area, formData.city, formData.state, formData.pincode]
+                    .filter(Boolean).join(', ');
+                const coords = await geocodeAddress(addr);
+                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
         };
-
-        const timer = setTimeout(detectCoordinates, 1000);
-        return () => clearTimeout(timer);
+        const t = setTimeout(detect, 1000);
+        return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
     // ── generic input ────────────────────────────────────────────────────────
@@ -219,48 +217,33 @@ const IndustrialForm = () => {
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
-        const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+        const slots = 5 - (selectedImages.length + existingImages.length);
+        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+        const valid = files.slice(0, slots).filter(f => {
+            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
             return true;
         });
-
-        if (!validFiles.length) return;
-
-        const newPreviews: string[] = [];
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length)
-                    setImagePreviews(prev => [...prev, ...newPreviews]);
+        if (!valid.length) return;
+        const previews: string[] = [];
+        let loaded = 0;
+        valid.forEach(f => {
+            const r = new FileReader();
+            r.onloadend = () => {
+                previews.push(r.result as string);
+                if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(f);
         });
-        setSelectedImages(prev => [...prev, ...validFiles]);
+        setSelectedImages(p => [...p, ...valid]);
         setError('');
     };
 
     const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
-        setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+        setSelectedImages(p => p.filter((_, idx) => idx !== i));
+        setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+    const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
@@ -276,17 +259,11 @@ const IndustrialForm = () => {
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                // FIX: Mark GPS detected BEFORE updating address fields
-                // This blocks the geocoding useEffect from firing and overwriting real GPS coords
                 isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy; // metres
+                const accuracy = pos.coords.accuracy;
 
-                // FIX: Show yellow warning if accuracy is poor
-                // > 500m means browser used WiFi/IP fallback (common on desktops)
-                // On mobile with real GPS this is usually < 20m
                 if (accuracy > 500) {
                     setLocationWarning(
                         `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
@@ -294,7 +271,6 @@ const IndustrialForm = () => {
                     );
                 }
 
-                // Set GPS coordinates immediately
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
@@ -302,11 +278,9 @@ const IndustrialForm = () => {
                         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
                     );
                     const data = await res.json();
-
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
-                            // FIX: Explicitly re-include lat/lng to prevent state batching from losing them
                             latitude: lat,
                             longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
@@ -315,9 +289,7 @@ const IndustrialForm = () => {
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
+                } catch (e) { console.error(e); }
 
                 setLocationLoading(false);
             },
@@ -329,55 +301,102 @@ const IndustrialForm = () => {
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── submit — FormData exactly matching the API curl ──────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
         setSuccessMessage('');
 
         try {
-            if (!formData.serviceName || !formData.category || !formData.description)
-                throw new Error('Please fill in all required fields (Service Name, Category, Description)');
+            // Validate userId first
+            let uid = formData.userId;
+            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
+            if (!uid) throw new Error('User not logged in. Please log out and log back in.');
+
+            if (!formData.serviceName || !formData.subCategory || !formData.description)
+                throw new Error('Please fill in all required fields (Service Name, Service Type, Description)');
             if (!formData.serviceCharge)
                 throw new Error('Please enter service charge');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const payload = {
-                userId: formData.userId,
-                serviceName: formData.serviceName,
-                description: formData.description,
-                category: formData.category,
-                subCategory: formData.subCategory,
-                serviceCharge: parseFloat(formData.serviceCharge),
-                chargeType: formData.chargeType,
-                latitude: parseFloat(formData.latitude),
-                longitude: parseFloat(formData.longitude),
-                area: formData.area,
-                city: formData.city,
-                state: formData.state,
-                pincode: formData.pincode,
-                availability: isAvailable,
-                images: selectedImages,
-            };
+            // Build FormData exactly like the API curl:
+            const fd = new FormData();
+            fd.append('userId', uid);
+            fd.append('serviceName', formData.serviceName);
+            fd.append('description', formData.description);
+            fd.append('category', formData.category);
+            fd.append('subCategory', formData.subCategory);
+            fd.append('serviceCharge', formData.serviceCharge);
+            fd.append('chargeType', formData.chargeType);
+            fd.append('latitude', formData.latitude);
+            fd.append('longitude', formData.longitude);
+            fd.append('area', formData.area);
+            fd.append('city', formData.city);
+            fd.append('state', formData.state);
+            fd.append('pincode', formData.pincode);
+            fd.append('availability', String(isAvailable));
+
+            // Append images exactly like the API: append("images", file, file.name)
+            selectedImages.forEach(f => fd.append('images', f, f.name));
+
+            // Preserve existing images on edit
+            if (isEditMode && existingImages.length > 0) {
+                fd.append('existingImages', JSON.stringify(existingImages));
+            }
+
+            // Debug log
+            console.log('📤 Sending FormData:');
+            console.log('  userId:', uid);
+            Array.from(fd.entries()).forEach(([k, v]) => {
+                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b, ${v.type})`);
+                else console.log(`  ${k}: ${v}`);
+            });
 
             if (isEditMode && editId) {
-                await updateIndustrialService(editId, payload);
+                const res = await updateIndustrialService(editId, {
+                    serviceName: formData.serviceName,
+                    description: formData.description,
+                    category: formData.category,
+                    subCategory: formData.subCategory,
+                    serviceCharge: parseFloat(formData.serviceCharge),
+                    chargeType: formData.chargeType,
+                    latitude: parseFloat(formData.latitude),
+                    longitude: parseFloat(formData.longitude),
+                    area: formData.area,
+                    city: formData.city,
+                    state: formData.state,
+                    pincode: formData.pincode,
+                    images: selectedImages,
+                });
+                if (!res.success) throw new Error(res.message || 'Failed to update service');
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await addIndustrialService(payload);
+                const res = await addIndustrialService({
+                    userId: uid,
+                    serviceName: formData.serviceName,
+                    description: formData.description,
+                    category: formData.category,
+                    subCategory: formData.subCategory,
+                    serviceCharge: parseFloat(formData.serviceCharge),
+                    chargeType: formData.chargeType,
+                    latitude: parseFloat(formData.latitude),
+                    longitude: parseFloat(formData.longitude),
+                    area: formData.area,
+                    city: formData.city,
+                    state: formData.state,
+                    pincode: formData.pincode,
+                    images: selectedImages,
+                });
+                if (!res.success) throw new Error(res.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
+            setTimeout(() => navigate('/listed-jobs'), 1500);
         } catch (err: any) {
+            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
-
-    const handleCancel = () => window.history.back();
 
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
@@ -392,7 +411,7 @@ const IndustrialForm = () => {
     }
 
     // ============================================================================
-    // RENDER - Mobile First Design
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -400,7 +419,7 @@ const IndustrialForm = () => {
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
-                        onClick={handleCancel}
+                        onClick={() => window.history.back()}
                         className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -433,8 +452,8 @@ const IndustrialForm = () => {
                     </div>
                 )}
 
-                {/* ─── 1. SERVICE NAME ──────────────────────────────────────── */}
-                <SectionCard>
+                {/* ─── 1. BASIC INFO ──────────────────────────────────────── */}
+                <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
                         <input
@@ -442,46 +461,27 @@ const IndustrialForm = () => {
                             name="serviceName"
                             value={formData.serviceName}
                             onChange={handleInputChange}
-                            placeholder="e.g., Borewell Drilling Services"
+                            placeholder="e.g., Packers & Movers"
                             className={inputBase}
                         />
                     </div>
-                </SectionCard>
-
-                {/* ─── 2. SERVICE CATEGORY ───────────────────────────────────── */}
-                <SectionCard title="Service Category">
-                    <div>
-                        <FieldLabel required>Main Category</FieldLabel>
-                        <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            {industrialTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <FieldLabel>Sub Category (Optional)</FieldLabel>
-                        <input
-                            type="text"
-                            name="subCategory"
-                            value={formData.subCategory}
-                            onChange={handleInputChange}
-                            placeholder="e.g., Residential, Commercial, Agricultural"
-                            className={inputBase}
-                        />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>Service Type</FieldLabel>
+                            <select
+                                name="subCategory"
+                                value={formData.subCategory}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {industrialTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. PRICING DETAILS ─────────────────────────────────────── */}
+                {/* ─── 2. PRICING DETAILS ─────────────────────────────────── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -491,7 +491,7 @@ const IndustrialForm = () => {
                                 name="serviceCharge"
                                 value={formData.serviceCharge}
                                 onChange={handleInputChange}
-                                placeholder="Amount"
+                                placeholder="5000"
                                 min="0"
                                 className={inputBase}
                             />
@@ -503,15 +503,9 @@ const IndustrialForm = () => {
                                 value={formData.chargeType}
                                 onChange={handleInputChange}
                                 className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
-                                }}
+                                style={selectStyle}
                             >
-                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
                             </select>
                         </div>
                     </div>
@@ -521,18 +515,14 @@ const IndustrialForm = () => {
                         <button
                             type="button"
                             onClick={() => setIsAvailable(!isAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isAvailable ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isAvailable ? 'bg-blue-500' : 'bg-gray-300'}`}
                         >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                            />
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. SERVICE DESCRIPTION ──────────────────────────────────── */}
+                {/* ─── 3. SERVICE DESCRIPTION ─────────────────────────────── */}
                 <SectionCard title="Service Description">
                     <textarea
                         name="description"
@@ -544,7 +534,7 @@ const IndustrialForm = () => {
                     />
                 </SectionCard>
 
-                {/* ─── 5. LOCATION DETAILS ────────────────────────────────────── */}
+                {/* ─── 4. LOCATION DETAILS ────────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -556,83 +546,47 @@ const IndustrialForm = () => {
                             className="!py-1.5 !px-3"
                         >
                             {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
+                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
                             ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
+                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
                             )}
                         </Button>
                     }
                 >
-                    {/* NEW: Low accuracy warning — shown when browser uses WiFi/IP instead of GPS */}
+                    {/* Low accuracy warning */}
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>
-                                {locationWarning}
-                            </p>
+                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
                         </div>
                     </div>
 
                     {/* Location Tip */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                         <p className={`${typography.body.small} text-blue-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
                         </p>
                     </div>
 
@@ -640,16 +594,14 @@ const IndustrialForm = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
+                                <span className="font-semibold">✓ Location detected: </span>
+                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 6. SERVICE PHOTOS ────────────────────────────────────────── */}
+                {/* ─── 5. SERVICE PHOTOS ────────────────────────────────────── */}
                 <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -671,10 +623,17 @@ const IndustrialForm = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached'
+                                            ? 'Maximum limit reached (5 images)'
                                             : 'Tap to upload service photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
+                                    </p>
+                                    {selectedImages.length > 0 && (
+                                        <p className="text-blue-600 text-sm font-medium mt-1">
+                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -685,16 +644,9 @@ const IndustrialForm = () => {
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
@@ -704,16 +656,9 @@ const IndustrialForm = () => {
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
@@ -726,22 +671,22 @@ const IndustrialForm = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading
                             ? 'bg-blue-400 cursor-not-allowed'
                             : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                            } shadow-sm ${typography.body.base}`}
+                            } ${typography.body.base}`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
                             : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
                     <button
-                        onClick={handleCancel}
+                        onClick={() => window.history.back()}
                         type="button"
                         className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
                     >

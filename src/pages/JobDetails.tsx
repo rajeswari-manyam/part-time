@@ -1,87 +1,54 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-    Phone,
-    MessageCircle,
-    Star,
-    ArrowLeft,
-    MapPin,
-    Navigation,
-    Calendar,
-    Tag,
-    Wallet,
-    Clock,
-    ChevronLeft,
-    ChevronRight,
-    BadgeCheck,
-    Share2,
-    ExternalLink,
+    ChevronLeft, ChevronRight, MapPin, Calendar,
+    Users, Briefcase, Tag, Navigation, Mail, Clock, Share2,
 } from "lucide-react";
 import { getJobById, getUserById, API_BASE_URL } from "../services/api.service";
 import { JobDetailsProps } from "../types/job.types";
-import Button from "../components/ui/Buttons";
-import typography from "../styles/typography";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Image Carousel
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Smart image URL resolver ──────────────────────────────────────────────────
+const resolveImageUrl = (path: string): string | null => {
+    if (!path || typeof path !== "string") return null;
+    const cleaned = path.trim();
+    if (!cleaned) return null;
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) return cleaned;
+    const normalized = cleaned.replace(/\\/g, "/");
+    const base = (API_BASE_URL || "").replace(/\/$/, "");
+    const rel = normalized.startsWith("/") ? normalized : `/${normalized}`;
+    return `${base}${rel}`;
+};
+const getImageUrls = (images?: string[]): string[] =>
+    (images || []).map(resolveImageUrl).filter(Boolean) as string[];
+
+// ── Image Carousel ────────────────────────────────────────────────────────────
 const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, title }) => {
     const [idx, setIdx] = useState(0);
+    const [errored, setErrored] = useState(false);
+    useEffect(() => { setIdx(0); setErrored(false); }, [images]);
 
-    if (!images.length) {
+    if (!images.length || errored) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
-                <span className="text-5xl sm:text-6xl md:text-7xl select-none">🔧</span>
+                <span className="text-7xl select-none">🔧</span>
             </div>
         );
     }
-
-    const prev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdx((i) => (i - 1 + images.length) % images.length);
-    };
-    const next = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdx((i) => (i + 1) % images.length);
-    };
-
     return (
         <div className="relative w-full h-full group">
-            <img
-                src={images[idx]}
-                alt={title}
-                className="w-full h-full object-cover object-center"
-                onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                }}
-            />
+            <img src={images[idx]} alt={title} className="w-full h-full object-cover object-center"
+                onError={() => { if (idx < images.length - 1) setIdx(i => i + 1); else setErrored(true); }} />
             {images.length > 1 && (
                 <>
-                    <button
-                        onClick={prev}
-                        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 sm:p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <ChevronLeft size={16} className="text-gray-700 sm:w-5 sm:h-5" />
+                    <button onClick={e => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ChevronLeft size={16} className="text-gray-700" />
                     </button>
-                    <button
-                        onClick={next}
-                        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 sm:p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <ChevronRight size={16} className="text-gray-700 sm:w-5 sm:h-5" />
+                    <button onClick={e => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ChevronRight size={16} className="text-gray-700" />
                     </button>
-                    {/* Dots */}
-                    <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5">
-                        {images.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={(e) => { e.stopPropagation(); setIdx(i); }}
-                                className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === idx ? "bg-white w-4 sm:w-5" : "bg-white/50 w-1 sm:w-1.5"
-                                    }`}
-                            />
-                        ))}
-                    </div>
-                    {/* Counter */}
-                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-black/40 text-white text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full backdrop-blur-sm">
+                    <div className="absolute top-3 right-16 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
                         {idx + 1} / {images.length}
                     </div>
                 </>
@@ -90,53 +57,37 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Info Row helper
-// ─────────────────────────────────────────────────────────────────────────────
-const InfoRow: React.FC<{
-    icon: React.ReactNode;
-    label: string;
-    value: React.ReactNode;
-    accent?: boolean;
-}> = ({ icon, label, value, accent }) => (
-    <div className="flex items-start gap-2 sm:gap-3 py-2.5 sm:py-3 border-b border-gray-50 last:border-0">
-        <div className={`mt-0.5 flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${accent ? "bg-orange-50 text-orange-500" : "bg-gray-50 text-gray-400"
-            }`}>
-            {icon}
-        </div>
+// ── Detail Row ────────────────────────────────────────────────────────────────
+const DetailRow: React.FC<{
+    icon: React.ReactNode; label: string; value: React.ReactNode;
+    iconColor?: string; last?: boolean;
+}> = ({ icon, label, value, iconColor = "text-teal-500", last }) => (
+    <div className={`flex items-start gap-3 py-3.5 ${!last ? "border-b border-gray-100" : ""}`}>
+        <div className={`mt-0.5 flex-shrink-0 ${iconColor}`}>{icon}</div>
         <div className="flex-1 min-w-0">
-            <p className={`${typography.body.xs} text-gray-400 font-medium uppercase tracking-wide mb-0.5`}>
-                {label}
-            </p>
-            <div className={`${typography.body.small} text-gray-800 font-medium break-words`}>
-                {value}
-            </div>
+            <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
+            <div className="text-sm font-semibold text-gray-900 break-words">{value}</div>
         </div>
     </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Distance helper
-// ─────────────────────────────────────────────────────────────────────────────
-const calculateDistance = (
-    lat1: number, lon1: number,
-    lat2: number, lon2: number
-): string => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number): string => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
+};
+const formatDate = (dateStr: string) => {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Component
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 const JobDetailsPage: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
     const navigate = useNavigate();
@@ -144,444 +95,272 @@ const JobDetailsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [distance, setDistance] = useState("N/A");
 
     useEffect(() => {
         if (!jobId) return;
-
-        const fetchJobDetails = async () => {
+        (async () => {
             try {
                 setLoading(true);
+                const jobRes = await getJobById(jobId);
+                if (!jobRes.success) { setError("Job not found"); return; }
+                const jd = jobRes.data;
+                setImageUrls(getImageUrls(jd.images));
 
-                const jobResponse = await getJobById(jobId);
-                if (!jobResponse.success) {
-                    setError("Job not found");
-                    return;
-                }
-
-                const jobData = jobResponse.data;
-
-                // Build image URLs
-                const urls = (jobData.images || []).map((p: string) =>
-                    `${API_BASE_URL}/${p.replace(/\\/g, "/")}`
-                );
-                setImageUrls(urls);
-
-                let customerName = "Customer";
-                let customerPhone = "";
-                let customerLat: number | null = null;
-                let customerLng: number | null = null;
-
+                let customerName = "Customer", customerPhone = "";
+                let customerLat: number | null = null, customerLng: number | null = null;
                 try {
-                    const userResponse = await getUserById(jobData.userId);
-                    if (userResponse.success) {
-                        customerName = userResponse.data.name;
-                        customerPhone = userResponse.data.phone;
-                        customerLat = Number(userResponse.data.latitude);
-                        customerLng = Number(userResponse.data.longitude);
+                    const userRes = await getUserById(jd.userId);
+                    if (userRes.success) {
+                        customerName = userRes.data.name;
+                        customerPhone = userRes.data.phone;
+                        customerLat = Number(userRes.data.latitude);
+                        customerLng = Number(userRes.data.longitude);
                     }
-                } catch {
-                    console.error("User fetch failed");
-                }
+                } catch { }
 
-                let distance = "N/A";
                 if (navigator.geolocation && customerLat && customerLng) {
                     try {
-                        const position = await new Promise<GeolocationPosition>((res, rej) =>
-                            navigator.geolocation.getCurrentPosition(res, rej)
-                        );
-                        distance = calculateDistance(
-                            position.coords.latitude,
-                            position.coords.longitude,
-                            customerLat!,
-                            customerLng!
-                        );
+                        const pos = await new Promise<GeolocationPosition>((res, rej) =>
+                            navigator.geolocation.getCurrentPosition(res, rej));
+                        setDistance(calcDistance(pos.coords.latitude, pos.coords.longitude, customerLat!, customerLng!));
                     } catch { }
                 }
 
                 setJob({
-                    title: jobData.subcategory
-                        ? `${jobData.subcategory} – ${jobData.category}`
-                        : jobData.category,
-
-                    customerDetails: {
-                        name: customerName,
-                        phone: customerPhone,
-                        distance,
-                        rating: 4.7,
-                        reviewCount: 23,
-                    },
-
+                    title: jd.subcategory ? `${jd.subcategory} – ${jd.category}` : jd.category,
+                    customerDetails: { name: customerName, phone: customerPhone, distance, rating: 4.7, reviewCount: 23 },
                     jobInformation: {
-                        type: jobData.jobType,
-                        budget: jobData.servicecharges,
-                        budgetType: "fixed",
-                        description: jobData.description || "No description provided",
-                        startDate: new Date(jobData.startDate).toLocaleDateString("en-IN", {
-                            day: "numeric", month: "short", year: "numeric",
-                        }),
-                        endDate: new Date(jobData.endDate).toLocaleDateString("en-IN", {
-                            day: "numeric", month: "short", year: "numeric",
-                        }),
-                        area: jobData.area,
-                        city: jobData.city,
-                        state: jobData.state,
-                        pincode: jobData.pincode,
-                        location: `${jobData.area}, ${jobData.city}, ${jobData.state} – ${jobData.pincode}`,
-                        category: jobData.category,
-                        subcategory: jobData.subcategory,
-                        latitude: jobData.latitude,
-                        longitude: jobData.longitude,
-                        images: jobData.images || [],
-                        createdAt: jobData.createdAt,
-                        updatedAt: jobData.updatedAt,
+                        type: jd.jobType, budget: jd.servicecharges, budgetType: "fixed",
+                        description: jd.description || "No description provided",
+                        startDate: formatDate(jd.startDate), endDate: formatDate(jd.endDate),
+                        area: jd.area, city: jd.city, state: jd.state, pincode: jd.pincode,
+                        location: [jd.area, jd.city, jd.state].filter(Boolean).join(", "),
+                        category: jd.category, subcategory: jd.subcategory,
+                        latitude: jd.latitude, longitude: jd.longitude,
+                        images: jd.images || [], createdAt: jd.createdAt, updatedAt: jd.updatedAt,
                     },
-
-                    mapUrl: `https://www.google.com/maps?q=${jobData.latitude},${jobData.longitude}&output=embed`,
+                    mapUrl: `https://www.google.com/maps?q=${jd.latitude},${jd.longitude}&output=embed`,
                 });
-            } catch {
-                setError("Failed to load job details");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchJobDetails();
+            } catch { setError("Failed to load job details"); }
+            finally { setLoading(false); }
+        })();
     }, [jobId]);
 
-    // ── Google Maps directions URL ────────────────────────────────────────
-    const directionsUrl = job?.jobInformation.latitude && job?.jobInformation.longitude
-        ? `https://www.google.com/maps/dir/?api=1&destination=${job.jobInformation.latitude},${job.jobInformation.longitude}`
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-            job?.jobInformation.location || ""
-        )}`;
-
-    // ── Loading ───────────────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-                    <p className={`${typography.body.small} text-gray-500`}>Loading details…</p>
-                </div>
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                <p className="text-sm text-gray-500">Loading details…</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    // ── Error ─────────────────────────────────────────────────────────────
-    if (error || !job) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
-                <div className="text-center max-w-sm">
-                    <div className="text-4xl sm:text-5xl mb-4">⚠️</div>
-                    <h2 className={`${typography.heading.h4} text-gray-800 mb-2`}>Not Found</h2>
-                    <p className={`${typography.body.base} text-gray-500 mb-6`}>
-                        {error || "Job not available"}
-                    </p>
-                    <Button variant="primary" onClick={() => navigate(-1)}>
-                        Go Back
-                    </Button>
-                </div>
+    if (error || !job) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+            <div className="text-center max-w-sm">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Not Found</h2>
+                <p className="text-gray-500 mb-6">{error || "Job not available"}</p>
+                <button onClick={() => navigate(-1)} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold">Go Back</button>
             </div>
-        );
-    }
+        </div>
+    );
 
-    const phone = job.customerDetails.phone;
-    const cleanPhone = phone.replace(/\D/g, "");
+    const { jobInformation, customerDetails } = job;
+    const directionsUrl = jobInformation.latitude && jobInformation.longitude
+        ? `https://www.google.com/maps/dir/?api=1&destination=${jobInformation.latitude},${jobInformation.longitude}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(jobInformation.location || "")}`;
+    const mapsOpenUrl = `https://www.google.com/maps?q=${jobInformation.latitude},${jobInformation.longitude}`;
+    const cleanPhone = (customerDetails.phone || "").replace(/\D/g, "");
 
     return (
-        <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        /*
+         * ── LAYOUT STRATEGY ────────────────────────────────────────────────────
+         * bg-gray-100 fills the full viewport (visible as side gutters on desktop)
+         * The inner white card is max-w-lg, centered with mx-auto.
+         * It uses position:relative so the absolute bottom bar stays INSIDE the card,
+         * not full-screen — giving a mobile-app-in-browser look on desktop.
+         * On actual mobile (≤ lg), the card is 100% width, no visible gutters.
+         * ───────────────────────────────────────────────────────────────────────
+         */
+        <div className="min-h-screen bg-gray-100 flex justify-center">
+            <div
+                className="relative w-full max-w-lg bg-white shadow-2xl overflow-hidden"
+                style={{ minHeight: "100vh" }}
+            >
+                {/* ══ SCROLLABLE AREA ═════════════════════════════════════════ */}
+                <div className="overflow-y-auto" style={{ paddingBottom: "88px", height: "100vh" }}>
 
-            {/* ── HERO IMAGE + TOP NAV OVERLAY ─────────────────────────── */}
-            <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-200">
-                <ImageCarousel images={imageUrls} title={job.title} />
+                    {/* ── HERO IMAGE ─────────────────────────────────────────── */}
+                    <div className="relative h-60 sm:h-72 bg-gray-200 overflow-hidden flex-shrink-0">
+                        <ImageCarousel images={imageUrls} title={job.title} />
 
-                {/* Gradient overlay for nav readability */}
-                <div className="absolute inset-x-0 top-0 h-16 sm:h-20 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-                <div className="absolute inset-x-0 bottom-0 h-20 sm:h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+                        {/* gradient overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
 
-                {/* Back button */}
-                <button
-                    onClick={() => navigate(-1)}
-                    className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 sm:p-2.5 shadow-md transition-all active:scale-95"
-                >
-                    <ArrowLeft size={18} className="text-gray-800 sm:w-5 sm:h-5" />
-                </button>
+                        {/* ← back + "Open" label */}
+                        <button onClick={() => navigate(-1)}
+                            className="absolute top-4 left-3 z-20 flex items-center gap-1 bg-white/90 hover:bg-white rounded-full pl-2 pr-3 py-1.5 shadow-md transition active:scale-95">
+                            <ChevronLeft size={18} className="text-gray-800" />
+                            <span className="text-xs font-bold text-green-600">Open</span>
+                        </button>
 
-                {/* Share button */}
-                <button
-                    onClick={() =>
-                        navigator.share?.({
-                            title: job.title,
-                            url: window.location.href,
-                        }).catch(() => { })
-                    }
-                    className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full p-2 sm:p-2.5 shadow-md transition-all active:scale-95"
-                >
-                    <Share2 size={18} className="text-gray-800 sm:w-5 sm:h-5" />
-                </button>
+                        {/* share */}
+                        <button
+                            onClick={() => navigator.share?.({ title: job.title, url: window.location.href }).catch(() => { })}
+                            className="absolute top-4 right-3 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition active:scale-95">
+                            <Share2 size={17} className="text-gray-700" />
+                        </button>
 
-                {/* Title floating at bottom of hero */}
-                <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
-                    <h1 className={`${typography.heading.h5} text-white drop-shadow-md line-clamp-2 leading-snug`}>
-                        {job.title}
-                    </h1>
-                    <div className="flex items-center gap-1 sm:gap-1.5 mt-1">
-                        <MapPin size={12} className="text-white/80 sm:w-3.5 sm:h-3.5" />
-                        <span className={`${typography.body.xs} text-white/90 font-medium truncate`}>
-                            {job.jobInformation.area}, {job.jobInformation.city}
-                        </span>
-                    </div>
-                </div>
-            </div>
+                        {/* distance badge */}
+                        {distance !== "N/A" && (
+                            <div className="absolute top-4 right-14 z-20">
+                                <span className="inline-flex items-center gap-1 bg-white/90 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full shadow">
+                                    <MapPin size={10} className="text-orange-500" />{distance}
+                                </span>
+                            </div>
+                        )}
 
-            {/* ── SCROLLABLE BODY ──────────────────────────────────────── */}
-            <div className="max-w-2xl mx-auto px-3 sm:px-4 pb-44 space-y-3 sm:space-y-4 -mt-2">
-
-                {/* ── QUICK STATS ROW ──────────────────────────────────── */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-3 sm:p-4 grid grid-cols-3 divide-x divide-gray-100">
-                    {/* Rating */}
-                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 pr-3 sm:pr-4">
-                        <div className="flex items-center gap-1">
-                            <Star size={13} className="text-yellow-400 fill-yellow-400 sm:w-3.5 sm:h-3.5" />
-                            <span className={`${typography.body.base} font-bold text-gray-900`}>
-                                {job.customerDetails.rating}
-                            </span>
+                        {/* overlay text at bottom of hero */}
+                        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-10">
+                            <div className="flex flex-wrap gap-1.5 mb-1.5">
+                                {jobInformation.subcategory && (
+                                    <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                        {jobInformation.subcategory}
+                                    </span>
+                                )}
+                                {jobInformation.category && (
+                                    <span className="bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded backdrop-blur-sm">
+                                        {jobInformation.category}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                                {jobInformation.budget && (
+                                    <span className="text-white font-extrabold text-2xl leading-none tracking-tight">
+                                        ₹{jobInformation.budget}
+                                    </span>
+                                )}
+                                <h1 className="text-white font-bold text-sm leading-snug line-clamp-2 flex-1">
+                                    {job.title}
+                                </h1>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                                {jobInformation.type && (
+                                    <span className="inline-flex items-center gap-1 bg-green-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        <Briefcase size={9} />{jobInformation.type}
+                                    </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 text-white/80 text-[10px]">
+                                    <Calendar size={9} />{jobInformation.startDate}
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-white/80 text-[10px]">
+                                    <Users size={9} />3 slots
+                                </span>
+                                <span className="ml-auto inline-flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    <span className="w-1 h-1 rounded-full bg-white" />Open
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1.5">
+                                <MapPin size={9} className="text-white/70 flex-shrink-0" />
+                                <span className="text-white/80 text-[10px] truncate">
+                                    {[jobInformation.area, jobInformation.city, jobInformation.state].filter(Boolean).join(", ")}
+                                </span>
+                            </div>
                         </div>
-                        <span className={`${typography.body.xs} text-gray-400`}>
-                            {job.customerDetails.reviewCount} reviews
-                        </span>
                     </div>
 
-                    {/* Distance */}
-                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 px-3 sm:px-4">
-                        <span className={`${typography.body.base} font-bold text-gray-900`}>
-                            {job.customerDetails.distance}
-                        </span>
-                        <span className={`${typography.body.xs} text-gray-400`}>Distance</span>
-                    </div>
+                    {/* ── WHITE BODY ─────────────────────────────────────────── */}
+                    <div className="bg-white px-4 pt-5 pb-4 space-y-4">
 
-                    {/* Budget */}
-                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 pl-3 sm:pl-4">
-                        <span className={`${typography.body.base} font-bold text-orange-500`}>
-                            {job.jobInformation.budget
-                                ? `₹${job.jobInformation.budget}`
-                                : "Discuss"}
-                        </span>
-                        <span className={`${typography.body.xs} text-gray-400`}>Budget</span>
-                    </div>
-                </div>
+                        {/* Title + badges */}
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 mb-2.5">
+                                {jobInformation.category || job.title}
+                            </h2>
+                            <div className="flex flex-wrap gap-2">
+                                {jobInformation.type && (
+                                    <span className="bg-orange-100 text-orange-600 text-xs font-bold px-3 py-1 rounded-full">
+                                        {jobInformation.type}
+                                    </span>
+                                )}
+                                {jobInformation.subcategory && (
+                                    <span className="border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+                                        {jobInformation.subcategory}
+                                    </span>
+                                )}
+                                {jobInformation.category && (
+                                    <span className="border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+                                        {jobInformation.category}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
 
-                {/* ── BADGES + STATUS ─────────────────────────────────── */}
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    <span className={`inline-flex items-center gap-1 sm:gap-1.5 bg-purple-50 text-purple-600 border border-purple-200 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 ${typography.body.xs} font-semibold`}>
-                        <BadgeCheck size={11} className="sm:w-3.5 sm:h-3.5" /> Verified
-                    </span>
-                    <span className={`inline-flex items-center gap-1 sm:gap-1.5 bg-green-50 text-green-600 border border-green-200 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 ${typography.body.xs} font-semibold`}>
-                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-green-500" />
-                        Open Now
-                    </span>
-                    {job.jobInformation.type && (
-                        <span className={`inline-flex items-center gap-1 sm:gap-1.5 bg-orange-50 text-orange-500 border border-orange-200 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 ${typography.body.xs} font-semibold`}>
-                            <Tag size={10} className="sm:w-3 sm:h-3" /> {job.jobInformation.type}
-                        </span>
-                    )}
-                </div>
+                        {/* 3-col stats */}
+                        <div className="rounded-2xl border border-gray-100 shadow-sm grid grid-cols-3 divide-x divide-gray-100 overflow-hidden">
+                            <div className="flex flex-col items-center justify-center gap-0.5 py-4 px-2">
+                                <MapPin size={20} className="text-orange-500 mb-0.5" />
+                                <span className="text-sm font-bold text-gray-900 text-center leading-tight">{jobInformation.city || "—"}</span>
+                                <a href={mapsOpenUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-orange-500 font-semibold mt-0.5">Tap to open</a>
+                            </div>
+                            <div className="flex flex-col items-center justify-center gap-0.5 py-4 px-2">
+                                <Navigation size={20} className="text-orange-500 mb-0.5" />
+                                <span className="text-sm font-bold text-gray-900">{distance}</span>
+                                <span className="text-[11px] text-gray-400 font-medium mt-0.5">Distance</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center gap-0.5 py-4 px-2">
+                                <Calendar size={20} className="text-orange-500 mb-0.5" />
+                                <span className="text-sm font-bold text-gray-900 text-center leading-tight">{jobInformation.startDate}</span>
+                                <span className="text-[11px] text-gray-400 font-medium mt-0.5">Start</span>
+                            </div>
+                        </div>
 
-                {/* ── CUSTOMER DETAILS ─────────────────────────────────── */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 border-b border-gray-50">
-                        <h2 className={`${typography.body.small} font-bold text-gray-900 uppercase tracking-wide`}>
-                            Customer Details
-                        </h2>
-                    </div>
-                    <div className="px-3 sm:px-4">
-                        <InfoRow
-                            icon={<span className="text-sm sm:text-base">👤</span>}
-                            label="Name"
-                            value={job.customerDetails.name}
-                        />
-                        <InfoRow
-                            icon={<Phone size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Phone Number"
-                            value={
-                                <a
-                                    href={`tel:${phone}`}
-                                    className="text-orange-500 font-semibold hover:text-orange-600"
-                                >
-                                    {phone || "Not provided"}
-                                </a>
-                            }
-                            accent
-                        />
-                        <InfoRow
-                            icon={<MapPin size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Distance"
-                            value={job.customerDetails.distance}
-                        />
-                    </div>
-                </div>
+                        {/* Description */}
+                        <div className="rounded-2xl border border-gray-100 shadow-sm p-4">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Description</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{jobInformation.description}</p>
+                        </div>
 
-                {/* ── JOB INFORMATION ──────────────────────────────────── */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 border-b border-gray-50">
-                        <h2 className={`${typography.body.small} font-bold text-gray-900 uppercase tracking-wide`}>
-                            Job Information
-                        </h2>
-                    </div>
-                    <div className="px-3 sm:px-4">
-                        <InfoRow
-                            icon={<Tag size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Category"
-                            value={
-                                <span>
-                                    {job.jobInformation.category}
-                                    {job.jobInformation.subcategory && (
-                                        <span className={`ml-2 ${typography.body.xs} bg-orange-50 text-orange-500 border border-orange-200 px-1.5 sm:px-2 py-0.5 rounded-full`}>
-                                            {job.jobInformation.subcategory}
-                                        </span>
-                                    )}
-                                </span>
-                            }
-                            accent
-                        />
-                        <InfoRow
-                            icon={<MapPin size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Location"
-                            value={job.jobInformation.location}
-                        />
-                        <InfoRow
-                            icon={<Wallet size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Budget"
-                            value={
-                                job.jobInformation.budget
-                                    ? `₹${job.jobInformation.budget} (${job.jobInformation.budgetType})`
-                                    : "To be discussed"
-                            }
-                            accent
-                        />
-                        <InfoRow
-                            icon={<Calendar size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Schedule"
-                            value={`${job.jobInformation.startDate} → ${job.jobInformation.endDate}`}
-                        />
-                        <InfoRow
-                            icon={<Clock size={14} className="sm:w-3.5 sm:h-3.5" />}
-                            label="Duration"
-                            value="2–3 hours estimated"
-                        />
+                        {/* Job Details rows */}
+                        <div className="rounded-2xl border border-gray-100 shadow-sm px-4 pt-1 pb-0">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest pt-3 pb-1">Job Details</p>
+                            <DetailRow icon={<Tag size={16} />} iconColor="text-teal-500" label="Charges"
+                                value={<span className="text-green-600 font-bold text-base">{jobInformation.budget ? `₹${jobInformation.budget}` : "Negotiable"}</span>} />
+                            <DetailRow icon={<Briefcase size={16} />} iconColor="text-gray-400" label="Job Type" value={jobInformation.type || "Full Time"} />
+                            <DetailRow icon={<Calendar size={16} />} iconColor="text-gray-400" label="Start Date" value={jobInformation.startDate} />
+                            <DetailRow icon={<Clock size={16} />} iconColor="text-gray-400" label="End Date" value={jobInformation.endDate} />
+                            <DetailRow icon={<Mail size={16} />} iconColor="text-gray-400" label="Pincode" value={jobInformation.pincode || "—"} />
+                            <DetailRow icon={<MapPin size={16} />} iconColor="text-gray-400" label="Location" last
+                                value={
+                                    <div className="flex items-center justify-between gap-2">
+                                        <a href={mapsOpenUrl} target="_blank" rel="noopener noreferrer"
+                                            className="text-orange-500 font-semibold hover:underline flex-1 text-sm">
+                                            {[jobInformation.area, jobInformation.city, jobInformation.state].filter(Boolean).join(", ")}
+                                        </a>
+                                        <a href={directionsUrl} target="_blank" rel="noopener noreferrer"
+                                            className="flex-shrink-0 text-gray-400 hover:text-orange-500 transition">
+                                            <Navigation size={15} />
+                                        </a>
+                                    </div>
+                                }
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* ── DESCRIPTION ─────────────────────────────────────── */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-3 sm:p-4">
-                    <h2 className={`${typography.body.small} font-bold text-gray-900 uppercase tracking-wide mb-2 sm:mb-3`}>
-                        Description
-                    </h2>
-                    <p className={`${typography.body.small} text-gray-600 leading-relaxed`}>
-                        {job.jobInformation.description}
-                    </p>
-                </div>
-
-                {/* ── MAP PREVIEW ─────────────────────────────────────── */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 border-b border-gray-50 flex items-center justify-between">
-                        <h2 className={`${typography.body.small} font-bold text-gray-900 uppercase tracking-wide`}>
-                            Location
-                        </h2>
-                        <a
-                            href={directionsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-0.5 sm:gap-1 ${typography.body.xs} text-orange-500 font-semibold hover:text-orange-600`}
-                        >
-                            <ExternalLink size={10} className="sm:w-3 sm:h-3" />
-                            Open Maps
-                        </a>
-                    </div>
-                    <div className="relative">
-                        <iframe
-                            src={job.mapUrl}
-                            className="w-full h-40 sm:h-48 md:h-52"
-                            style={{ border: 0 }}
-                            loading="lazy"
-                            title="Job Location Map"
-                            allowFullScreen
-                        />
-                        {/* Tap-to-open overlay */}
-                        <a
-                            href={directionsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute inset-0 flex items-end justify-center pb-3 sm:pb-4 opacity-0 hover:opacity-100 transition-opacity"
-                        >
-                            <span className={`bg-white shadow-lg text-orange-600 ${typography.body.xs} font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1 sm:gap-1.5`}>
-                                <Navigation size={11} className="sm:w-3.5 sm:h-3.5" /> Get Directions
-                            </span>
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-
-            {/* ── FIXED BOTTOM ACTION BAR ──────────────────────────────── */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] px-3 sm:px-4 py-2.5 sm:py-3 z-[100]">
-                <div className="max-w-2xl mx-auto space-y-2">
-
-                    {/* Row 1: Directions | Call (with number) | WhatsApp */}
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-
-                        {/* Directions → Google Maps */}
-                        <a
-                            href={directionsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 border-2 border-gray-200 hover:border-orange-300 hover:bg-orange-50 rounded-lg sm:rounded-xl py-2 sm:py-2.5 text-gray-600 hover:text-orange-500 transition-all active:scale-95"
-                        >
-                            <Navigation size={16} className="sm:w-[18px] sm:h-[18px]" />
-                            <span className={`${typography.body.xs} font-semibold`}>Directions</span>
-                        </a>
-
-                        {/* Call — shows phone number below icon */}
-                        <a
-                            href={`tel:${phone}`}
-                            className="flex flex-col items-center justify-center gap-0 sm:gap-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg sm:rounded-xl py-2 sm:py-2.5 transition-all active:scale-95 shadow-md shadow-green-200"
-                        >
-                            <Phone size={16} className="sm:w-[18px] sm:h-[18px]" />
-                            <span className={`${typography.body.xs} font-bold leading-tight`}>Call</span>
-                            {phone && (
-                                <span className="text-[9px] sm:text-[10px] font-medium opacity-90 truncate max-w-full px-1">
-                                    {phone}
-                                </span>
-                            )}
-                        </a>
-
-                        {/* WhatsApp */}
-                        <a
-                            href={`https://wa.me/${cleanPhone}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg sm:rounded-xl py-2 sm:py-2.5 transition-all active:scale-95 shadow-md shadow-emerald-200"
-                        >
-                            <MessageCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
-                            <span className={`${typography.body.xs} font-semibold`}>WhatsApp</span>
-                        </a>
-                    </div>
-
-                    {/* Row 2: Accept Job (full width) */}
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        fullWidth
-                        onClick={() => alert("Job accepted!")}
-                        className="!py-3 sm:!py-3.5"
+                {/* ══ BOTTOM BAR — absolute inside the centered card ══════════ */}
+                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-4 py-3">
+                    <button
+                        onClick={() => { if (cleanPhone) window.open(`https://wa.me/${cleanPhone}`, "_blank"); }}
+                        className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-base py-4 rounded-2xl shadow-md shadow-orange-100 transition-all active:scale-[0.98]"
                     >
-                        <span className="flex items-center justify-center gap-1.5">
-                            ✓ Accept This Job
-                        </span>
-                    </Button>
+                        <Mail size={18} />
+                        Send Enquiry
+                    </button>
                 </div>
             </div>
-
         </div>
     );
 };

@@ -4,7 +4,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { getNearbyWorkers } from "../services/api.service";
 
-// ── Nearby card components with dummy data
+// ── Dummy Nearby Cards ───────────────────────────────────────────────────────
 import NearbyMaidCard from "../components/cards/Home Repair/NearByMaidService";
 import NearbyCookCard from "../components/cards/Home Repair/NearByCookingCard";
 import BabySitterCard from "../components/cards/Home Repair/NearBy BabySitterServices";
@@ -28,6 +28,7 @@ export interface HomePersonalWorker {
     chargeType: "hour" | "day" | "fixed";
     profilePic?: string;
     images?: string[];
+    phone?: string;
     area: string;
     city: string;
     state: string;
@@ -39,7 +40,7 @@ export interface HomePersonalWorker {
 }
 
 // ============================================================================
-// SUBCATEGORY → CARD COMPONENT MAP
+// CARD MAP
 // ============================================================================
 type CardKey = "maid" | "cook" | "baby" | "elder" | "housekeeping" | "laundry" | "water";
 
@@ -56,83 +57,77 @@ const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
 // ============================================================================
 // HELPERS
 // ============================================================================
-const normalizeSubcategory = (sub: string | undefined): string => {
-    if (!sub) return "";
-    const normalized = sub.toLowerCase();
-    console.log("📍 Raw subcategory:", sub);
-    console.log("📍 Normalized subcategory:", normalized);
-    return normalized;
+const resolveCardKey = (subcategory?: string): CardKey => {
+    const n = (subcategory || "").toLowerCase();
+    if (n.includes("maid")) return "maid";
+    if (n.includes("cook")) return "cook";
+    if (n.includes("baby") || n.includes("sitter")) return "baby";
+    if (n.includes("elder")) return "elder";
+    if (n.includes("house") || n.includes("keeping")) return "housekeeping";
+    if (n.includes("laundry")) return "laundry";
+    if (n.includes("water")) return "water";
+    return "maid";
 };
 
-const getCardComponentForSubcategory = (
-    subcategory: string | undefined
-): React.ComponentType<any> | null => {
-    if (!subcategory) return null;
-
-    const normalized = normalizeSubcategory(subcategory);
-
-    if (normalized.includes("maid")) {
-        console.log("✅ Matched to NearbyMaidCard");
-        return CARD_MAP.maid;
-    }
-
-    if (normalized.includes("cook")) {
-        console.log("✅ Matched to NearbyCookCard");
-        return CARD_MAP.cook;
-    }
-
-    if (normalized.includes("baby") || normalized.includes("sitter")) {
-        console.log("✅ Matched to BabySitterCard");
-        return CARD_MAP.baby;
-    }
-
-    if (normalized.includes("elder")) {
-        console.log("✅ Matched to ElderCareCard");
-        return CARD_MAP.elder;
-    }
-
-    if (normalized.includes("house") || normalized.includes("keeping")) {
-        console.log("✅ Matched to HousekeepingCard");
-        return CARD_MAP.housekeeping;
-    }
-
-    if (normalized.includes("laundry")) {
-        console.log("✅ Matched to NearbyLaundryCard");
-        return CARD_MAP.laundry;
-    }
-
-    if (normalized.includes("water")) {
-        console.log("✅ Matched to MineralWaterSuppliers");
-        return CARD_MAP.water;
-    }
-
-    console.warn(`⚠️ No matching card component for: "${subcategory}"`);
-    return CARD_MAP.maid; // Default to maid card
+const getDisplayTitle = (subcategory?: string): string => {
+    if (!subcategory) return "All Home & Personal Services";
+    return subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
 
-const shouldShowNearbyCards = (subcategory: string | undefined): boolean => {
-    if (!subcategory) return false;
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
-    const normalized = normalizeSubcategory(subcategory);
+// ============================================================================
+// Extracts worker array from ANY known API response shape
+// ============================================================================
+const extractWorkers = (response: any): HomePersonalWorker[] => {
+    if (!response) return [];
 
-    const keywords = [
-        "maid", "cook", "baby", "sitter", "elder", "care",
-        "housekeeping", "laundry", "water", "service"
+    // Full response dump — expand in browser console to see exact shape
+    console.log("🔍 FULL RAW RESPONSE (expand to inspect):", response);
+    try {
+        console.log("🔍 FULL RAW RESPONSE (JSON):", JSON.stringify(response, null, 2));
+    } catch {
+        console.log("🔍 Response could not be JSON stringified (may contain circular refs)");
+    }
+
+    // Try every common API shape
+    const candidates: Array<{ label: string; value: any }> = [
+        { label: "response.workers", value: response.workers },
+        { label: "response.data?.workers", value: response.data?.workers },
+        { label: "response.data (array)", value: response.data },
+        { label: "response.result", value: response.result },
+        { label: "response.results", value: response.results },
+        { label: "response.data?.data", value: response.data?.data },
+        { label: "response.data?.result", value: response.data?.result },
+        { label: "response.data?.results", value: response.data?.results },
+        { label: "response.nearbyWorkers", value: response.nearbyWorkers },
+        { label: "response.data?.nearbyWorkers", value: response.data?.nearbyWorkers },
+        { label: "response.services", value: response.services },
+        { label: "response.data?.services", value: response.data?.services },
     ];
 
-    const hasMatch = keywords.some((keyword) => normalized.includes(keyword));
+    for (const { label, value } of candidates) {
+        if (Array.isArray(value)) {
+            console.log(`✅ Workers found at: ${label} — count: ${value.length}`);
+            return value as HomePersonalWorker[];
+        }
+        // Single object with _id — wrap it
+        if (value && typeof value === "object" && !Array.isArray(value) && value._id) {
+            console.log(`✅ Single worker found at: ${label}, wrapping in array`);
+            return [value] as HomePersonalWorker[];
+        }
+    }
 
-    console.log(`📊 Should show nearby cards for "${subcategory}":`, hasMatch);
-
-    return hasMatch;
-};
-
-const getDisplayTitle = (subcategory: string | undefined) => {
-    if (!subcategory) return "All Home & Personal Services";
-    return subcategory
-        .split("-")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+    console.warn("⚠️ Could not extract workers. Top-level keys:", Object.keys(response));
+    return [];
 };
 
 // ============================================================================
@@ -149,322 +144,242 @@ const HomePersonalServicesList: React.FC = () => {
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
 
-    // ── Get user's location on component mount ──
+    // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
-        const getUserLocation = () => {
-            setFetchingLocation(true);
-            setLocationError("");
-
-            if (!navigator.geolocation) {
-                setLocationError("Geolocation is not supported by your browser");
+        setFetchingLocation(true);
+        if (!navigator.geolocation) {
+            setLocationError("Geolocation not supported");
+            setFetchingLocation(false);
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setUserLocation({ latitude, longitude });
-                    setFetchingLocation(false);
-                    console.log("📍 User location:", latitude, longitude);
-                },
-                (error) => {
-                    console.error("Location error:", error);
-                    setLocationError("Unable to retrieve your location. Please enable location services.");
-                    setFetchingLocation(false);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        };
-
-        getUserLocation();
+                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
+            },
+            (err) => {
+                console.error(err);
+                setLocationError("Unable to retrieve your location.");
+                setFetchingLocation(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     }, []);
 
-    // ── Fetch nearby workers when location is available ──
+    // ── Fetch nearby workers when location ready ─────────────────────────────
     useEffect(() => {
-        const fetchNearbyWorkers = async () => {
-            if (!userLocation) return;
-
+        if (!userLocation) return;
+        const fetch_ = async () => {
             setLoading(true);
             setError("");
-
             try {
+                console.log("🏠 Fetching nearby home & personal workers...");
+                console.log("📡 Params → lat:", userLocation.latitude, "lng:", userLocation.longitude, "range: 10, category: home, sub:", subcategory || "(none)");
+
                 const response = await getNearbyWorkers(
                     userLocation.latitude,
                     userLocation.longitude,
-                    10,              // range in km
-                    "home",          // category
-                    subcategory || "" // subcategory from URL param
+                    10,
+                    "home",
+                    subcategory || ""
                 );
 
-                if (response.success && response.workers) {
-                    console.log('📊 Total workers from API:', response.workers.length);
-                    setNearbyWorkers(response.workers);
-                    console.log("✅ Nearby home & personal workers:", response.workers);
-                } else {
-                    setNearbyWorkers([]);
-                }
-            } catch (err) {
-                console.error("Error fetching nearby workers:", err);
+                const workers = extractWorkers(response);
+                console.log("🏠 Final worker count to display:", workers.length);
+                setNearbyWorkers(workers);
+
+            } catch (e) {
+                console.error("❌ Error fetching workers:", e);
                 setError("Failed to load nearby workers");
                 setNearbyWorkers([]);
             } finally {
                 setLoading(false);
             }
         };
+        fetch_();
+    }, [userLocation]);
 
-        if (userLocation) {
-            fetchNearbyWorkers();
-        }
-    }, [userLocation, subcategory]);
+    // ── Navigation handlers ──────────────────────────────────────────────────
+    const handleView = (worker: any) => navigate(`/home-personal-services/worker/${worker._id || worker.id}`);
+    const handleAddPost = () =>
+        navigate(subcategory ? `/add-home-service-form?subcategory=${subcategory}` : "/add-home-service-form");
 
-    // ── Navigation handlers ──────────────────────────────────────────
-    const handleView = (worker: any) => {
-        const id = worker.id || worker._id;
-        console.log("Viewing worker details:", id);
-        navigate(`/home-personal-services/worker/${id}`);
-    };
-
-    const handleAddPost = () => {
-        console.log("Adding new post. Subcategory:", subcategory);
-        navigate(
-            subcategory
-                ? `/add-home-service-form?subcategory=${subcategory}`
-                : "/add-home-service-form"
-        );
-    };
-
-    // ── Helper functions ──
     const openDirections = (worker: HomePersonalWorker) => {
-        if (worker.latitude && worker.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${worker.latitude},${worker.longitude}`,
-                "_blank"
-            );
-        } else if (worker.area || worker.city) {
-            const addr = encodeURIComponent(
-                [worker.area, worker.city, worker.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
+        if (worker.latitude && worker.longitude)
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${worker.latitude},${worker.longitude}`, "_blank");
+        else if (worker.area || worker.city)
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([worker.area, worker.city, worker.state].filter(Boolean).join(", "))}`, "_blank");
     };
 
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-        const R = 6371; // Earth's radius in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
+    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
+
+    // ── Dummy cards — always render first ────────────────────────────────────
+    const renderDummyCards = () => {
+        const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
+        return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── Render Worker Card ──
+    // ============================================================================
+    // WORKER CARD — mirrors RealEstateList card style
+    // ============================================================================
     const renderWorkerCard = (worker: HomePersonalWorker) => {
         const id = worker._id || "";
-        const location = [worker.area, worker.city, worker.state]
-            .filter(Boolean)
-            .join(", ") || "Location not set";
+        const location = [worker.area, worker.city].filter(Boolean).join(", ") || "Location not set";
+        const imageUrls = (worker.images || []).filter(Boolean) as string[];
 
-        // Calculate distance if user location is available
         let distance: string | null = null;
         if (userLocation && worker.latitude && worker.longitude) {
-            const dist = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                worker.latitude,
-                worker.longitude
+            const d = calculateDistance(
+                userLocation.latitude, userLocation.longitude,
+                worker.latitude, worker.longitude
             );
-            distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+            distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative cursor-pointer"
-                style={{ border: '1px solid #e5e7eb' }}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
                 onClick={() => handleView(worker)}
             >
-                {/* Distance Badge */}
-                {distance && (
-                    <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full shadow-md">
-                            <span>📍</span> {distance} away
-                        </span>
-                    </div>
-                )}
-
-                {/* Profile Image */}
-                {worker.profilePic && (
-                    <div className="w-full h-40 overflow-hidden bg-gray-100">
+                {/* ── Image / Profile ── */}
+                <div className="relative h-48 bg-gradient-to-br from-purple-600/5 to-purple-600/10 overflow-hidden">
+                    {worker.profilePic ? (
                         <img
                             src={worker.profilePic}
                             alt={worker.name}
                             className="w-full h-full object-cover"
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
-                    </div>
-                )}
+                    ) : imageUrls.length > 0 ? (
+                        <img
+                            src={imageUrls[0]}
+                            alt={worker.name}
+                            className="w-full h-full object-cover"
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <span className="text-5xl">🏠</span>
+                        </div>
+                    )}
 
-                {/* Body */}
-                <div className="p-5 flex flex-col flex-1 gap-3">
-                    {/* Name */}
-                    <h2 className="text-xl font-semibold text-gray-900 truncate">
+                    {/* Live Data — top left */}
+                    <div className="absolute top-3 left-3 z-10">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-purple-600 text-white text-xs font-bold rounded-md shadow-md">
+                            Live Data
+                        </span>
+                    </div>
+
+                    {/* Charge type — top right */}
+                    <div className="absolute top-3 right-3 z-10">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-purple-500 text-white capitalize">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                            Per {worker.chargeType}
+                        </span>
+                    </div>
+
+                    {imageUrls.length > 1 && (
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                            1 / {imageUrls.length}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Body ── */}
+                <div className="p-4 flex flex-col gap-2.5">
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
                         {worker.name || "Unnamed Worker"}
                     </h2>
 
-                    {/* Location */}
+                    {worker.subCategory && (
+                        <p className="text-sm font-medium text-gray-700">{worker.subCategory}</p>
+                    )}
+
                     <p className="text-sm text-gray-500 flex items-start gap-1.5">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {/* Subcategory and Charge Type Badge */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        {worker.subCategory && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200">
-                                <span className="shrink-0">🏠</span>
-                                <span className="truncate">{worker.subCategory}</span>
-                            </span>
-                        )}
-                        <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border font-medium bg-purple-50 text-purple-700 border-purple-200 capitalize">
-                            {worker.chargeType}
-                        </span>
-                    </div>
-
-                    {/* Skill */}
-                    {worker.skill && (
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                            🛠️ {worker.skill}
+                    {distance && (
+                        <p className="text-sm font-semibold text-purple-600 flex items-center gap-1">
+                            <span>📍</span> {distance} away
                         </p>
                     )}
 
-                    {/* Charge Info */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                        <div>
-                            <p className="text-xs text-gray-500">Charge Type</p>
-                            <p className="text-sm font-semibold text-gray-900 capitalize">
-                                Per {worker.chargeType}
-                            </p>
+                    {/* Skill + Charge */}
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                            {worker.skill && (
+                                <span className="text-sm text-gray-600 flex items-center gap-1 line-clamp-1">
+                                    🛠️ {worker.skill}
+                                </span>
+                            )}
                         </div>
                         {worker.serviceCharge && (
                             <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">
-                                    Charges
-                                </p>
-                                <p className="text-lg font-bold text-green-600">
-                                    ₹{worker.serviceCharge}
-                                </p>
+                                <p className="text-xs text-gray-500 uppercase">Per {worker.chargeType}</p>
+                                <p className="text-base font-bold text-purple-600">₹{worker.serviceCharge}</p>
                             </div>
                         )}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                openDirections(worker);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    {/* Directions + Call */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        <button
+                            onClick={e => { e.stopPropagation(); openDirections(worker); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors"
                         >
                             <span>📍</span> Directions
-                        </Button>
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                handleView(worker);
-                            }}
-                            className="w-full sm:flex-1 justify-center gap-1.5"
+                        </button>
+                        <button
+                            onClick={e => { e.stopPropagation(); worker.phone && openCall(worker.phone); }}
+                            disabled={!worker.phone}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${worker.phone
+                                ? "bg-purple-600 text-white hover:bg-purple-700"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
                         >
-                            <span className="shrink-0">👁️</span>
-                            <span>View Details</span>
-                        </Button>
+                            <span>📞</span> Call
+                        </button>
                     </div>
                 </div>
             </div>
         );
     };
 
-    // ── Render Cards Section ─────────────────────────────────────────
-    const renderCardsSection = () => {
-        const CardComponent = getCardComponentForSubcategory(subcategory);
-
-        if (!CardComponent) {
-            console.error(`❌ No card component available for subcategory: "${subcategory}"`);
-            return null;
-        }
-
-        return (
-            <div className="space-y-8">
-                {/* Nearby Card Components - renders built-in dummy data */}
-                <div>
-                    <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                        <span className="shrink-0">🏠</span>
-                        <span className="truncate">Nearby {getDisplayTitle(subcategory)}</span>
-                    </h2>
-                    <CardComponent onViewDetails={handleView} />
-                </div>
-            </div>
-        );
-    };
-
-    // ── Render Nearby Workers ────────────────────────────────────────
-    const renderNearbyWorkers = () => {
-        if (fetchingLocation) {
-            return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Detecting your location...</p>
-                </div>
-            );
-        }
-
-        if (locationError) {
-            return (
-                <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-3">📍</div>
-                    <p className="text-yellow-800 font-medium mb-2">{locationError}</p>
-                    <p className="text-sm text-yellow-700">Enable location services to see nearby workers</p>
-                </div>
-            );
-        }
-
+    // ── Nearby services section ──────────────────────────────────────────────
+    const renderNearbyServices = () => {
         if (loading) {
             return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading nearby workers...</p>
+                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
                 </div>
             );
         }
 
         if (nearbyWorkers.length === 0) {
             return (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                    <div className="text-6xl mb-4">🏠</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Nearby Workers Found
-                    </h3>
-                    <p className={`${typography.body.small} text-gray-500`}>
-                        Try exploring other areas or add your own service!
+                <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+                    <div className="text-5xl mb-3">🏠</div>
+                    <p className="text-gray-500 font-medium">No workers found in your area.</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        Open console → look for <strong>🔍 FULL RAW RESPONSE (JSON)</strong> to see the exact API response shape
                     </p>
                 </div>
             );
         }
 
         return (
-            <div>
-                <h2 className={`${typography.heading.h4} text-gray-800 mb-3 sm:mb-4 flex items-center gap-2`}>
-                    <span className="shrink-0">📍</span>
-                    <span className="truncate">Nearby Workers ({nearbyWorkers.length})</span>
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-purple-600 text-white text-sm font-bold rounded-full px-2.5">
+                        {nearbyWorkers.length}
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {nearbyWorkers.map(renderWorkerCard)}
                 </div>
             </div>
@@ -472,31 +387,22 @@ const HomePersonalServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER
+    // MAIN RENDER — DUMMY FIRST, API SECOND
     // ============================================================================
-    if (loading && !nearbyWorkers.length) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50/30 to-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading workers...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-50/30 to-white">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* ─── HEADER ── title + "+ Add Post" ─────────────────── */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                    <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                        {getDisplayTitle(subcategory)}
-                    </h1>
-
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
+                            {getDisplayTitle(subcategory)}
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">Find home services near you</p>
+                    </div>
                     <Button
-                        variant="gradient-blue"
+                        variant="primary"
                         size="md"
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center"
@@ -505,22 +411,32 @@ const HomePersonalServicesList: React.FC = () => {
                     </Button>
                 </div>
 
-                {/* Error */}
+                {/* Location status */}
+                {fetchingLocation && (
+                    <div className="bg-purple-600/10 border border-purple-600/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
+                        <span className="text-sm text-purple-700">Getting your location...</span>
+                    </div>
+                )}
+                {locationError && (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                        <p className="text-yellow-700 text-sm">{locationError}</p>
+                    </div>
+                )}
                 {error && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium">{error}</p>
+                        <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
 
-                {/* ─── NEARBY WORKERS (LIVE DATA) ──────────────────── */}
-                {renderNearbyWorkers()}
+                {/* ✅ 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">
+                    {renderDummyCards()}
+                </div>
 
-                {/* ─── DUMMY CARD COMPONENTS ──────────────────────────── */}
-                {shouldShowNearbyCards(subcategory) && (
-                    <div className="mt-8">
-                        {renderCardsSection()}
-                    </div>
-                )}
+                {/* ✅ 2. API DATA SECOND */}
+                {userLocation && !fetchingLocation && renderNearbyServices()}
+
             </div>
         </div>
     );

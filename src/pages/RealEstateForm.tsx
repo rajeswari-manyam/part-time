@@ -5,39 +5,23 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Property type options ────────────────────────────────────────────────────
 const propertyTypeOptions = ['Apartment', 'Villa', 'Independent House', 'Plot', 'Commercial', 'Office Space'];
-
-// ── Listing type options ─────────────────────────────────────────────────────
 const listingTypeOptions = ['Rent', 'Sale', 'Lease'];
-
-// ── Furnishing status options ────────────────────────────────────────────────
 const furnishingStatusOptions = ['Fully-Furnished', 'Semi-Furnished', 'Unfurnished'];
-
-// ── Availability status options ──────────────────────────────────────────────
 const availabilityStatusOptions = ['Available', 'Sold', 'Rented', 'Under Construction'];
 
-// ============================================================================
-// SHARED INPUT CLASSES - Mobile First
-// ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-green-500 focus:border-green-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// ============================================================================
-// REUSABLE LABEL
-// ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -50,27 +34,45 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
-// ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
-// ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await response.json();
-
+        const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`);
+        const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
+            const loc = data.results[0].geometry.location;
+            return { lat: loc.lat, lng: loc.lng };
         }
         return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
+    } catch { return null; }
+};
+
+// ✅ Scans all common localStorage keys to find userId
+const resolveUserId = (): string => {
+    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+    for (const key of candidates) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        if (raw.length > 10 && !raw.startsWith('{')) {
+            console.log(`✅ userId from localStorage["${key}"] =`, raw);
+            return raw;
+        }
+        try {
+            const parsed = JSON.parse(raw);
+            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+            if (id) { console.log(`✅ userId from localStorage["${key}"] (JSON) =`, id); return String(id); }
+        } catch { }
     }
+    console.warn("⚠️ userId not found. localStorage keys:", Object.keys(localStorage));
+    return '';
+};
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem'
 };
 
 // ============================================================================
@@ -78,11 +80,8 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 const RealEstateForm = () => {
     const navigate = useNavigate();
-
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -93,7 +92,7 @@ const RealEstateForm = () => {
     const [locationWarning, setLocationWarning] = useState('');
 
     const [formData, setFormData] = useState({
-        userId: localStorage.getItem('userId') || '',
+        userId: resolveUserId(),
         name: '',
         propertyType: propertyTypeOptions[0],
         listingType: listingTypeOptions[0],
@@ -116,12 +115,9 @@ const RealEstateForm = () => {
         description: '',
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
@@ -133,15 +129,11 @@ const RealEstateForm = () => {
             try {
                 const response = await getRealEstateServiceById(editId);
                 if (!response.success || !response.data) throw new Error('Service not found');
-
-                // Handle both single object and array responses
                 const data = Array.isArray(response.data) ? response.data[0] : response.data;
-
                 if (!data) throw new Error('Service not found');
-
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
+                    userId: data.userId || prev.userId,
                     name: data.name || '',
                     propertyType: data.propertyType || propertyTypeOptions[0],
                     listingType: data.listingType || listingTypeOptions[0],
@@ -163,171 +155,110 @@ const RealEstateForm = () => {
                     amenities: data.amenities || '',
                     description: data.description || '',
                 }));
-
                 if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
-            } finally {
-                setLoadingData(false);
-            }
+            } finally { setLoadingData(false); }
         };
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when address is typed manually ───────────────
+    // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
-        const detectCoordinates = async () => {
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
-            }
-
+        const detect = async () => {
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.address}, ${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
-                    .replace(/, ,/g, ',')
-                    .replace(/^,|,$/g, '');
-
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
+                const addr = [formData.address, formData.area, formData.city, formData.state, formData.pincode]
+                    .filter(Boolean).join(', ');
+                const coords = await geocodeAddress(addr);
+                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
         };
-
-        const timer = setTimeout(detectCoordinates, 1000);
-        return () => clearTimeout(timer);
+        const t = setTimeout(detect, 1000);
+        return () => clearTimeout(t);
     }, [formData.address, formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
-        const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+        const slots = 5 - (selectedImages.length + existingImages.length);
+        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+        const valid = files.slice(0, slots).filter(f => {
+            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
             return true;
         });
-
-        if (!validFiles.length) return;
-
-        const newPreviews: string[] = [];
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length)
-                    setImagePreviews(prev => [...prev, ...newPreviews]);
+        if (!valid.length) return;
+        const previews: string[] = [];
+        let loaded = 0;
+        valid.forEach(f => {
+            const r = new FileReader();
+            r.onloadend = () => {
+                previews.push(r.result as string);
+                if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(f);
         });
-        setSelectedImages(prev => [...prev, ...validFiles]);
+        setSelectedImages(p => [...p, ...valid]);
         setError('');
     };
 
     const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
-        setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+        setSelectedImages(p => p.filter((_, idx) => idx !== i));
+        setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
+    const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
-
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── GPS location ─────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
-
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported by your browser');
-            setLocationLoading(false);
-            return;
-        }
-
+        setLocationLoading(true); setError(''); setLocationWarning('');
+        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
                 isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy;
-
-                if (accuracy > 500) {
-                    setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
-                        `The address fields below may be approximate — please verify and correct if needed.`
-                    );
-                }
-
+                if (pos.coords.accuracy > 500) setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
-
                     if (data.address) {
                         setFormData(prev => ({
-                            ...prev,
-                            latitude: lat,
-                            longitude: lng,
-                            address: data.address.house_number
-                                ? `${data.address.house_number} ${data.address.road || ''}`.trim()
-                                : data.address.road || prev.address,
+                            ...prev, latitude: lat, longitude: lng,
+                            address: data.address.house_number ? `${data.address.house_number} ${data.address.road || ''}`.trim() : data.address.road || prev.address,
                             area: data.address.suburb || data.address.neighbourhood || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
-
+                } catch { }
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
+            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ============================================================================
+    // SUBMIT — FormData exactly matching the API curl
+    // ============================================================================
     const handleSubmit = async () => {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-
+        setLoading(true); setError(''); setSuccessMessage('');
         try {
+            // ✅ Validate userId first — prevents "User not found" 404
+            let uid = formData.userId;
+            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
+            if (!uid) throw new Error('User not logged in. Please log out and log back in.');
+
             if (!formData.name || !formData.phone || !formData.email)
                 throw new Error('Please fill in all required fields (Name, Phone, Email)');
             if (!formData.price || !formData.areaSize)
@@ -335,446 +266,224 @@ const RealEstateForm = () => {
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            const formDataToSend = new FormData();
+            // ✅ Build FormData exactly like the API curl:
+            // formdata.append("userId", "69921fc1717d1df32c7fdca1");
+            // formdata.append("images", fileInput.files[0], filename);
+            const fd = new FormData();
+            fd.append('userId', uid);
+            fd.append('name', formData.name);
+            fd.append('propertyType', formData.propertyType);
+            fd.append('listingType', formData.listingType);
+            fd.append('email', formData.email);
+            fd.append('phone', formData.phone);
+            fd.append('price', formData.price);
+            fd.append('areaSize', formData.areaSize);
+            fd.append('bedrooms', formData.bedrooms);
+            fd.append('bathrooms', formData.bathrooms);
+            fd.append('furnishingStatus', formData.furnishingStatus);
+            fd.append('availabilityStatus', formData.availabilityStatus);
+            fd.append('address', formData.address);
+            fd.append('area', formData.area);
+            fd.append('city', formData.city);
+            fd.append('state', formData.state);
+            fd.append('pincode', formData.pincode);
+            fd.append('latitude', formData.latitude);
+            fd.append('longitude', formData.longitude);
+            fd.append('amenities', formData.amenities);
+            fd.append('description', formData.description);
 
-            // Append all text fields
-            formDataToSend.append('userId', formData.userId);
-            formDataToSend.append('name', formData.name);
-            formDataToSend.append('propertyType', formData.propertyType);
-            formDataToSend.append('listingType', formData.listingType);
-            formDataToSend.append('email', formData.email);
-            formDataToSend.append('phone', formData.phone);
-            formDataToSend.append('price', formData.price);
-            formDataToSend.append('areaSize', formData.areaSize);
-            formDataToSend.append('bedrooms', formData.bedrooms);
-            formDataToSend.append('bathrooms', formData.bathrooms);
-            formDataToSend.append('furnishingStatus', formData.furnishingStatus);
-            formDataToSend.append('availabilityStatus', formData.availabilityStatus);
-            formDataToSend.append('address', formData.address);
-            formDataToSend.append('area', formData.area);
-            formDataToSend.append('city', formData.city);
-            formDataToSend.append('state', formData.state);
-            formDataToSend.append('pincode', formData.pincode);
-            formDataToSend.append('latitude', formData.latitude);
-            formDataToSend.append('longitude', formData.longitude);
-            formDataToSend.append('amenities', formData.amenities);
-            formDataToSend.append('description', formData.description);
+            // ✅ Append images exactly like the API: append("images", file, file.name)
+            selectedImages.forEach(f => fd.append('images', f, f.name));
 
-            // Append new images
-            selectedImages.forEach((image) => {
-                formDataToSend.append('images', image);
+            // Preserve existing images on edit
+            if (isEditMode && existingImages.length > 0) {
+                fd.append('existingImages', JSON.stringify(existingImages));
+            }
+
+            // Debug log
+            console.log('📤 Sending FormData:');
+            console.log('  userId:', uid);
+            Array.from(fd.entries()).forEach(([k, v]) => {
+                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b, ${v.type})`);
+                else console.log(`  ${k}: ${v}`);
             });
 
-            // Append existing images if in edit mode
-            if (isEditMode && existingImages.length > 0) {
-                formDataToSend.append('existingImages', JSON.stringify(existingImages));
-            }
-
             if (isEditMode && editId) {
-                const response = await updateRealEstateService(editId, formDataToSend);
-                if (response.success) {
-                    setSuccessMessage('Property updated successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
-                } else {
-                    throw new Error(response.message || 'Failed to update property');
-                }
+                const res = await updateRealEstateService(editId, fd);
+                if (!res.success) throw new Error(res.message || 'Failed to update property');
+                setSuccessMessage('Property updated successfully!');
             } else {
-                const response = await addRealEstateService(formDataToSend);
-                if (response.success) {
-                    setSuccessMessage('Property listed successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
-                } else {
-                    throw new Error(response.message || 'Failed to list property');
-                }
+                const res = await addRealEstateService(fd);
+                if (!res.success) throw new Error(res.message || 'Failed to list property');
+                setSuccessMessage('Property listed successfully!');
             }
+            setTimeout(() => navigate('/listed-jobs'), 1500);
         } catch (err: any) {
+            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
-    const handleCancel = () => window.history.back();
-
-    // ── loading screen ───────────────────────────────────────────────────────
-    if (loadingData) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
-                </div>
+    if (loadingData) return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
+                <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
-        );
-    }
+        </div>
+    );
 
     // ============================================================================
-    // RENDER - Mobile First Design
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
+            {/* Header */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Property' : 'List New Property'}
-                        </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your property listing' : 'Create new property listing'}
-                        </p>
+                        <h1 className={`${typography.heading.h5} text-gray-900`}>{isEditMode ? 'Update Property' : 'List New Property'}</h1>
+                        <p className={`${typography.body.small} text-gray-500`}>{isEditMode ? 'Update your property listing' : 'Create new property listing'}</p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
+                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
 
-                {/* ── Alerts ── */}
-                {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        {successMessage}
-                    </div>
-                )}
-
-                {/* ─── 1. BASIC INFORMATION ──────────────────────────────────────── */}
+                {/* 1. BASIC INFO */}
                 <SectionCard title="Basic Information">
                     <div>
-                        <FieldLabel required>Owner/Agent Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Enter name"
-                            className={inputBase}
-                        />
+                        <FieldLabel required>Owner / Agent Name</FieldLabel>
+                        <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter name" className={inputBase} />
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Property Type</FieldLabel>
-                            <select
-                                name="propertyType"
-                                value={formData.propertyType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
-                                }}
-                            >
+                            <select name="propertyType" value={formData.propertyType} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
                                 {propertyTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
-
                         <div>
                             <FieldLabel required>Listing Type</FieldLabel>
-                            <select
-                                name="listingType"
-                                value={formData.listingType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
-                                }}
-                            >
+                            <select name="listingType" value={formData.listingType} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
                                 {listingTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
+                {/* 2. CONTACT */}
                 <SectionCard title="Contact Information">
                     <div>
                         <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
                     </div>
                     <div>
                         <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. PROPERTY DETAILS ───────────────────────── */}
+                {/* 3. PROPERTY DETAILS */}
                 <SectionCard title="Property Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Price (₹)</FieldLabel>
-                            <input
-                                type="number"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleInputChange}
-                                placeholder="15000"
-                                className={inputBase}
-                            />
+                            <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="15000" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>Area Size (sq ft)</FieldLabel>
-                            <input
-                                type="number"
-                                name="areaSize"
-                                value={formData.areaSize}
-                                onChange={handleInputChange}
-                                placeholder="1200"
-                                className={inputBase}
-                            />
+                            <input type="number" name="areaSize" value={formData.areaSize} onChange={handleInputChange} placeholder="1200" className={inputBase} />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Bedrooms</FieldLabel>
-                            <input
-                                type="number"
-                                name="bedrooms"
-                                value={formData.bedrooms}
-                                onChange={handleInputChange}
-                                placeholder="2"
-                                className={inputBase}
-                            />
+                            <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} placeholder="2" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel>Bathrooms</FieldLabel>
-                            <input
-                                type="number"
-                                name="bathrooms"
-                                value={formData.bathrooms}
-                                onChange={handleInputChange}
-                                placeholder="2"
-                                className={inputBase}
-                            />
+                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} placeholder="2" className={inputBase} />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Furnishing Status</FieldLabel>
-                            <select
-                                name="furnishingStatus"
-                                value={formData.furnishingStatus}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
-                                }}
-                            >
+                            <select name="furnishingStatus" value={formData.furnishingStatus} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
                                 {furnishingStatusOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                         <div>
                             <FieldLabel>Availability</FieldLabel>
-                            <select
-                                name="availabilityStatus"
-                                value={formData.availabilityStatus}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem'
-                                }}
-                            >
+                            <select name="availabilityStatus" value={formData.availabilityStatus} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
                                 {availabilityStatusOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                     </div>
-
                     <div>
                         <FieldLabel>Amenities</FieldLabel>
-                        <input
-                            type="text"
-                            name="amenities"
-                            value={formData.amenities}
-                            onChange={handleInputChange}
-                            placeholder="Parking, Lift, Power Backup"
-                            className={inputBase}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Separate with commas
-                        </p>
+                        <input type="text" name="amenities" value={formData.amenities} onChange={handleInputChange} placeholder="Parking, Lift, Power Backup" className={inputBase} />
+                        <p className={`${typography.misc.caption} mt-2`}>💡 Separate with commas</p>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. LOCATION DETAILS ────────────────────────────── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="!py-1.5 !px-3"
-                        >
-                            {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
-                            )}
-                        </Button>
-                    }
-                >
+                {/* 4. LOCATION */}
+                <SectionCard title="Location Details" action={
+                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
+                        {locationLoading
+                            ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                            : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
+                    </Button>
+                }>
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>
-                                {locationWarning}
-                            </p>
+                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
-
                     <div>
                         <FieldLabel required>Address</FieldLabel>
-                        <input
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleInputChange}
-                            placeholder="Flat No, Building Name"
-                            className={inputBase}
-                        />
+                        <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Flat No, Building Name" className={inputBase} />
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
-                        </div>
+                        <div><FieldLabel required>Area</FieldLabel><input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} /></div>
+                        <div><FieldLabel required>City</FieldLabel><input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} /></div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
-                        </div>
+                        <div><FieldLabel required>State</FieldLabel><input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} /></div>
+                        <div><FieldLabel required>PIN Code</FieldLabel><input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
                     </div>
-
                     <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-green-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter address manually.
-                        </p>
+                        <p className={`${typography.body.small} text-green-800`}>📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.</p>
                     </div>
-
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
+                                <span className="font-semibold">✓ Location detected: </span>
+                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 5. DESCRIPTION ──────────────────────────────────────── */}
+                {/* 5. DESCRIPTION */}
                 <SectionCard title="Description">
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="2BHK flat near metro station, prime location..."
-                        className={inputBase + ' resize-none'}
-                    />
+                    <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4}
+                        placeholder="2BHK flat near metro station, prime location..." className={inputBase + ' resize-none'} />
                 </SectionCard>
 
-                {/* ─── 6. PROPERTY PHOTOS ────────────────────────────── */}
+                {/* 6. PHOTOS */}
                 <SectionCard title="Property Photos (Optional)">
                     <label className="cursor-pointer block">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
-                        />
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
+                            disabled={selectedImages.length + existingImages.length >= 5} />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-green-300 hover:border-green-400 hover:bg-green-50'
@@ -786,10 +495,15 @@ const RealEstateForm = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached'
+                                            ? 'Maximum limit reached (5 images)'
                                             : 'Tap to upload property photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
+                                    {selectedImages.length > 0 && (
+                                        <p className="text-green-600 text-sm font-medium mt-1">
+                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -799,66 +513,32 @@ const RealEstateForm = () => {
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        Saved
-                                    </span>
+                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-green-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
-                                    </span>
+                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-green-400" />
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
                                 </div>
                             ))}
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-green-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700 active:bg-green-800'
-                            } shadow-sm ${typography.body.base}`}
-                    >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Listing...')
-                            : (isEditMode ? 'Update Property' : 'List Property')}
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-2 pb-8">
+                    <button onClick={handleSubmit} disabled={loading} type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:bg-green-800'} ${typography.body.base}`}>
+                        {loading ? (isEditMode ? 'Updating...' : 'Listing...') : (isEditMode ? 'Update Property' : 'List Property')}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
-                    >
+                    <button onClick={() => window.history.back()} type="button"
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>
                         Cancel
                     </button>
                 </div>

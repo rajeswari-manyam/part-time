@@ -270,7 +270,7 @@ const HospitalServicesList: React.FC = () => {
                 onClick={() => handleView(hospital)}
             >
                 {/* Image Section - Fixed height like dummy cards */}
-                <div className="relative h-48 bg-gradient-to-br from-emerald-50 to-emerald-100 overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-[#1A5F9E]/5 to-[#1A5F9E]/10 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -288,7 +288,7 @@ const HospitalServicesList: React.FC = () => {
 
                     {/* Live Data Badge - Top Left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-purple-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-[#1A5F9E] text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
@@ -316,7 +316,7 @@ const HospitalServicesList: React.FC = () => {
 
                     {/* Distance - Prominent styling */}
                     {distance && (
-                        <p className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-[#1A5F9E] flex items-center gap-1">
                             <span>📍</span>
                             {distance} away
                         </p>
@@ -340,7 +340,7 @@ const HospitalServicesList: React.FC = () => {
                     {/* Hospital Type Badge */}
                     {hospital.hospitalType && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200 font-medium">
+                            <span className="inline-flex items-center gap-1 text-xs bg-[#1A5F9E]/5 text-[#1A5F9E] px-2.5 py-1 rounded-md border border-[#1A5F9E]/20 font-medium">
                                 ⭐ {hospital.hospitalType}
                             </span>
                         </div>
@@ -373,7 +373,7 @@ const HospitalServicesList: React.FC = () => {
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                    <span className="text-xs text-[#1A5F9E] font-medium px-1 py-1">
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -388,7 +388,7 @@ const HospitalServicesList: React.FC = () => {
                                 e.stopPropagation();
                                 openDirections(hospital);
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors active:bg-purple-100"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-[#1A5F9E] text-[#1A5F9E] rounded-lg font-medium text-sm hover:bg-[#1A5F9E]/5 transition-colors active:bg-[#1A5F9E]/10"
                         >
                             <span>📍</span>
                             Directions
@@ -400,7 +400,7 @@ const HospitalServicesList: React.FC = () => {
                             }}
                             disabled={!hospital.phone}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${hospital.phone
-                                ? "bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700"
+                                ? "bg-[#1A5F9E] text-white hover:bg-[#154a7e] active:bg-[#0f365d]"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                         >
@@ -444,7 +444,7 @@ const HospitalServicesList: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-[#1A5F9E] text-white text-sm font-bold rounded-full px-2.5">
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -475,7 +475,7 @@ const HospitalServicesList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full sm:w-auto justify-center bg-[#1A5F9E] hover:bg-[#154a7e] text-white"
                     >
                         + Create Hospitals & Healthcare Service
                     </Button>
@@ -483,9 +483,9 @@ const HospitalServicesList: React.FC = () => {
 
                 {/* Location Status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-[#1A5F9E] border-t-transparent rounded-full"></div>
+                        <span className="text-sm text-[#1A5F9E]">Getting your location...</span>
                     </div>
                 )}
 

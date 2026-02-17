@@ -1,25 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addEventService, updateEventService, getEventServiceById, EventWorker } from "../services/EventWorker.service";
+import { addEventService, updateEventService, getEventServiceById } from "../services/EventWorker.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Availability options ─────────────────────────────────────────────────────
-const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
-// ── Charge type options ──────────────────────────────────────────────────────
-const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Event', 'Fixed Rate'];
-
-// ── Pull event subcategories from JSON (categoryId 3) ────────────────────────
-const getEventSubcategories = () => {
-    const eventCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 14);
-    return eventCategory ? eventCategory.items.map(item => item.name) : [];
+// ── Build a proper absolute image URL from a raw backend path ────────────────
+const buildImageUrl = (path: string): string => {
+    if (!path) return "";
+    if (/^(https?:\/\/|blob:|data:)/i.test(path)) return path;
+    const clean = path.replace(/\\/g, "/");
+    return `${API_BASE_URL}/${clean.replace(/^\//, "")}`;
 };
 
+// ── Pull event subcategories from JSON (categoryId 14) ──────────────────────
+const getEventSubcategories = () => {
+    const cat = subcategoriesData.subcategories.find(c => c.categoryId === 14);
+    return cat ? cat.items.map(i => i.name) : [];
+};
+
+const chargeTypeOptions = ['per event', 'per day', 'per hour', 'fixed rate'];
+
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
@@ -27,18 +33,12 @@ const inputBase =
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// ============================================================================
-// REUSABLE LABEL
-// ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -51,27 +51,40 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
-// ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
-// ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await response.json();
-
+        const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`);
+        const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
+            const loc = data.results[0].geometry.location;
+            return { lat: loc.lat, lng: loc.lng };
         }
         return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
+    } catch { return null; }
+};
+
+const resolveUserId = (): string => {
+    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+    for (const key of candidates) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        if (raw.length > 10 && !raw.startsWith('{')) return raw;
+        try {
+            const parsed = JSON.parse(raw);
+            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+            if (id) return String(id);
+        } catch { }
     }
+    return '';
+};
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem'
 };
 
 // ============================================================================
@@ -79,17 +92,12 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 const EventForm = () => {
     const navigate = useNavigate();
-
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub
-            ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-            : null;
+        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -97,42 +105,37 @@ const EventForm = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-
-    // NEW: separate warning state for low-accuracy GPS (yellow banner)
     const [locationWarning, setLocationWarning] = useState('');
 
     const eventCategories = getEventSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || eventCategories[0] || 'Party Decoration';
 
     const [formData, setFormData] = useState({
-        userId: localStorage.getItem('userId') || '',
+        userId: resolveUserId(),
         name: '',
         category: defaultCategory,
         email: '',
         phone: '',
-        bio: '',
-        services: '' as string,
+        description: '',
         serviceCharge: '',
         chargeType: chargeTypeOptions[0],
+        experience: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        experience: '',
-        availability: true,
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+    // ✅ existingImages stores raw paths from API; existingImageUrls stores display URLs
     const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-
-    // FIX: Prevents geocoding useEffect from overwriting real GPS coordinates
     const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
@@ -143,300 +146,209 @@ const EventForm = () => {
             try {
                 const response = await getEventServiceById(editId);
                 if (!response.success || !response.data) throw new Error('Service not found');
-
                 const data = response.data;
-
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
+                    userId: data.userId || prev.userId,
                     name: data.name || '',
                     category: data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
-                    bio: data.bio || '',
-                    services: data.services?.join(', ') || '',
+                    description: data.description || data.bio || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
                     chargeType: data.chargeType || chargeTypeOptions[0],
+                    experience: data.experience?.toString() || '',
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
                     pincode: data.pincode || '',
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
-                    experience: data.experience?.toString() || '',
-                    availability: data.availability !== undefined ? data.availability : true,
                 }));
-
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+                if (data.images && Array.isArray(data.images)) {
+                    setExistingImages(data.images);
+                    // ✅ Build display URLs for existing images
+                    setExistingImageUrls(data.images.map(buildImageUrl));
+                }
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
-            } finally {
-                setLoadingData(false);
-            }
+            } finally { setLoadingData(false); }
         };
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when address is typed manually ───────────────
-    // FIX: Skips geocoding when GPS was just used to prevent overwriting real coords
+    // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
-        const detectCoordinates = async () => {
-            // Skip geocoding if GPS just fired — real coords are already set
-            if (isGPSDetected.current) {
-                isGPSDetected.current = false;
-                return;
-            }
-
-            // Only auto-detect if we have area but no coordinates yet
+        const detect = async () => {
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
-                    .replace(/, ,/g, ',')
-                    .replace(/^,|,$/g, '');
-
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
-                    }
-                }
+                const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
+                const coords = await geocodeAddress(addr);
+                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
         };
-
-        const timer = setTimeout(detectCoordinates, 1000);
-        return () => clearTimeout(timer);
+        const t = setTimeout(detect, 1000);
+        return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
-        const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+        const slots = 5 - (selectedImages.length + existingImages.length);
+        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+        const valid = files.slice(0, slots).filter(f => {
+            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
             return true;
         });
-
-        if (!validFiles.length) return;
-
-        const newPreviews: string[] = [];
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length)
-                    setImagePreviews(prev => [...prev, ...newPreviews]);
+        if (!valid.length) return;
+        const previews: string[] = [];
+        let loaded = 0;
+        valid.forEach(f => {
+            const r = new FileReader();
+            r.onloadend = () => {
+                previews.push(r.result as string);
+                if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(f);
         });
-        setSelectedImages(prev => [...prev, ...validFiles]);
+        setSelectedImages(p => [...p, ...valid]);
         setError('');
     };
 
     const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
-        setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+        setSelectedImages(p => p.filter((_, idx) => idx !== i));
+        setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
 
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
+    // ✅ Remove from both the raw paths array and the display URLs array
+    const handleRemoveExistingImage = (i: number) => {
+        setExistingImages(p => p.filter((_, idx) => idx !== i));
+        setExistingImageUrls(p => p.filter((_, idx) => idx !== i));
+    };
 
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── GPS location ─────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
-
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported by your browser');
-            setLocationLoading(false);
-            return;
-        }
-
+        setLocationLoading(true); setError(''); setLocationWarning('');
+        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                // FIX: Mark GPS detected BEFORE updating address fields
-                // This blocks the geocoding useEffect from firing and overwriting real GPS coords
                 isGPSDetected.current = true;
-
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy; // metres
-
-                // FIX: Show yellow warning if accuracy is poor
-                // > 500m means browser used WiFi/IP fallback (common on desktops)
-                // On mobile with real GPS this is usually < 20m
-                if (accuracy > 500) {
-                    setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
-                        `The address fields below may be approximate — please verify and correct if needed.`
-                    );
-                }
-
-                // Set GPS coordinates immediately
+                if (pos.coords.accuracy > 500)
+                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
-
                     if (data.address) {
                         setFormData(prev => ({
-                            ...prev,
-                            // FIX: Explicitly re-include lat/lng to prevent state batching from losing them
-                            latitude: lat,
-                            longitude: lng,
+                            ...prev, latitude: lat, longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
-
+                } catch { }
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
+            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-
+        setLoading(true); setError(''); setSuccessMessage('');
         try {
-            if (!formData.name || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Name, Phone, Email)');
-            if (!formData.services || formData.services.trim() === '')
-                throw new Error('Please enter at least one service');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
+            let uid = formData.userId;
+            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
+            if (!uid) throw new Error('User not logged in. Please log out and log back in.');
 
-            const formDataToSend = new FormData();
-            
-            // Append all text fields
-            formDataToSend.append('userId', formData.userId);
-            formDataToSend.append('name', formData.name);
-            formDataToSend.append('category', formData.category);
-            formDataToSend.append('email', formData.email);
-            formDataToSend.append('phone', formData.phone);
-            formDataToSend.append('bio', formData.bio);
-            
-            // Convert services string to array
-            const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
-            formDataToSend.append('services', JSON.stringify(servicesArray));
-            
-            formDataToSend.append('serviceCharge', formData.serviceCharge);
-            formDataToSend.append('chargeType', formData.chargeType);
-            formDataToSend.append('area', formData.area);
-            formDataToSend.append('city', formData.city);
-            formDataToSend.append('state', formData.state);
-            formDataToSend.append('pincode', formData.pincode);
-            formDataToSend.append('latitude', formData.latitude);
-            formDataToSend.append('longitude', formData.longitude);
-            formDataToSend.append('experience', formData.experience);
-            formDataToSend.append('availability', formData.availability.toString());
+            if (!formData.name) throw new Error('Please enter a service / business name');
+            if (!formData.serviceCharge) throw new Error('Please enter a service charge');
+            if (!formData.latitude || !formData.longitude) throw new Error('Please provide a valid location');
 
-            // Append new images
-            selectedImages.forEach((image) => {
-                formDataToSend.append('images', image);
+            const fd = new FormData();
+            fd.append('userId', uid);
+            fd.append('name', formData.name);
+            fd.append('category', formData.category);
+            fd.append('email', formData.email);
+            fd.append('phone', formData.phone);
+            fd.append('description', formData.description);
+            fd.append('serviceCharge', formData.serviceCharge);
+            fd.append('chargeType', formData.chargeType);
+            fd.append('experience', formData.experience);
+            fd.append('area', formData.area);
+            fd.append('city', formData.city);
+            fd.append('state', formData.state);
+            fd.append('pincode', formData.pincode);
+            fd.append('latitude', formData.latitude);
+            fd.append('longitude', formData.longitude);
+
+            // ✅ Append new images with filename — matches the API curl exactly
+            selectedImages.forEach(f => fd.append('images', f, f.name));
+
+            // ✅ Send raw existing image paths (not display URLs) to backend
+            if (isEditMode && existingImages.length > 0)
+                fd.append('existingImages', JSON.stringify(existingImages));
+
+            console.log('📤 Sending FormData:');
+            Array.from(fd.entries()).forEach(([k, v]) => {
+                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
+                else console.log(`  ${k}: ${v}`);
             });
 
-            // Append existing images if in edit mode
-            if (isEditMode && existingImages.length > 0) {
-                formDataToSend.append('existingImages', JSON.stringify(existingImages));
-            }
-
             if (isEditMode && editId) {
-                const response = await updateEventService(editId, formDataToSend);
-                if (response.success) {
-                    setSuccessMessage('Service updated successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
-                } else {
-                    throw new Error(response.message || 'Failed to update service');
-                }
+                const res = await updateEventService(editId, fd);
+                if (!res.success) throw new Error(res.message || 'Failed to update service');
+                setSuccessMessage('Service updated successfully!');
             } else {
-                const response = await addEventService(formDataToSend);
-                if (response.success) {
-                    setSuccessMessage('Service created successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
-                } else {
-                    throw new Error(response.message || 'Failed to create service');
-                }
+                const res = await addEventService(fd);
+                if (!res.success) throw new Error(res.message || 'Failed to create service');
+                setSuccessMessage('Service created successfully!');
             }
+            setTimeout(() => navigate('/listed-jobs'), 1500);
         } catch (err: any) {
+            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
-    const handleCancel = () => window.history.back();
-
-    // ── loading screen ───────────────────────────────────────────────────────
-    if (loadingData) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
-                </div>
+    if (loadingData) return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+                <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
-        );
-    }
+        </div>
+    );
 
     // ============================================================================
-    // RENDER - Mobile First Design
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
+            {/* Header */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Event Service' : 'Add New Event Service'}
+                            {isEditMode ? 'Update Event Service' : 'Add Event Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
                             {isEditMode ? 'Update your event service listing' : 'Create new event service listing'}
@@ -445,316 +357,114 @@ const EventForm = () => {
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
+                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
 
-                {/* ── Alerts ── */}
-                {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        {successMessage}
-                    </div>
-                )}
-
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
-                <SectionCard>
+                {/* 1. BASIC INFO */}
+                <SectionCard title="Basic Information">
                     <div>
-                        <FieldLabel required>Your Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Enter your name"
-                            className={inputBase}
-                        />
+                        <FieldLabel required>Service / Business Name</FieldLabel>
+                        <input type="text" name="name" value={formData.name} onChange={handleInputChange}
+                            placeholder="e.g., DJ Services, Party Decoration" className={inputBase} />
                     </div>
-                </SectionCard>
-
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. CATEGORY & SERVICES ────────────────────────── */}
-                <SectionCard>
                     <div>
                         <FieldLabel required>Category</FieldLabel>
-                        <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            {eventCategories.map(t => <option key={t} value={t}>{t}</option>)}
+                        <select name="category" value={formData.category} onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                 </SectionCard>
 
-                <SectionCard>
+                {/* 2. CONTACT */}
+                <SectionCard title="Contact Information">
                     <div>
-                        <FieldLabel required>Services Offered</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={formData.services}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="DJ Services, Sound System, Lighting, Stage Setup"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter services separated by commas
-                        </p>
-
-                        {/* Service Chips Preview */}
-                        {formData.services && formData.services.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.services.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        <FieldLabel>Phone</FieldLabel>
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
+                            placeholder="Enter phone number" className={inputBase} />
+                    </div>
+                    <div>
+                        <FieldLabel>Email</FieldLabel>
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange}
+                            placeholder="Enter email address" className={inputBase} />
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. PROFESSIONAL DETAILS ───────────────────────── */}
-                <SectionCard title="Professional Details">
+                {/* 3. SERVICE DETAILS */}
+                <SectionCard title="Service Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <FieldLabel required>Experience (years)</FieldLabel>
-                            <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years"
-                                min="0"
-                                className={inputBase}
-                            />
+                            <FieldLabel required>Service Charge (₹)</FieldLabel>
+                            <input type="number" name="serviceCharge" value={formData.serviceCharge} onChange={handleInputChange}
+                                placeholder="5000" className={inputBase} />
                         </div>
                         <div>
-                            <FieldLabel required>Service Charge (₹)</FieldLabel>
-                            <input
-                                type="text"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
-                                onChange={handleInputChange}
-                                placeholder="Amount"
-                                className={inputBase}
-                            />
+                            <FieldLabel required>Charge Type</FieldLabel>
+                            <select name="chargeType" value={formData.chargeType} onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                            </select>
                         </div>
                     </div>
-
                     <div>
-                        <FieldLabel required>Charge Type</FieldLabel>
-                        <select
-                            name="chargeType"
-                            value={formData.chargeType}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-emerald-500' : 'bg-gray-300'
-                                }`}
-                        >
-                            <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                            />
-                        </button>
+                        <FieldLabel>Experience (years)</FieldLabel>
+                        <input type="number" name="experience" value={formData.experience} onChange={handleInputChange}
+                            placeholder="e.g. 5" min="0" className={inputBase} />
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. BIO ──────────────────────────────────────── */}
-                <SectionCard title="Bio">
-                    <textarea
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Tell us about yourself and your expertise in event services..."
-                        className={inputBase + ' resize-none'}
-                    />
-                </SectionCard>
-
-                {/* ─── 6. LOCATION DETAILS ────────────────────────────── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="!py-1.5 !px-3"
-                        >
-                            {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
-                            )}
-                        </Button>
-                    }
-                >
-                    {/* NEW: Low accuracy warning — shown when browser uses WiFi/IP instead of GPS */}
+                {/* 4. LOCATION */}
+                <SectionCard title="Location Details" action={
+                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
+                        {locationLoading
+                            ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                            : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
+                    </Button>
+                }>
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>
-                                {locationWarning}
-                            </p>
+                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
-
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
-                        </div>
+                        <div><FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} /></div>
+                        <div><FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} /></div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
-                        </div>
+                        <div><FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} /></div>
+                        <div><FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
                     </div>
-
-                    {/* Location Tip */}
                     <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-purple-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
-                        </p>
+                        <p className={`${typography.body.small} text-purple-800`}>📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.</p>
                     </div>
-
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
+                                <span className="font-semibold">✓ Location detected: </span>
+                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* 5. DESCRIPTION */}
+                <SectionCard title="Description">
+                    <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4}
+                        placeholder="Describe your event service, expertise, and what makes you special..."
+                        className={inputBase + ' resize-none'} />
+                </SectionCard>
+
+                {/* 6. PHOTOS */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
-                        />
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
+                            disabled={selectedImages.length + existingImages.length >= 5} />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50'
@@ -766,30 +476,37 @@ const EventForm = () => {
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached'
+                                            ? 'Maximum limit reached (5 images)'
                                             : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
+                                    {selectedImages.length > 0 && (
+                                        <p className="text-purple-600 text-sm font-medium mt-1">
+                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {/* Image Previews */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                    {/* ✅ Image Previews — existingImageUrls for display, existingImages for submit */}
+                    {(existingImageUrls.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
+                            {existingImageUrls.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img
                                         src={url}
                                         alt={`Saved ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null;
+                                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3e8ff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='32'%3E🎉%3C/text%3E%3C/svg%3E";
+                                        }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-purple-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
@@ -799,16 +516,10 @@ const EventForm = () => {
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-purple-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-purple-400" />
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
@@ -820,26 +531,19 @@ const EventForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-2 pb-8">
+                    <button onClick={handleSubmit} disabled={loading} type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading
                             ? 'bg-purple-400 cursor-not-allowed'
                             : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
-                            } shadow-sm ${typography.body.base}`}
-                    >
+                            } ${typography.body.base}`}>
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                            : (isEditMode ? 'Update Service' : 'Add Service')}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
-                    >
+                    <button onClick={() => window.history.back()} type="button"
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>
                         Cancel
                     </button>
                 </div>

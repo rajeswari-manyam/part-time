@@ -77,7 +77,7 @@ export interface AllServicesResponse {
 }
 
 // ---- Fetch nearby business workers ----
-export const getNearbyBusinessWorkers = async (
+export const getNearbyBusinessServices = async (
   latitude: number,
   longitude: number,
   distance?: number
