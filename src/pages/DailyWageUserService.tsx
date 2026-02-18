@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserLabours, deleteLabour, LabourWorker } from "../services/DailyWage.service";
+import { deleteLabour, LabourWorker } from "../services/DailyWage.service";
+import { ServiceItem } from "../services/api.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
@@ -31,6 +32,7 @@ const getIcon = (subCategory?: string) => {
 // ============================================================================
 interface DailyWageUserServiceProps {
     userId: string;
+    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -41,31 +43,16 @@ interface DailyWageUserServiceProps {
 // ============================================================================
 const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
     userId,
+    data = [],                      // ✅ no internal fetch — use prop directly
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
-    const [workers, setWorkers] = useState<LabourWorker[]>([]);
-    const [loading, setLoading] = useState(true);
+
+    // Cast to LabourWorker[] so we keep all existing field access
+    const [workers, setWorkers] = useState<LabourWorker[]>(data as LabourWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-
-    // ── Fetch ────────────────────────────────────────────────────────────────
-    const fetchWorkers = async () => {
-        if (!userId) { setWorkers([]); setLoading(false); return; }
-        setLoading(true);
-        try {
-            const response = await getUserLabours(userId);
-            setWorkers(response.success ? response.data || [] : []);
-        } catch (error) {
-            console.error("Error fetching workers:", error);
-            setWorkers([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchWorkers(); }, [userId]);
 
     // ── Filter ───────────────────────────────────────────────────────────────
     const filteredWorkers = selectedSubcategory
@@ -119,7 +106,7 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
     const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
     // ============================================================================
-    // CARD — Hospital visual structure, daily-wage-specific fields
+    // CARD
     // ============================================================================
     const renderWorkerCard = (worker: LabourWorker) => {
         const id = worker._id || "";
@@ -148,14 +135,14 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* SubCategory badge — top left */}
+                    {/* SubCategory badge */}
                     <div className="absolute top-3 left-3">
                         <span className={`${typography.misc.badge} bg-orange-500 text-white px-3 py-1 rounded-full shadow-md`}>
                             {worker.subCategory || "Daily Wage"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown — top right */}
+                    {/* Action Dropdown */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
@@ -172,36 +159,23 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
 
                 {/* ── Details ── */}
                 <div className="p-4">
-                    {/* Title */}
                     <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
                         {worker.name || worker.subCategory || "Unnamed Worker"}
                     </h3>
 
-                    {/* Location — SVG pin matching Hospital */}
                     <div className="flex items-start gap-2 mb-3">
-                        <svg
-                            className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0"
-                            fill="currentColor" viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                clipRule="evenodd"
-                            />
+                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>
-                            {location}
-                        </p>
+                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
                     </div>
 
-                    {/* Description */}
                     {worker.description && (
                         <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
                             {worker.description}
                         </p>
                     )}
 
-                    {/* Availability + Experience + Wage badges */}
                     <div className="flex flex-wrap gap-2 mb-3">
                         <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${worker.availability
                             ? "bg-green-50 text-green-700 border-green-200"
@@ -219,37 +193,27 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
 
                         {worker.dailyWage && (
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200 font-semibold">
-                                💰 ₹{worker.dailyWage}
-                                {worker.chargeType ? ` / ${worker.chargeType}` : ""}
+                                💰 ₹{worker.dailyWage}{worker.chargeType ? ` / ${worker.chargeType}` : ""}
                             </span>
                         )}
                     </div>
 
-                    {/* Skills — matching Hospital's departments/services strip */}
                     {skills.length > 0 && (
                         <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>
-                                Skills:
-                            </p>
+                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Skills:</p>
                             <div className="flex flex-wrap gap-1">
                                 {skills.slice(0, 3).map((s, idx) => (
-                                    <span
-                                        key={idx}
-                                        className={`${typography.fontSize.xs} bg-orange-500/5 text-orange-600 px-2 py-0.5 rounded-full`}
-                                    >
+                                    <span key={idx} className={`${typography.fontSize.xs} bg-orange-500/5 text-orange-600 px-2 py-0.5 rounded-full`}>
                                         {s}
                                     </span>
                                 ))}
                                 {skills.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500`}>
-                                        +{skills.length - 3} more
-                                    </span>
+                                    <span className={`${typography.fontSize.xs} text-gray-500`}>+{skills.length - 3} more</span>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Directions + Call — matching Hospital button pair */}
                     <div className="flex gap-2 mt-2">
                         <Button
                             variant="outline"
@@ -277,24 +241,6 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
     };
 
     // ============================================================================
-    // LOADING
-    // ============================================================================
-    if (loading) {
-        return (
-            <div>
-                {!hideHeader && (
-                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>👷</span> Daily Wage Workers
-                    </h2>
-                )}
-                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-                </div>
-            </div>
-        );
-    }
-
-    // ============================================================================
     // EMPTY STATE
     // ============================================================================
     if (filteredWorkers.length === 0) {
@@ -309,9 +255,7 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">👷</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Worker Listings Yet
-                    </h3>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Worker Listings Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your worker listings to showcase them here.
                     </p>

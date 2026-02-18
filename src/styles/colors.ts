@@ -15,7 +15,7 @@ export const colors = {
         dark: '#0F4A7A',        // Darker shade for pressed states
     },
 
-    // Secondary/Background Colors
+
     secondary: {
         main: '#F0F0F0',        // Secondary background color
         light: '#F8F8F8',       // Lighter background

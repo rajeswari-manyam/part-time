@@ -357,7 +357,7 @@ const HotelForm = () => {
                 };
                 await updateHotel(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             } else {
                 // ── CREATE: build FormData exactly like the API expects
                 const formdata = new FormData();
@@ -418,7 +418,7 @@ const HotelForm = () => {
                 if (!result.success) throw new Error(result.message || 'Failed to create service');
 
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             }
         } catch (err: any) {
             console.error("❌ Submit error:", err);

@@ -341,7 +341,7 @@ const DailyWageForm: React.FC = () => {
                 const response = await updateLabour(editId, payload, selectedImages);
                 if (response.success) {
                     setSuccessMessage('Worker updated successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                    setTimeout(() => navigate('/my-business'), 1500);
                 } else {
                     throw new Error(response.message || 'Failed to update worker');
                 }
@@ -369,7 +369,7 @@ const DailyWageForm: React.FC = () => {
                 const response = await addLabour(payload, selectedImages);
                 if (response.success) {
                     setSuccessMessage('Worker created successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                    setTimeout(() => navigate('/my-business'), 1500);
                 } else {
                     throw new Error(response.message || 'Failed to create worker');
                 }

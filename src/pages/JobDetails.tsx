@@ -3,8 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
     ChevronLeft, ChevronRight, MapPin, Calendar,
     Users, Briefcase, Tag, Navigation, Mail, Clock, Share2,
+    CheckCircle, Loader2,
 } from "lucide-react";
 import { getJobById, getUserById, API_BASE_URL } from "../services/api.service";
+import { confirmJob, checkJobApplication } from "../services/api.service";
 import { JobDetailsProps } from "../types/job.types";
 
 // ── Smart image URL resolver ──────────────────────────────────────────────────
@@ -91,12 +93,23 @@ const formatDate = (dateStr: string) => {
 const JobDetailsPage: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
     const navigate = useNavigate();
+
     const [job, setJob] = useState<JobDetailsProps | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [distance, setDistance] = useState("N/A");
 
+    // ── Enquiry state ─────────────────────────────────────────────────────────
+    const [enquirySent, setEnquirySent] = useState(false);       // already applied?
+    const [enquiryLoading, setEnquiryLoading] = useState(false); // sending in progress
+    const [enquiryError, setEnquiryError] = useState<string>("");
+
+    // Get logged-in worker's workerId from localStorage
+    // The worker must have workerId stored after registration/login
+    const currentWorkerId = localStorage.getItem("workerId") || localStorage.getItem("userId") || "";
+
+    // ── Fetch job data ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!jobId) return;
         (async () => {
@@ -142,11 +155,44 @@ const JobDetailsPage: React.FC = () => {
                     },
                     mapUrl: `https://www.google.com/maps?q=${jd.latitude},${jd.longitude}&output=embed`,
                 });
+
+                // ── Check if this worker already applied ──────────────────────
+                if (currentWorkerId && jobId) {
+                    const { checkJobApplication } = await import("../services/api.service");
+                    const alreadyApplied = await checkJobApplication(jobId, currentWorkerId);
+                    setEnquirySent(alreadyApplied);
+                }
+
             } catch { setError("Failed to load job details"); }
             finally { setLoading(false); }
         })();
-    }, [jobId]);
+    }, [jobId, currentWorkerId]);
 
+    // ── Send Enquiry (confirm job) ────────────────────────────────────────────
+    const handleSendEnquiry = async () => {
+        if (!jobId || !currentWorkerId) {
+            setEnquiryError("Unable to send enquiry. Please login again.");
+            return;
+        }
+        if (enquirySent) return; // already applied
+
+        setEnquiryLoading(true);
+        setEnquiryError("");
+        try {
+            const result = await confirmJob(jobId, currentWorkerId); // ✅ sends workerId
+            if (result.success) {
+                setEnquirySent(true);
+            } else {
+                setEnquiryError(result.message || "Failed to send enquiry. Try again.");
+            }
+        } catch (err: any) {
+            setEnquiryError("Network error. Please try again.");
+        } finally {
+            setEnquiryLoading(false);
+        }
+    };
+
+    // ── Loading / Error states ────────────────────────────────────────────────
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="flex flex-col items-center gap-3">
@@ -172,48 +218,31 @@ const JobDetailsPage: React.FC = () => {
         ? `https://www.google.com/maps/dir/?api=1&destination=${jobInformation.latitude},${jobInformation.longitude}`
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(jobInformation.location || "")}`;
     const mapsOpenUrl = `https://www.google.com/maps?q=${jobInformation.latitude},${jobInformation.longitude}`;
-    const cleanPhone = (customerDetails.phone || "").replace(/\D/g, "");
 
     return (
-        /*
-         * ── LAYOUT STRATEGY ────────────────────────────────────────────────────
-         * bg-gray-100 fills the full viewport (visible as side gutters on desktop)
-         * The inner white card is max-w-lg, centered with mx-auto.
-         * It uses position:relative so the absolute bottom bar stays INSIDE the card,
-         * not full-screen — giving a mobile-app-in-browser look on desktop.
-         * On actual mobile (≤ lg), the card is 100% width, no visible gutters.
-         * ───────────────────────────────────────────────────────────────────────
-         */
         <div className="min-h-screen bg-gray-100 flex justify-center">
-            <div
-                className="relative w-full max-w-lg bg-white shadow-2xl overflow-hidden"
-                style={{ minHeight: "100vh" }}
-            >
+            <div className="relative w-full max-w-lg bg-white shadow-2xl overflow-hidden" style={{ minHeight: "100vh" }}>
+
                 {/* ══ SCROLLABLE AREA ═════════════════════════════════════════ */}
                 <div className="overflow-y-auto" style={{ paddingBottom: "88px", height: "100vh" }}>
 
                     {/* ── HERO IMAGE ─────────────────────────────────────────── */}
                     <div className="relative h-60 sm:h-72 bg-gray-200 overflow-hidden flex-shrink-0">
                         <ImageCarousel images={imageUrls} title={job.title} />
-
-                        {/* gradient overlay */}
                         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
 
-                        {/* ← back + "Open" label */}
                         <button onClick={() => navigate(-1)}
                             className="absolute top-4 left-3 z-20 flex items-center gap-1 bg-white/90 hover:bg-white rounded-full pl-2 pr-3 py-1.5 shadow-md transition active:scale-95">
                             <ChevronLeft size={18} className="text-gray-800" />
                             <span className="text-xs font-bold text-green-600">Open</span>
                         </button>
 
-                        {/* share */}
                         <button
                             onClick={() => navigator.share?.({ title: job.title, url: window.location.href }).catch(() => { })}
                             className="absolute top-4 right-3 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition active:scale-95">
                             <Share2 size={17} className="text-gray-700" />
                         </button>
 
-                        {/* distance badge */}
                         {distance !== "N/A" && (
                             <div className="absolute top-4 right-14 z-20">
                                 <span className="inline-flex items-center gap-1 bg-white/90 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full shadow">
@@ -222,7 +251,6 @@ const JobDetailsPage: React.FC = () => {
                             </div>
                         )}
 
-                        {/* overlay text at bottom of hero */}
                         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-10">
                             <div className="flex flex-wrap gap-1.5 mb-1.5">
                                 {jobInformation.subcategory && (
@@ -273,6 +301,17 @@ const JobDetailsPage: React.FC = () => {
 
                     {/* ── WHITE BODY ─────────────────────────────────────────── */}
                     <div className="bg-white px-4 pt-5 pb-4 space-y-4">
+
+                        {/* ── Already Applied Banner ─── */}
+                        {enquirySent && (
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                                <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-bold text-green-700">Enquiry Sent!</p>
+                                    <p className="text-xs text-green-600">You have applied for this job. The customer will contact you soon.</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Title + badges */}
                         <div>
@@ -350,15 +389,42 @@ const JobDetailsPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ══ BOTTOM BAR — absolute inside the centered card ══════════ */}
+                {/* ══ BOTTOM BAR ══════════════════════════════════════════════ */}
                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-4 py-3">
-                    <button
-                        onClick={() => { if (cleanPhone) window.open(`https://wa.me/${cleanPhone}`, "_blank"); }}
-                        className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold text-base py-4 rounded-2xl shadow-md shadow-orange-100 transition-all active:scale-[0.98]"
-                    >
-                        <Mail size={18} />
-                        Send Enquiry
-                    </button>
+                    {/* Error message */}
+                    {enquiryError && (
+                        <p className="text-xs text-red-500 text-center mb-2">{enquiryError}</p>
+                    )}
+
+                    {enquirySent ? (
+                        /* ── Already applied: show green confirmed button ── */
+                        <button
+                            disabled
+                            className="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold text-base py-4 rounded-2xl"
+                        >
+                            <CheckCircle size={18} />
+                            Enquiry Sent ✓
+                        </button>
+                    ) : (
+                        /* ── Not applied yet: show Send Enquiry button ── */
+                        <button
+                            onClick={handleSendEnquiry}
+                            disabled={enquiryLoading}
+                            className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-orange-300 text-white font-bold text-base py-4 rounded-2xl shadow-md shadow-orange-100 transition-all active:scale-[0.98]"
+                        >
+                            {enquiryLoading ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Sending…
+                                </>
+                            ) : (
+                                <>
+                                    <Mail size={18} />
+                                    Send Enquiry
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

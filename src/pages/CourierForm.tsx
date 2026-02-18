@@ -453,7 +453,7 @@ const CourierForm: React.FC = () => {
 
             if (response.success) {
                 setSuccessMessage(isEditMode ? 'Service updated successfully!' : 'Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             } else {
                 throw new Error(response.message || 'Failed to submit');
             }

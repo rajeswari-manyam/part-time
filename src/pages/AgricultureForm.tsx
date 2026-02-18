@@ -482,7 +482,7 @@ const AgricultureForm: React.FC = () => {
                 setSuccessMessage('Service created successfully!');
             }
 
-            setTimeout(() => navigate('/listed-jobs'), 1500);
+            setTimeout(() => navigate('/my-business'), 1500);
 
         } catch (err: unknown) {
             // FIX 10: Handle errors that may not have .message

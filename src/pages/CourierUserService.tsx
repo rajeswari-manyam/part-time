@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    getUserCourierServices,
-    deleteCourierService,
-    CourierWorker,
-} from "../services/CourierService.service";
+import { deleteCourierService, CourierWorker } from "../services/CourierService.service";
+import { ServiceItem } from "../services/api.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
@@ -33,6 +30,7 @@ const getIcon = (category?: string) => {
 // ============================================================================
 interface CourierUserServiceProps {
     userId: string;
+    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -43,37 +41,16 @@ interface CourierUserServiceProps {
 // ============================================================================
 const CourierUserService: React.FC<CourierUserServiceProps> = ({
     userId,
+    data = [],                      // ✅ no internal fetch — use prop directly
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
-    const [couriers, setCouriers] = useState<CourierWorker[]>([]);
-    const [loading, setLoading] = useState(true);
+
+    // Cast to CourierWorker[] so all existing field access works
+    const [couriers, setCouriers] = useState<CourierWorker[]>(data as CourierWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-
-    // ── Fetch ────────────────────────────────────────────────────────────────
-    const fetchCouriers = async () => {
-        if (!userId) {
-            setCouriers([]);
-            setLoading(false);
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await getUserCourierServices(userId);
-            setCouriers(response.success ? response.data || [] : []);
-        } catch (error) {
-            console.error("Error fetching courier services:", error);
-            setCouriers([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchCouriers();
-    }, [userId]);
 
     // ── Filter ───────────────────────────────────────────────────────────────
     const filteredCouriers = selectedSubcategory
@@ -90,7 +67,6 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
 
     const handleDelete = async (id: string) => {
         if (!window.confirm("Delete this courier service?")) return;
-
         setDeleteLoading(id);
         try {
             const result = await deleteCourierService(id);
@@ -130,7 +106,7 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — Hospital visual structure, courier-specific fields
+    // CARD
     // ============================================================================
     const renderCourierCard = (courier: CourierWorker) => {
         const id = courier._id || "";
@@ -151,9 +127,7 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
                             src={imageUrls[0]}
                             alt={courier.name || "Courier Service"}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -161,16 +135,14 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Category badge — top left */}
+                    {/* Category badge */}
                     <div className="absolute top-3 left-3">
-                        <span
-                            className={`${typography.misc.badge} bg-indigo-600 text-white px-3 py-1 rounded-full shadow-md`}
-                        >
+                        <span className={`${typography.misc.badge} bg-indigo-600 text-white px-3 py-1 rounded-full shadow-md`}>
                             {courier.category || "Courier"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown — top right */}
+                    {/* Action Dropdown */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
@@ -187,27 +159,16 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
 
                 {/* ── Details ── */}
                 <div className="p-4">
-                    {/* Title */}
                     <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
                         {courier.name || "Unnamed Service"}
                     </h3>
 
-                    {/* Location — SVG pin matching Hospital */}
+                    {/* Location */}
                     <div className="flex items-start gap-2 mb-3">
-                        <svg
-                            className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                clipRule="evenodd"
-                            />
+                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>
-                            {location}
-                        </p>
+                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
                     </div>
 
                     {/* Bio */}
@@ -217,7 +178,7 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
                         </p>
                     )}
 
-                    {/* Availability + Experience badges */}
+                    {/* Availability + Experience + Charge badges */}
                     <div className="flex flex-wrap gap-2 mb-3">
                         <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${courier.availability
                             ? "bg-green-50 text-green-700 border-green-200"
@@ -235,24 +196,18 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
 
                         {courier.serviceCharge && (
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200 font-semibold">
-                                💰 ₹{courier.serviceCharge}
-                                {courier.chargeType ? ` / ${courier.chargeType}` : ""}
+                                💰 ₹{courier.serviceCharge}{courier.chargeType ? ` / ${courier.chargeType}` : ""}
                             </span>
                         )}
                     </div>
 
-                    {/* Services — matching Hospital's departments/services strip */}
+                    {/* Services */}
                     {services.length > 0 && (
                         <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>
-                                Services:
-                            </p>
+                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Services:</p>
                             <div className="flex flex-wrap gap-1">
                                 {services.slice(0, 3).map((s, idx) => (
-                                    <span
-                                        key={idx}
-                                        className={`${typography.fontSize.xs} bg-indigo-600/5 text-indigo-600 px-2 py-0.5 rounded-full`}
-                                    >
+                                    <span key={idx} className={`${typography.fontSize.xs} bg-indigo-600/5 text-indigo-600 px-2 py-0.5 rounded-full`}>
                                         {s}
                                     </span>
                                 ))}
@@ -265,7 +220,7 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Directions + Call — matching Hospital's button pair */}
+                    {/* Directions + Call */}
                     <div className="flex gap-2 mt-2">
                         <Button
                             variant="outline"
@@ -293,24 +248,6 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
     };
 
     // ============================================================================
-    // LOADING
-    // ============================================================================
-    if (loading) {
-        return (
-            <div>
-                {!hideHeader && (
-                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>📦</span> Courier Services
-                    </h2>
-                )}
-                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-                </div>
-            </div>
-        );
-    }
-
-    // ============================================================================
     // EMPTY STATE
     // ============================================================================
     if (filteredCouriers.length === 0) {
@@ -325,9 +262,7 @@ const CourierUserService: React.FC<CourierUserServiceProps> = ({
                 )}
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                     <div className="text-6xl mb-4">📦</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>
-                        No Courier Services Yet
-                    </h3>
+                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Courier Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your courier services to showcase them here.
                     </p>

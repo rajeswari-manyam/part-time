@@ -319,7 +319,7 @@ const PetForm = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to add service');
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/listed-jobs'), 1500);
+            setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
             console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');

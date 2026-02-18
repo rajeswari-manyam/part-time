@@ -40,7 +40,7 @@ import NotificationScreen from "./pages/Notificationcsreen";
 import RoleSelection from "./pages/RoleSelection";
 import AllJobs from "./pages/AllJobs";
 import UpdateJob from "./pages/UpdateJob";
-import ListedJobs from "./pages/Listedjobs";
+
 import LocationSelector from "./components/LocationSelector";
 import MyProfile from "./pages/MyProfile";
 import BookNow from "./pages/BookNow";
@@ -62,7 +62,7 @@ import WorkerRedirectHandler from "./Routs/WorkerRender";
 import AddSkills from "./pages/AddSkills";
 import WorkerDashboard from "./pages/WorkerDashboard";
 
-import FoodService from "./pages/FoodService";
+import FoodService from "./pages/FoodServiceList";
 import FoodServiceForm from "./pages/FoodServiceForm";
 import HospitalServiceList from "./pages/HospitalServiceList";
 import HotelServiceList from "./pages/HotelServiceList";
@@ -83,9 +83,9 @@ import AgricultureList from "./pages/AgricultureList";
 import DailyWagesList from "./pages/DailyWagesList";
 
 
-import HomePersonalServiceList from "./pages/Home&PersonalServiceList";
+import HomePersonalServiceList from "./pages/HomePersonalServiceList";
 import HotelForm from "./pages/HotelForm";
-import BeautyServiceForm from "./pages/BeautySevriceForm";
+import BeautyServiceForm from "./pages/BeautyServiceForm";
 import BeautyServiceList from "./pages/BeautyServiceList";
 import HospitalServicesList from "./pages/HospitalServiceList";
 import HospitalForm from "./pages/HospitalForm";
@@ -93,6 +93,7 @@ import HospitalForm from "./pages/HospitalForm";
 import SportsServiceForm from "./pages/SportsServiceForm";
 import ShoppingForm from "./pages/ShoppingForm";
 import MyBusiness from "./pages/MyBusiness";
+import ListedJobs from "./pages/Listedjobs";
 import DigitalServiceForm from "./pages/DigitalServiceForm";
 import DigitalServiceList from "./pages/DigitalServiceList";
 import EducationForm from "./pages/EducationForm";
@@ -126,14 +127,17 @@ import WeddingForm from "./pages/WeddingForm";
 import WeddingServiceList from "./pages/WeddingServiceList";
 import ArtForm from "./pages/ArtForm";
 import ArtServiceList from "./pages/ArtServiceList";
-import PlumberForm from "./pages/PlumbarForm";
-import PlumberServiceList from "./pages/PlumbarsList";
+import PlumberForm from "./pages/PlumberForm";
+import PlumberServiceList from "./pages/PlumbersList";
 import RealEstateList from "./pages/RealEstateList";
 import RealEstateForm from "./pages/RealEstateForm";
-import HomePersonalForm from "./pages/Home&personalForm";
-import HomePersonalList from "./pages/Home&PersonalServiceList";
+import HomePersonalForm from "./pages/HomePersonalForm";
+import HomePersonalList from "./pages/HomePersonalServiceList";
+import FoodForm from "./pages/FoodServiceForm";
+import FoodServiceList from "./pages/FoodServiceList";
 
-
+import ConfirmedWorkersPage from "./pages/ConforimedWorkerPage";
+import JobApplicantsPage from "./pages/JobApplicationPage";
 
 
 /* ---------------- Protected Route ---------------- */
@@ -154,7 +158,7 @@ const ListedJobsWrapper: React.FC = () => {
         );
     }
 
-    return <MyBusiness userId={user._id} />;
+    return <ListedJobs userId={user._id} />;
 };
 
 /* ---------------- MyBusiness Wrapper to get userId ---------------- */
@@ -258,6 +262,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-plumber-service-form" element={<PlumberForm />} />
                     <Route path="/add-real-estate-form" element={<RealEstateForm />} />
                     <Route path="/add-home-service-form" element={<HomePersonalForm />} />
+                    <Route path="/add-food-form" element={<FoodForm />} />
 
 
                     {/* ================= BEAUTY & WELLNESS ROUTES ================= */}
@@ -339,6 +344,11 @@ const AppRoutes: React.FC = () => {
                     <Route path="/real-estate" element={<RealEstateList />} />
                     <Route path="/home-personal/:subcategory" element={<HomePersonalList />} />
                     <Route path="/home-personal" element={<HomePersonalList />} />
+                    <Route path="/food/:subcategory" element={<FoodServiceList />} />
+                    <Route path="/food" element={<FoodServiceList />} />
+                  
+                      <Route path="/confirmed-workers/:jobId" element={<ConfirmedWorkersPage />} />
+                      <Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
 
 
                     <Route

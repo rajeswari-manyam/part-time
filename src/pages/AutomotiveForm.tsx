@@ -314,11 +314,11 @@ const AutomotiveForm = () => {
             if (isEditMode && editId) {
                 await updateAutomotive(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             } else {
                 await createAutomotive(payload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form. Please try again.');

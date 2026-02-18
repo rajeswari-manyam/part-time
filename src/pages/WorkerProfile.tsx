@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import Button from "../components/ui/Buttons";
-import typography from "../styles/typography";
 import LocationSection from "../components/WorkerProfile/LocationSection";
 import ProfilePhotoUpload from "../components/WorkerProfile/ProfilePhotoUpload";
 import { createWorkerBase, CreateWorkerBasePayload } from "../services/api.service";
@@ -28,32 +27,31 @@ const WorkerProfile: React.FC = () => {
 
   const fetchLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setLatitude(lat);
+          setLongitude(lng);
 
-        setLatitude(lat);
-        setLongitude(lng);
-
-        try {
-          // Example using OpenStreetMap Nominatim API
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-          );
-          const data = await response.json();
-
-          // Fill address fields
-          setAddress(data.address.road || data.address.neighbourhood || "");
-          setCity(data.address.city || data.address.town || data.address.village || "");
-          setState(data.address.state || "");
-          setPincode(data.address.postcode || "");
-        } catch (err) {
-          console.error("Error fetching address:", err);
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+            );
+            const data = await response.json();
+            setAddress(data.address.road || data.address.neighbourhood || "");
+            setCity(data.address.city || data.address.town || data.address.village || "");
+            setState(data.address.state || "");
+            setPincode(data.address.postcode || "");
+          } catch (err) {
+            console.error("Error fetching address:", err);
+          }
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          alert("Unable to fetch current location.");
         }
-      }, (err) => {
-        console.error("Geolocation error:", err);
-        alert("Unable to fetch current location.");
-      });
+      );
     } else {
       alert("Geolocation is not supported by your browser.");
     }
@@ -84,6 +82,8 @@ const WorkerProfile: React.FC = () => {
         pincode,
         latitude,
         longitude,
+        // ✅ FIX: Pass profilePhotoFile so it gets uploaded with the request
+        profilePic: profilePhotoFile ?? undefined,
       };
 
       const res = await createWorkerBase(payload);
@@ -93,10 +93,7 @@ const WorkerProfile: React.FC = () => {
       localStorage.setItem("workerId", res.worker._id);
       localStorage.setItem("@worker_id", res.worker._id);
 
-      // Show success message
       alert("Profile created successfully!");
-
-      // Navigate to add skills
       navigate("/add-skills");
     } catch (e: any) {
       setError(e.message);
@@ -110,7 +107,7 @@ const WorkerProfile: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-4 md:py-8 px-4 md:px-6">
       <div className="max-w-xl mx-auto">
 
-        {/* Header with Back Button */}
+        {/* Header */}
         <div className="flex items-center mb-4 md:mb-6">
           <button
             onClick={() => navigate("/")}
@@ -124,7 +121,7 @@ const WorkerProfile: React.FC = () => {
           </h2>
         </div>
 
-        {/* Main Form Container */}
+        {/* Form Container */}
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-4 md:p-6">
 
           {/* Error Message */}
@@ -137,18 +134,18 @@ const WorkerProfile: React.FC = () => {
           {/* Profile Photo Upload */}
           <ProfilePhotoUpload
             profilePhoto={profilePhoto}
-            onPhotoUpload={e => {
+            onPhotoUpload={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
-              setProfilePhotoFile(file);
+              setProfilePhotoFile(file); // ✅ Store the actual File object
               const r = new FileReader();
               r.onload = () => setProfilePhoto(r.result as string);
               r.readAsDataURL(file);
             }}
           />
 
-          {/* Form Fields */}
           <div className="space-y-3 md:space-y-4">
+
             {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 md:mb-2">
@@ -197,7 +194,7 @@ const WorkerProfile: React.FC = () => {
               isCityListening={false}
             />
 
-            {/* Submit Button */}
+            {/* Submit */}
             <div className="pt-2 md:pt-4">
               <Button fullWidth onClick={handleSubmit} disabled={loading}>
                 <span className="text-sm md:text-base">
@@ -206,7 +203,7 @@ const WorkerProfile: React.FC = () => {
               </Button>
             </div>
 
-            {/* Cancel Button */}
+            {/* Cancel */}
             <button
               onClick={() => navigate("/")}
               className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
@@ -216,20 +213,17 @@ const WorkerProfile: React.FC = () => {
             </button>
           </div>
 
-          {/* Helper Text */}
           <div className="mt-4 md:mt-6 p-3 md:p-4 bg-blue-50 rounded-lg">
             <p className="text-xs md:text-sm text-blue-800">
               <span className="font-semibold">💡 Tip:</span> Complete your profile to start receiving job requests from customers in your area.
             </p>
           </div>
 
-          {/* Required Fields Note */}
           <p className="text-xs md:text-sm text-gray-500 text-center mt-4">
             <span className="text-red-500">*</span> Required fields
           </p>
         </div>
 
-        {/* Mobile Bottom Spacing */}
         <div className="h-4 md:h-0"></div>
       </div>
     </div>

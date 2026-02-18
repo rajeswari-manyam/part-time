@@ -1,10 +1,8 @@
 import axios from "axios";
 
-// ✅ UPDATED: Changed to match your actual backend IP
 export const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "";
 
-// Axios instance for x-www-form-urlencoded requests
 const API_FORM = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -12,7 +10,6 @@ const API_FORM = axios.create({
     },
 });
 
-// Axios instance for multipart/form-data (file uploads)
 const API_MULTIPART = axios.create({
     baseURL: API_BASE_URL,
 });
@@ -44,7 +41,6 @@ interface ApiResponse {
     };
 }
 
-// ✅ Register and send OTP
 export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
@@ -55,28 +51,18 @@ export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<Ap
 
         const response = await fetch(`${API_BASE_URL}/register`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Register API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Registration response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("Register with OTP error:", error);
         throw error;
     }
 };
 
-// ✅ Verify OTP
 export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
@@ -85,28 +71,18 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
 
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Verify OTP API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Verify OTP response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("Verify OTP error:", error);
         throw error;
     }
 };
 
-// ✅ Resend OTP
 export const resendOtp = async (phone: string): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
@@ -114,26 +90,18 @@ export const resendOtp = async (phone: string): Promise<ApiResponse> => {
 
         const response = await fetch(`${API_BASE_URL}/resend-otp`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Resend OTP API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Resend OTP response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("Resend OTP error:", error);
         throw error;
     }
 };
+
 export interface CreateJobPayload {
     userId: string;
     title: string;
@@ -155,16 +123,11 @@ export interface CreateJobPayload {
 
 export const createJob = async (data: CreateJobPayload) => {
     const formData = new FormData();
-
     formData.append("userId", data.userId);
     formData.append("title", data.title);
     formData.append("description", data.description);
     formData.append("category", data.category);
-
-    if (data.subcategory) {
-        formData.append("subcategory", data.subcategory);
-    }
-
+    if (data.subcategory) formData.append("subcategory", data.subcategory);
     formData.append("jobType", data.jobType);
     formData.append("servicecharges", data.servicecharges);
     formData.append("startDate", data.startDate);
@@ -175,11 +138,8 @@ export const createJob = async (data: CreateJobPayload) => {
     formData.append("pincode", data.pincode);
     formData.append("latitude", String(data.latitude));
     formData.append("longitude", String(data.longitude));
-
-    if (data.images && data.images.length > 0) {
-        data.images.forEach((file) => {
-            formData.append("images", file);
-        });
+    if (data.images?.length) {
+        data.images.forEach((file) => formData.append("images", file));
     }
 
     const response = await API_MULTIPART.post("/jobcreate", formData);
@@ -187,25 +147,13 @@ export const createJob = async (data: CreateJobPayload) => {
 };
 
 export const getJobById = async (id: string) => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/getJobById/${id}`);
-        return response.data;
-    } catch (error: any) {
-        throw error;
-    }
+    const response = await axios.get(`${API_BASE_URL}/getJobById/${id}`);
+    return response.data;
 };
 
-
-
 export const deleteJob = async (jobId: string) => {
-    try {
-        const response = await axios.delete(`${API_BASE_URL}/deleteJob/${jobId}`)
-        return response.data
-    }
-    catch (error) {
-        console.error("Error deleting job:", error)
-        throw error
-    }
+    const response = await axios.delete(`${API_BASE_URL}/deleteJob/${jobId}`);
+    return response.data;
 };
 
 export interface UpdateJobPayload {
@@ -219,7 +167,6 @@ export interface UpdateJobPayload {
 
 export const updateJob = async (jobId: string, payload: any) => {
     const formData = new FormData();
-
     if (payload.title) formData.append("title", payload.title);
     if (payload.description) formData.append("description", payload.description);
     if (payload.category) formData.append("category", payload.category);
@@ -228,18 +175,14 @@ export const updateJob = async (jobId: string, payload: any) => {
     if (payload.location) formData.append("location", payload.location);
     if (payload.latitude) formData.append("latitude", payload.latitude.toString());
     if (payload.longitude) formData.append("longitude", payload.longitude.toString());
-
-    if (payload.images && payload.images.length > 0) {
-        payload.images.forEach((image: File) => {
-            formData.append("images", image);
-        });
+    if (payload.images?.length) {
+        payload.images.forEach((image: File) => formData.append("images", image));
     }
 
     const response = await fetch(`${API_BASE_URL}/updateJob/${jobId}`, {
         method: "PUT",
         body: formData,
     });
-
     return response.json();
 };
 
@@ -250,29 +193,13 @@ export const getNearbyWorkers = async (
     category: string,
     subcategory: string
 ) => {
-    const cleanCategory = category.trim();
-    const cleanSubcategory = subcategory.trim();
-
-    const url = `${API_BASE_URL}/getNearbyWorkers?latitude=${latitude}&longitude=${longitude}&range=${range}&category=${encodeURIComponent(cleanCategory)}&subcategory=${encodeURIComponent(cleanSubcategory)}`;
-
-    console.log('Fetching workers with URL:', url);
-
+    const url = `${API_BASE_URL}/getNearbyWorkers?latitude=${latitude}&longitude=${longitude}&range=${range}&category=${encodeURIComponent(category.trim())}&subcategory=${encodeURIComponent(subcategory.trim())}`;
     const response = await fetch(url, {
         method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
     });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('API Response:', data);
-    return data;
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
 };
 
 export const getUserLocation = (): Promise<{ latitude: number; longitude: number }> => {
@@ -281,55 +208,32 @@ export const getUserLocation = (): Promise<{ latitude: number; longitude: number
             reject(new Error("Geolocation is not supported by your browser"));
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                });
-            },
-            (error) => {
-                reject(error);
-            }
+            (position) => resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+            }),
+            (error) => reject(error)
         );
     });
 };
 
-export interface GetNearbyWorkersParams {
-    latitude: number;
-    longitude: number;
-    range?: number;
-}
-
 export const getAllWorkers = async () => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/getAllWorkers`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching all workers:", error);
-        throw error;
-    }
+    const response = await axios.get(`${API_BASE_URL}/getAllWorkers`);
+    return response.data;
 };
 
 export const getUserJobs = async (userId: string) => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/getUserJobs`, {
-            params: { userId },
-        });
-        return response.data; // Returns { message, count, jobs: [...] }
-    } catch (error) {
-        console.error("Error fetching user jobs:", error);
-        throw error;
-    }
-};// Update this interface in your api.service.ts file
+    const response = await axios.get(`${API_BASE_URL}/getUserJobs`, { params: { userId } });
+    return response.data;
+};
 
 export interface Worker {
     _id: string;
     userId: string;
     name: string;
     email?: string;
-    category: string | string[];  // Can be string or array
+    category: string | string[];
     subCategories?: string[];
     skills?: string[];
     bio?: string;
@@ -342,7 +246,7 @@ export interface Worker {
     state?: string;
     pincode?: string;
     isActive: boolean;
-    images?: string[];  // Changed from 'string' to 'string[]'
+    images?: string[];
     profilePic?: string;
     createdAt: string;
     updatedAt: string;
@@ -350,16 +254,9 @@ export interface Worker {
 }
 
 export const getWorkerById = async (workerId: string): Promise<{ success: boolean; data: Worker }> => {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/getWorkerById/${workerId}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching worker by ID:", error);
-        throw error;
-    }
+    const response = await axios.get(`${API_BASE_URL}/getWorkerById/${workerId}`);
+    return response.data;
 };
-
-// Fixed API functions - Replace in api.service.ts
 
 export interface UpdateUserPayload {
     name?: string;
@@ -386,88 +283,31 @@ export interface User {
     updatedAt: string;
 }
 
-// ✅ Get User By ID - with proper error handling
 export const getUserById = async (userId: string): Promise<{ success: boolean; data: User }> => {
     try {
-        console.log("Fetching user:", userId);
-
         const response = await axios.get(`${API_BASE_URL}/getUserById/${userId}`);
-
-        console.log("getUserById response:", response.data);
-
         return response.data;
     } catch (error: any) {
-        console.error("Error fetching user by ID:", error.response?.data || error.message);
-
-        // Re-throw with more context
-        throw new Error(
-            error.response?.data?.message ||
-            error.message ||
-            "Failed to fetch user data"
-        );
+        throw new Error(error.response?.data?.message || error.message || "Failed to fetch user data");
     }
 };
 
-// ✅ Update User By ID - Always use multipart/form-data
-export const updateUserById = async (
-    userId: string,
-    payload: UpdateUserPayload
-) => {
+export const updateUserById = async (userId: string, payload: UpdateUserPayload) => {
     try {
-        console.log("=== UPDATE USER START ===");
-        console.log("User ID:", userId);
-        console.log("Payload:", payload);
-
-        // Always use multipart/form-data for consistency
         const formData = new FormData();
-
-        // Add all fields to FormData
         Object.entries(payload).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
-                if (value instanceof File) {
-                    console.log(`Adding file: ${key} = ${value.name}`);
-                    formData.append(key, value);
-                } else {
-                    console.log(`Adding field: ${key} = ${value}`);
-                    formData.append(key, String(value));
-                }
+                formData.append(key, value instanceof File ? value : String(value));
             }
         });
 
-        // Log FormData contents (for debugging)
-        console.log("FormData entries:", {
-            hasName: formData.has('name'),
-            hasLatitude: formData.has('latitude'),
-            hasLongitude: formData.has('longitude'),
-            hasProfilePic: formData.has('profilePic')
+        const response = await axios.put(`${API_BASE_URL}/updateUserById/${userId}`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
         });
-
-        // Make the request
-        const response = await axios.put(
-            `${API_BASE_URL}/updateUserById/${userId}`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }
-        );
-
-        console.log("Update response:", response.data);
-        console.log("=== UPDATE USER END ===");
-
         return response.data;
     } catch (error: any) {
-        console.error("=== UPDATE USER ERROR ===");
-        console.error("Error details:", error.response?.data || error.message);
-        console.error("Status:", error.response?.status);
-
-        // Provide detailed error information
         if (error.response) {
-            throw new Error(
-                error.response.data?.message ||
-                `Server error: ${error.response.status} - ${error.response.statusText}`
-            );
+            throw new Error(error.response.data?.message || `Server error: ${error.response.status}`);
         } else if (error.request) {
             throw new Error("No response from server. Please check your connection.");
         } else {
@@ -475,46 +315,15 @@ export const updateUserById = async (
         }
     }
 };
-const GOOGLE_MAPS_API_KEY = "AIzaSyA6myHzS10YXdcazAFalmXvDkrYCp5cLc8";
-
-// Existing: getUserLocation and getNearbyWorkers remain unchanged
-
-export const getNearbyPlaces = async (
-    lat: number,
-    lng: number,
-    type: string,  // 'restaurant', 'cafe', 'store', etc.
-    radius = 5000
-) => {
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
-
-    // For dev: use a CORS proxy. In production, call via backend
-    const response = await fetch(`https://cors-anywhere.herokuapp.com/${url}`);
-    const data = await response.json();
-    return data.results;
-};
-// Add these interfaces and functions to your api.service.ts file
-// ==================== CREATE WORKER ====================
 
 export const getAllUsers = async (): Promise<{ success: boolean; data: User[] }> => {
     try {
-        console.log("Fetching all users...");
-
         const response = await axios.get(`${API_BASE_URL}/getAllUsers`);
-
-        console.log("getAllUsers response:", response.data);
-
         return response.data;
     } catch (error: any) {
-        console.error("Error fetching all users:", error.response?.data || error.message);
-
-        throw new Error(
-            error.response?.data?.message ||
-            error.message ||
-            "Failed to fetch users"
-        );
+        throw new Error(error.response?.data?.message || error.message || "Failed to fetch users");
     }
 };
-// ==================== CREATE BOOKING ====================
 
 export interface CreateBookingPayload {
     customer: string;
@@ -524,7 +333,7 @@ export interface CreateBookingPayload {
     days?: number;
     months?: number;
     price: number;
-    startDate: string; // YYYY-MM-DD
+    startDate: string;
     remarks?: string;
 }
 
@@ -533,13 +342,11 @@ export const createBooking = async (
 ): Promise<{ success: boolean; message: string; data: any }> => {
     try {
         const formData = new URLSearchParams();
-
         formData.append("customer", payload.customer);
         formData.append("worker", payload.worker);
         formData.append("bookingType", payload.bookingType);
         formData.append("price", String(payload.price));
         formData.append("startDate", payload.startDate);
-
         if (payload.hours) formData.append("hours", String(payload.hours));
         if (payload.days) formData.append("days", String(payload.days));
         if (payload.months) formData.append("months", String(payload.months));
@@ -547,17 +354,10 @@ export const createBooking = async (
 
         const response = await fetch(`${API_BASE_URL}/createBooking`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
-        }
-
+        if (!response.ok) throw new Error(await response.text());
         return await response.json();
     } catch (error) {
         console.error("Create booking error:", error);
@@ -589,10 +389,7 @@ export interface TicketResponse {
     };
 }
 
-// Add this function with your other API functions
-export const createTicket = async (
-    payload: CreateTicketPayload
-): Promise<TicketResponse> => {
+export const createTicket = async (payload: CreateTicketPayload): Promise<TicketResponse> => {
     try {
         const formData = new URLSearchParams();
         formData.append("raisedById", payload.raisedById);
@@ -603,27 +400,16 @@ export const createTicket = async (
 
         const response = await fetch(`${API_BASE_URL}/create`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Create Ticket API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Create Ticket response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("Create ticket error:", error);
         throw error;
     }
 };
-// ==================== GET TICKETS BY USER ID ====================
 
 export interface GetTicketsResponse {
     message: string;
@@ -647,29 +433,18 @@ export const getTicketsByUserId = async (
 ): Promise<GetTicketsResponse> => {
     try {
         const response = await fetch(
-            `${API_BASE_URL}/getTicketById/${userId}?raisedById=${userId}&raisedByRole=${userRole}`,
-            {
-                method: "GET",
-            }
+            `${API_BASE_URL}/getTicketById/${userId}?raisedById=${userId}&raisedByRole=${userRole}`
         );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Get Tickets API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Get Tickets response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("Get tickets error:", error);
         throw error;
     }
 };
-// Add these new interfaces and functions to your api.service.ts
 
 // ==================== CREATE WORKER (STEP 1) ====================
+// FIX: Use multipart/form-data to support profilePic file upload
 export interface CreateWorkerBasePayload {
     userId: string;
     name: string;
@@ -679,6 +454,7 @@ export interface CreateWorkerBasePayload {
     pincode: string;
     latitude: number | string;
     longitude: number | string;
+    profilePic?: File; // ✅ ADDED: profilePic file support (matches Postman)
 }
 
 export interface CreateWorkerBaseResponse {
@@ -709,7 +485,9 @@ export const createWorkerBase = async (
     payload: CreateWorkerBasePayload
 ): Promise<CreateWorkerBaseResponse> => {
     try {
-        const formData = new URLSearchParams();
+        // ✅ FIX: Use FormData (multipart/form-data) instead of URLSearchParams
+        // Reason: API accepts profilePic file upload (confirmed in Postman test)
+        const formData = new FormData();
         formData.append("userId", payload.userId);
         formData.append("name", payload.name);
         formData.append("area", payload.area);
@@ -719,11 +497,14 @@ export const createWorkerBase = async (
         formData.append("latitude", String(payload.latitude));
         formData.append("longitude", String(payload.longitude));
 
+        // ✅ FIX: Attach profilePic if provided
+        if (payload.profilePic) {
+            formData.append("profilePic", payload.profilePic);
+        }
+
+        // ✅ FIX: No Content-Type header — browser sets it automatically with boundary
         const response = await fetch(`${API_BASE_URL}/createworkers`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
             body: formData,
         });
 
@@ -743,13 +524,15 @@ export const createWorkerBase = async (
 };
 
 // ==================== ADD WORKER SKILL (STEP 2) ====================
+// FIX: Use multipart/form-data to support images file upload
 export interface AddWorkerSkillPayload {
     workerId: string;
-    category: string | string[]; // Can be single or comma-separated
+    category: string | string[];
     subCategory: string;
     skill: string;
     serviceCharge: number;
     chargeType: "hour" | "day" | "fixed";
+    images?: File[]; // ✅ ADDED: images file support (matches Postman)
 }
 
 export interface AddWorkerSkillResponse {
@@ -780,10 +563,12 @@ export const addWorkerSkill = async (
     payload: AddWorkerSkillPayload
 ): Promise<AddWorkerSkillResponse> => {
     try {
-        const formData = new URLSearchParams();
+        // ✅ FIX: Use FormData (multipart/form-data) instead of URLSearchParams
+        // Reason: API accepts images file uploads (confirmed in Postman test)
+        const formData = new FormData();
         formData.append("workerId", payload.workerId);
 
-        // Handle category - convert array to comma-separated string if needed
+        // Handle category array → comma-separated string
         const categoryString = Array.isArray(payload.category)
             ? payload.category.join(",")
             : payload.category;
@@ -794,11 +579,14 @@ export const addWorkerSkill = async (
         formData.append("serviceCharge", String(payload.serviceCharge));
         formData.append("chargeType", payload.chargeType);
 
+        // ✅ FIX: Attach each image file if provided
+        if (payload.images?.length) {
+            payload.images.forEach((file) => formData.append("images", file));
+        }
+
+        // ✅ FIX: No Content-Type header — browser sets it automatically with boundary
         const response = await fetch(`${API_BASE_URL}/addworkerSkill`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
             body: formData,
         });
 
@@ -849,7 +637,6 @@ export const createWorkerComplete = async (
     try {
         console.log("📝 Step 1: Creating base worker profile...");
 
-        // Step 1: Create base worker
         const baseWorkerResponse = await createWorkerBase({
             userId: payload.userId,
             name: payload.name,
@@ -859,6 +646,7 @@ export const createWorkerComplete = async (
             pincode: payload.pincode,
             latitude: payload.latitude,
             longitude: payload.longitude,
+            profilePic: payload.profilePic, // ✅ FIX: Pass profilePic through
         });
 
         if (!baseWorkerResponse.success) {
@@ -870,7 +658,6 @@ export const createWorkerComplete = async (
 
         console.log("📝 Step 2: Adding worker skills...");
 
-        // Step 2: Add skills to worker
         const skillResponse = await addWorkerSkill({
             workerId,
             category: payload.category,
@@ -878,6 +665,7 @@ export const createWorkerComplete = async (
             skill: payload.skills,
             serviceCharge: payload.serviceCharge,
             chargeType: payload.chargeType,
+            images: payload.images, // ✅ FIX: Pass images through
         });
 
         if (!skillResponse.success) {
@@ -897,10 +685,8 @@ export const createWorkerComplete = async (
         throw error;
     }
 };
-// Add this to your api.service.ts file
 
 // ==================== GET WORKER WITH SKILLS ====================
-
 export interface WorkerSkillDetail {
     _id: string;
     userId: string;
@@ -953,32 +739,21 @@ export const getWorkerWithSkills = async (
     workerId: string
 ): Promise<WorkerWithSkillsResponse> => {
     try {
-        console.log("🔍 Fetching worker with skills for ID:", workerId);
-
         const response = await fetch(
             `${API_BASE_URL}/getWorkerWithSkills?workerId=${workerId}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
             }
         );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Get Worker With Skills API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("✅ Worker with skills response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("❌ Get worker with skills error:", error);
         throw error;
     }
 };
+
 export interface WorkerListItem {
     _id: string;
     name: string;
@@ -1005,7 +780,6 @@ export const getWorkersWithSkills = async (): Promise<{
     if (!response.ok) throw new Error("Failed to fetch workers");
     return response.json();
 };
-// Add these functions to your api.service.ts file
 
 // ==================== GET WORKER SKILL BY ID ====================
 export interface WorkerSkillResponse {
@@ -1038,27 +812,15 @@ export const getWorkerSkillById = async (
     skillId: string
 ): Promise<WorkerSkillResponse> => {
     try {
-        console.log("🔍 Fetching worker skill by ID:", skillId);
-
         const response = await fetch(
             `${API_BASE_URL}/getWorkerSkillById/${skillId}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
             }
         );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Get Worker Skill By ID API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("✅ Worker skill response:", data);
-        return data;
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("❌ Get worker skill by ID error:", error);
         throw error;
@@ -1073,45 +835,31 @@ export interface UpdateWorkerSkillPayload {
     serviceCharge?: number;
     chargeType?: "hour" | "day" | "fixed";
 }
+
 export const updateWorkerSkill = async (
     skillId: string,
     payload: UpdateWorkerSkillPayload
 ): Promise<WorkerSkillResponse> => {
     try {
-        console.log("📝 Updating worker skill:", skillId, payload);
-
         const formData = new URLSearchParams();
-
         if (payload.category) {
-            const categoryString = Array.isArray(payload.category)
+            formData.append("category", Array.isArray(payload.category)
                 ? payload.category.join(",")
-                : payload.category;
-            formData.append("category", categoryString);
+                : payload.category);
         }
-
         if (payload.subCategory) formData.append("subCategory", payload.subCategory);
         if (payload.skill) formData.append("skill", payload.skill);
         if (payload.serviceCharge !== undefined)
             formData.append("serviceCharge", String(payload.serviceCharge));
         if (payload.chargeType) formData.append("chargeType", payload.chargeType);
 
-        const response = await fetch(
-            `${API_BASE_URL}/updateWorkerSkillById/${skillId}`, // ✅ FIXED
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: formData.toString(),
-            }
-        );
+        const response = await fetch(`${API_BASE_URL}/updateWorkerSkillById/${skillId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData.toString(),
+        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Update Worker Skill API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
     } catch (error) {
         console.error("❌ Update worker skill error:", error);
@@ -1120,53 +868,342 @@ export const updateWorkerSkill = async (
 };
 
 // ==================== DELETE WORKER SKILL ====================
-export const deleteWorkerSkill = async (skillId: string): Promise<{ success: boolean; message: string }> => {
+export const deleteWorkerSkill = async (
+    skillId: string
+): Promise<{ success: boolean; message: string }> => {
     try {
-        console.log("🗑️ Deleting worker skill:", skillId);
-
-        const response = await fetch(
-            `${API_BASE_URL}/deleteWorkerSkill/${skillId}`,
-            {
-                method: "DELETE",
-            }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Delete Worker Skill API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("✅ Worker skill deleted:", data);
-        return data;
+        const response = await fetch(`${API_BASE_URL}/deleteWorkerSkill/${skillId}`, {
+            method: "DELETE",
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
     } catch (error) {
         console.error("❌ Delete worker skill error:", error);
         throw error;
     }
 };
+
 export const getAllJobs = async () => {
     const response = await axios.get(`${API_BASE_URL}/getAllJobs`);
     return response.data;
 };
 
-
-
-export const getNearbyJobs = async (
-    latitude: number,
-    longitude: number
-) => {
+export const getNearbyJobs = async (latitude: number, longitude: number) => {
     const res = await fetch(
         `${API_BASE_URL}/getNearbyJobs?latitude=${latitude}&longitude=${longitude}`,
-        {
+        { method: "GET", redirect: "follow" }
+    );
+    if (!res.ok) throw new Error("Failed to fetch nearby jobs");
+    return res.json();
+};
+
+// ==================== GET NEARBY JOBS FOR WORKER ====================
+export interface JobDetail {
+    _id: string;
+    userId: string;
+    title: string;
+    description: string;
+    category: string;
+    subcategory?: string;
+    jobType: "FULL_TIME" | "PART_TIME";
+    servicecharges: string;
+    startDate: string;
+    endDate: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    images?: string[];
+    distance?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface NearbyJobsForWorkerResponse {
+    success: boolean;
+    message: string;
+    count: number;
+    jobs: JobDetail[];
+}
+
+export const getNearbyJobsForWorker = async (
+    workerId: string
+): Promise<NearbyJobsForWorkerResponse> => {
+    try {
+        console.log("🔍 Fetching nearby jobs for worker ID:", workerId);
+
+        // ✅ Correct
+        const response = await fetch(
+            `${API_BASE_URL}/getNearbyJobsWorker/${workerId}`,
+            {
+                method: "GET",
+                redirect: "follow",
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Get Nearby Jobs For Worker API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Nearby jobs for worker response:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ Get nearby jobs for worker error:", error);
+        throw error;
+    }
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types — each key maps to the category name returned by the API
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ServiceItem {
+    _id: string;
+    userId: string;
+    subcategory?: string;
+    [key: string]: any; // allow extra fields per service type
+}
+
+// ============================================================================
+// UPDATE THIS INTERFACE IN YOUR api.service.ts FILE
+// Replace your existing AllUserData interface with this corrected version
+// ============================================================================
+
+export interface AllUserData {
+    agriculture?:    ServiceItem[];
+    automotive?:     ServiceItem[];
+    beauty?:         ServiceItem[];
+    business?:       ServiceItem[];
+    corporate?:      ServiceItem[];   // ✅ was "corporative" — fixed to match backend
+    creative?:       ServiceItem[];   // ✅ was "art"         — fixed to match backend
+    dailyWage?:      ServiceItem[];
+    techDigital?:    ServiceItem[];   // ✅ was "digital"     — fixed to match backend
+    education?:      ServiceItem[];
+    events?:         ServiceItem[];   // ✅ was "event"       — fixed to match backend
+    food?:           ServiceItem[];
+    healthcare?:     ServiceItem[];   // ✅ was "hospital"    — fixed to match backend
+    hotelTravel?:    ServiceItem[];   // ✅ was "hotel"       — fixed to match backend
+    industrialLocal?: ServiceItem[];  // ✅ was "industrial"  — fixed to match backend
+    courier?:        ServiceItem[];
+    pet?:            ServiceItem[];
+    realEstate?:     ServiceItem[];
+    shopping?:       ServiceItem[];
+    sports?:         ServiceItem[];
+    wedding?:        ServiceItem[];
+
+    [key: string]: ServiceItem[] | undefined; // index signature for dynamic access
+}
+
+export interface GetAllDataByUserIdResponse {
+    success: boolean;
+    message?: string;
+    data: AllUserData;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API Function
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /getAllDataByUserId/:userId
+ * Returns all service listings created by this user, grouped by category.
+ */
+export const getAllDataByUserId = async (
+    userId: string
+): Promise<GetAllDataByUserIdResponse> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getAllDataByUserId/${userId}`,
+            {
+                method: "GET",
+                redirect: "follow",
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("getAllDataByUserId API error:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ getAllDataByUserId response:", data);
+        return data;
+    } catch (error) {
+        console.error("❌ getAllDataByUserId error:", error);
+        throw error;
+    }
+};
+
+// ==================== REMOVE WORKER FROM JOB ====================
+// POST /removeworker  { workerId, jobId }
+export const removeWorker = async (
+    workerId: string,
+    jobId: string
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("workerId", workerId);
+        urlencoded.append("jobId", jobId);
+
+        const response = await fetch(`${API_BASE_URL}/removeworker`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: urlencoded,
+            redirect: "follow",
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ removeWorker error:", error);
+        throw error;
+    }
+};
+
+// ==================== CONFIRM WORKER FOR JOB ====================
+// POST /confirm-job  { jobId, workerId }
+export const confirmJob = async (
+    jobId: string,
+    workerId: string
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("jobId", jobId);
+        urlencoded.append("workerId", workerId);
+
+        const response = await fetch(`${API_BASE_URL}/confirm-job`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: urlencoded,
+            redirect: "follow",
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ confirmJob error:", error);
+        throw error;
+    }
+};
+
+export interface ConfirmedWorkers {
+    _id: string;
+    userId: string;
+    name: string;
+    category: string[];
+    subCategories: string[];
+    skills: string[];
+    serviceCharge: number;
+    chargeType: "hour" | "day" | "fixed";
+    profilePic: string;
+    images: string[];
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+export interface GetConfirmedWorkersResponse {
+    success: boolean;
+    message?: string;
+    data: ConfirmedWorkers[];  // already flattened by the function below
+}
+
+export const getConfirmedWorkers = async (
+    jobId: string
+): Promise<GetConfirmedWorkersResponse> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
             method: "GET",
             redirect: "follow",
-        }
-    );
+        });
 
-    if (!res.ok) {
-        throw new Error("Failed to fetch nearby jobs");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const json = await response.json();
+
+        // ✅ API nests workers inside json.data.confirmedWorkers
+        const workers: ConfirmedWorkers[] =
+            json?.data?.confirmedWorkers ||
+            json?.data ||
+            [];
+
+        return {
+            success: json.success ?? true,
+            message: json.message,
+            data: workers,   // ← always a flat array
+        };
+    } catch (error) {
+        console.error("❌ getConfirmedWorkers error:", error);
+        throw error;
     }
+};
+// ==================== CHECK IF WORKER ALREADY APPLIED TO JOB ====================
+export const checkJobApplication = async (
+    jobId: string,
+    workerId: string
+): Promise<boolean> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getConfirmedWorkers/${jobId}`,
+            { method: "GET", redirect: "follow" }
+        );
 
-    return res.json();
+        if (!response.ok) return false;
+
+        const json = await response.json();
+
+        // ✅ FIXED: same path fix
+        const workers: any[] =
+            json?.data?.confirmedWorkers ||
+            json?.data ||
+            [];
+
+        return workers.some(
+            (w) => w._id === workerId || w.userId === workerId
+        );
+    } catch (error) {
+        console.error("❌ checkJobApplication error:", error);
+        return false;
+    }
+};
+
+// ==================== GET CONFIRMED WORKERS COUNT FOR A JOB ====================
+export const getConfirmedWorkersCount = async (
+    jobId: string
+): Promise<number> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getConfirmedWorkers/${jobId}`,
+            { method: "GET", redirect: "follow" }
+        );
+
+        if (!response.ok) return 0;
+
+        const json = await response.json();
+
+        // ✅ FIXED: same path fix
+        const workers: any[] =
+            json?.data?.confirmedWorkers ||
+            json?.data ||
+            [];
+
+        return workers.length;
+    } catch (error) {
+        console.error("❌ getConfirmedWorkersCount error:", error);
+        return 0;
+    }
 };

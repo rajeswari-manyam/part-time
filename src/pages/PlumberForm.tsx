@@ -1,27 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    createShoppingStore,
-    updateShoppingRetail,
-    getShoppingRetailById,
-    ShoppingStore
-} from '../services/ShoppingService.service';
+import { createJob, updateJob, getJobById, CreateJobPayload } from "../services/api.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Pull shopping/retail subcategories from JSON (categoryId 7) ────────────────
-const getShoppingRetailSubcategories = () => {
-    const shoppingCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 7);
-    return shoppingCategory ? shoppingCategory.items.map((item: any) => item.name) : [];
+// ── Job type options ─────────────────────────────────────────────────────
+const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
+
+// ── Pull Plumber subcategories from JSON (categoryId 3) ────────────────
+const getPlumberSubcategories = () => {
+    const plumberCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 3);
+    return plumberCategory ? plumberCategory.items.map(item => item.name) : [];
 };
 
 // ============================================================================
 // SHARED INPUT CLASSES - Mobile First
 // ============================================================================
 const inputBase =
-    `w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
@@ -30,7 +28,7 @@ const inputBase =
 // REUSABLE LABEL
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-1.5 sm:mb-2 text-sm sm:text-base font-medium`}>
+    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
@@ -39,10 +37,10 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 // SECTION CARD WRAPPER
 // ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 space-y-3 sm:space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900 text-sm sm:text-base`}>{title}</h3>
+                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
                 {action}
             </div>
         )}
@@ -76,7 +74,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 // COMPONENT
 // ============================================================================
-const ShoppingForm: React.FC = () => {
+const PlumberForm = () => {
     const navigate = useNavigate();
 
     // ── URL helpers ──────────────────────────────────────────────────────────
@@ -96,33 +94,37 @@ const ShoppingForm: React.FC = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [locationWarning, setLocationWarning] = useState('');
 
-    const storeTypes = getShoppingRetailSubcategories();
-    const defaultType = getSubcategoryFromUrl() || storeTypes[0] || 'Supermarkets';
+    const plumberSubcategories = getPlumberSubcategories();
+    const defaultSubcategory = getSubcategoryFromUrl() || plumberSubcategories[0] || 'Plumbing Services';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        storeName: '',
-        storeType: defaultType,
-        email: '',
-        phone: '',
+        title: '',
         description: '',
+        category: 'plumbing',
+        subcategory: defaultSubcategory,
+        jobType: 'FULL_TIME' as 'FULL_TIME' | 'PART_TIME',
+        servicecharges: '',
+        startDate: '',
+        endDate: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
+        images: '',
     });
 
     // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
+    const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -130,33 +132,37 @@ const ShoppingForm: React.FC = () => {
         const fetchData = async () => {
             setLoadingData(true);
             try {
-                const response = await getShoppingRetailById(editId);
-                if (!response.success || !response.data) throw new Error('Store not found');
+                const response = await getJobById(editId);
+                if (!response || !response.job) {
+                    setError('Service not found');
+                    setLoadingData(false);
+                    return;
+                }
 
-                const data = response.data;
+                const job = response.job;
+
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
-                    storeName: data.storeName || '',
-                    storeType: data.storeType || defaultType,
-                    email: data.email || '',
-                    phone: data.phone || '',
-                    description: data.description || '',
-                    area: data.area || '',
-                    city: data.city || '',
-                    state: data.state || '',
-                    pincode: data.pincode || '',
-                    latitude: data.latitude?.toString() || '',
-                    longitude: data.longitude?.toString() || '',
+                    userId: prev.userId || job.userId || '',
+                    title: job.title || '',
+                    description: job.description || '',
+                    category: job.category || 'plumbing',
+                    subcategory: job.subcategory || defaultSubcategory,
+                    jobType: job.jobType || 'FULL_TIME',
+                    servicecharges: job.servicecharges?.toString() || '',
+                    startDate: job.startDate?.split('T')[0] || '',
+                    endDate: job.endDate?.split('T')[0] || '',
+                    area: job.area || '',
+                    city: job.city || '',
+                    state: job.state || '',
+                    pincode: job.pincode || '',
+                    latitude: job.latitude?.toString() || '',
+                    longitude: job.longitude?.toString() || '',
+                    images: job.images?.join(',') || '',
                 }));
-
-                if (data.images && Array.isArray(data.images)) {
-                    setExistingImages(data.images);
-                    console.log('📸 Loaded existing images:', data.images.length);
-                }
             } catch (err) {
                 console.error(err);
-                setError('Failed to load store data');
+                setError('Failed to load job data');
             } finally {
                 setLoadingData(false);
             }
@@ -164,11 +170,18 @@ const ShoppingForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when area is entered ────────────────────────
+    // ── Auto-detect coordinates when address is typed manually ───────────────
     useEffect(() => {
         const detectCoordinates = async () => {
+            if (isGPSDetected.current) {
+                isGPSDetected.current = false;
+                return;
+            }
+
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`.replace(/, ,/g, ',').replace(/^,|,$/g, '');
+                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`
+                    .replace(/, ,/g, ',')
+                    .replace(/^,|,$/g, '');
 
                 if (fullAddress.trim()) {
                     const coords = await geocodeAddress(fullAddress);
@@ -198,9 +211,7 @@ const ShoppingForm: React.FC = () => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        const remainingExisting = existingImages.filter(img => !imagesToDelete.includes(img)).length;
-        const availableSlots = 5 - (remainingExisting + selectedImages.length);
-
+        const availableSlots = 5 - selectedImages.length;
         if (availableSlots <= 0) {
             setError('Maximum 5 images allowed');
             return;
@@ -230,7 +241,6 @@ const ShoppingForm: React.FC = () => {
             };
             reader.readAsDataURL(file);
         });
-
         setSelectedImages(prev => [...prev, ...validFiles]);
         setError('');
     };
@@ -240,29 +250,33 @@ const ShoppingForm: React.FC = () => {
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
 
-    const handleRemoveExistingImage = (imageUrl: string) => {
-        setImagesToDelete(prev => [...prev, imageUrl]);
-    };
-
-    const handleRestoreExistingImage = (imageUrl: string) => {
-        setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
-    };
-
     // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
+        setLocationWarning('');
 
         if (!navigator.geolocation) {
-            setError('Geolocation not supported');
+            setError('Geolocation not supported by your browser');
             setLocationLoading(false);
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
+                isGPSDetected.current = true;
+
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
+                const accuracy = pos.coords.accuracy;
+
+                if (accuracy > 500) {
+                    setLocationWarning(
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
+                        `The address fields below may be approximate — please verify and correct if needed.`
+                    );
+                }
+
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
@@ -274,6 +288,8 @@ const ShoppingForm: React.FC = () => {
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
+                            latitude: lat,
+                            longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
@@ -301,67 +317,37 @@ const ShoppingForm: React.FC = () => {
         setSuccessMessage('');
 
         try {
-            if (!formData.storeName || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Store Name, Phone, Email)');
+            if (!formData.title || !formData.description)
+                throw new Error('Please fill in all required fields (Title, Description)');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // Create FormData for multipart/form-data submission
-            const fd = new FormData();
-
-            // Append all text fields
-            fd.append('userId', formData.userId);
-            fd.append('storeName', formData.storeName);
-            fd.append('storeType', formData.storeType);
-            fd.append('email', formData.email);
-            fd.append('phone', formData.phone);
-            fd.append('description', formData.description || '');
-            fd.append('area', formData.area);
-            fd.append('city', formData.city);
-            fd.append('state', formData.state);
-            fd.append('pincode', formData.pincode);
-            fd.append('latitude', formData.latitude);
-            fd.append('longitude', formData.longitude);
-
-            // ✅ IMAGES HANDLING - Match backend expectations
-            // 1. Append NEW image files (File objects)
-            if (selectedImages.length > 0) {
-                selectedImages.forEach((img, index) => {
-                    fd.append('images', img, img.name);
-                    console.log(`📎 Appending new image ${index + 1}:`, img.name);
-                });
-            }
-
-            // 2. For EDIT mode: Send remaining existing images that weren't deleted
-            if (isEditMode) {
-                const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
-                if (remainingExisting.length > 0) {
-                    fd.append('existingImages', JSON.stringify(remainingExisting));
-                    console.log('📎 Keeping existing images:', remainingExisting.length);
-                }
-
-                if (imagesToDelete.length > 0) {
-                    fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
-                    console.log('🗑️ Marked for deletion:', imagesToDelete.length);
-                }
-            }
-
-            // Debug log
-            console.log('📤 Submitting shopping store:', {
+            const jobPayload: CreateJobPayload = {
                 userId: formData.userId,
-                storeName: formData.storeName,
-                storeType: formData.storeType,
-                newImagesCount: selectedImages.length,
-                existingImagesCount: isEditMode ? existingImages.filter(url => !imagesToDelete.includes(url)).length : 0,
-            });
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                subcategory: formData.subcategory,
+                jobType: formData.jobType,
+                servicecharges: formData.servicecharges,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                area: formData.area,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
+                images: selectedImages,
+            };
 
             if (isEditMode && editId) {
-                await updateShoppingRetail(editId, fd);
-                setSuccessMessage('Store updated successfully!');
+                const response = await updateJob(editId, jobPayload);
+                setSuccessMessage('Service updated successfully!');
                 setTimeout(() => navigate('/my-business'), 1500);
             } else {
-                await createShoppingStore(fd);
-                setSuccessMessage('Store created successfully!');
+                const response = await createJob(jobPayload);
+                setSuccessMessage('Service created successfully!');
                 setTimeout(() => navigate('/my-business'), 1500);
             }
         } catch (err: any) {
@@ -372,11 +358,6 @@ const ShoppingForm: React.FC = () => {
     };
 
     const handleCancel = () => window.history.back();
-
-    // Calculate displayed images count
-    const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
-    const totalImagesCount = remainingExistingCount + selectedImages.length;
-    const maxImagesReached = totalImagesCount >= 5;
 
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
@@ -396,91 +377,75 @@ const ShoppingForm: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* ── Header - Fixed ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-                <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-100 rounded-full transition flex-shrink-0"
-                        aria-label="Go back"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1 min-w-0">
-                        <h1 className={`${typography.heading.h5} text-gray-900 truncate`}>
-                            {isEditMode ? 'Update Store' : 'Add New Store'}
+                    <div className="flex-1">
+                        <h1 className={`${typography.heading.h5} text-gray-900`}>
+                            {isEditMode ? 'Update Plumber Service' : 'Add New Plumber Service'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500 hidden sm:block`}>
-                            {isEditMode ? 'Update your store listing' : 'Create new store listing'}
+                        <p className={`${typography.body.small} text-gray-500`}>
+                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
             {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
+            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
                 {/* ── Alerts ── */}
                 {error && (
-                    <div className={`p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error} text-sm sm:text-base`}>
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
                         {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
                         {successMessage}
                     </div>
                 )}
 
-                {/* ─── 1. STORE NAME ──────────────────────────────────────── */}
+                {/* ─── 1. TITLE & DESCRIPTION ──────────────────────────────────────── */}
                 <SectionCard>
                     <div>
-                        <FieldLabel required>Store Name</FieldLabel>
+                        <FieldLabel required>Service Title</FieldLabel>
                         <input
                             type="text"
-                            name="storeName"
-                            value={formData.storeName}
+                            name="title"
+                            value={formData.title}
                             onChange={handleInputChange}
-                            placeholder="Enter your store name"
+                            placeholder="e.g., Professional Plumbing Services"
                             className={inputBase}
+                        />
+                    </div>
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Describe your services, experience, and specializations..."
+                            className={inputBase + ' resize-none'}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
-                <SectionCard title="Contact Information">
+                {/* ─── 2. CATEGORY & SUBCATEGORY ────────────────────────── */}
+                <SectionCard title="Service Category">
                     <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. STORE TYPE ────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Store Type</FieldLabel>
+                        <FieldLabel required>Subcategory</FieldLabel>
                         <select
-                            name="storeType"
-                            value={formData.storeType}
+                            name="subcategory"
+                            value={formData.subcategory}
                             onChange={handleInputChange}
                             className={inputBase + ' appearance-none bg-white'}
                             style={{
@@ -491,24 +456,78 @@ const ShoppingForm: React.FC = () => {
                                 paddingRight: '2.5rem'
                             }}
                         >
-                            {storeTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                            {plumberSubcategories.map(sub => (
+                                <option key={sub} value={sub}>{sub}</option>
+                            ))}
                         </select>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. DESCRIPTION ──────────────────────────────────────── */}
-                <SectionCard title="Store Description">
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Tell us about your store..."
-                        className={inputBase + ' resize-none'}
-                    />
+                {/* ─── 3. JOB DETAILS ───────────────────────── */}
+                <SectionCard title="Job Details">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>Job Type</FieldLabel>
+                            <select
+                                name="jobType"
+                                value={formData.jobType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 0.75rem center',
+                                    backgroundSize: '1.5em 1.5em',
+                                    paddingRight: '2.5rem'
+                                }}
+                            >
+                                {jobTypeOptions.map(type => (
+                                    <option key={type} value={type}>
+                                        {type.replace('_', ' ')}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <FieldLabel required>Service Charges (₹)</FieldLabel>
+                            <input
+                                type="text"
+                                name="servicecharges"
+                                value={formData.servicecharges}
+                                onChange={handleInputChange}
+                                placeholder="2000"
+                                className={inputBase}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>Start Date</FieldLabel>
+                            <input
+                                type="date"
+                                name="startDate"
+                                value={formData.startDate}
+                                onChange={handleInputChange}
+                                className={inputBase}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel required>End Date</FieldLabel>
+                            <input
+                                type="date"
+                                name="endDate"
+                                value={formData.endDate}
+                                onChange={handleInputChange}
+                                className={inputBase}
+                            />
+                        </div>
+                    </div>
                 </SectionCard>
 
-                {/* ─── 5. LOCATION DETAILS ────────────────────────────── */}
+                {/* ─── 4. LOCATION DETAILS ────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -533,6 +552,15 @@ const ShoppingForm: React.FC = () => {
                         </Button>
                     }
                 >
+                    {locationWarning && (
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
+                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <p className={`${typography.body.small} text-yellow-800`}>
+                                {locationWarning}
+                            </p>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
@@ -583,26 +611,26 @@ const ShoppingForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Location Tip */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 sm:p-3">
-                        <p className={`${typography.body.small} text-blue-800 text-xs sm:text-sm`}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-blue-800`}>
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter address manually.
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-2.5 sm:p-3">
-                            <p className={`${typography.body.small} text-green-800 text-xs sm:text-sm`}>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1 break-all">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                                <span className="ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 6. STORE PHOTOS ────────────────────────────── */}
-                <SectionCard title={`Store Photos (${totalImagesCount}/5)`}>
+                {/* ─── 5. PORTFOLIO PHOTOS ────────────────────────────── */}
+                <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
                             type="file"
@@ -610,125 +638,69 @@ const ShoppingForm: React.FC = () => {
                             multiple
                             onChange={handleImageSelect}
                             className="hidden"
-                            disabled={maxImagesReached}
+                            disabled={selectedImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center transition ${maxImagesReached
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                             : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
                             }`}>
-                            <div className="flex flex-col items-center gap-2 sm:gap-3">
-                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700 text-sm sm:text-base`}>
-                                        {maxImagesReached
-                                            ? 'Maximum 5 images reached'
-                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
+                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                        {selectedImages.length >= 5
+                                            ? 'Maximum limit reached'
+                                            : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1 text-xs sm:text-sm`}>
-                                        Upload photos of your store, products, or team
-                                    </p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {/* Images Grid - Shows both existing and new images */}
-                    {(existingImages.length > 0 || selectedImages.length > 0) && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 sm:mt-4">
-                            {/* EXISTING IMAGES (not marked for deletion) */}
-                            {existingImages
-                                .filter(url => !imagesToDelete.includes(url))
-                                .map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
-                                        <img
-                                            src={url}
-                                            alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-gray-200"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveExistingImage(url)}
-                                            className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
-                                        >
-                                            <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                                        </button>
-                                        <span className={`absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full`}>
-                                            Saved
-                                        </span>
-                                    </div>
-                                ))}
-
-                            {/* NEW IMAGES (to be uploaded) */}
-                            {selectedImages.map((file, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
+                    {imagePreviews.length > 0 && (
+                        <div className="grid grid-cols-3 gap-3 mt-4">
+                            {imagePreviews.map((preview, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square">
                                     <img
-                                        src={imagePreviews[i]}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-blue-400"
+                                        src={preview}
+                                        alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
                                     >
-                                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                        <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-green-600 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full`}>
-                                        New
-                                    </span>
-                                    <span className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-black/50 text-white text-[10px] sm:text-xs px-1 rounded">
-                                        {(file.size / 1024 / 1024).toFixed(1)}MB
-                                    </span>
                                 </div>
                             ))}
-                        </div>
-                    )}
-
-                    {/* Deleted Images (Undo section) */}
-                    {imagesToDelete.length > 0 && (
-                        <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl">
-                            <p className={`${typography.body.small} text-red-700 mb-2 text-xs sm:text-sm`}>
-                                Images marked for deletion ({imagesToDelete.length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {imagesToDelete.map((url, i) => (
-                                    <button
-                                        key={`del-${i}`}
-                                        onClick={() => handleRestoreExistingImage(url)}
-                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50"
-                                    >
-                                        <span>↩</span> Restore image {i + 1}
-                                    </button>
-                                ))}
-                            </div>
                         </div>
                     )}
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-4 sm:pb-0">
+                <div className="flex gap-4 pt-2">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`w-full sm:flex-1 px-6 py-3 sm:py-3.5 rounded-lg font-semibold text-white transition-all ${loading
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
                             ? 'bg-blue-400 cursor-not-allowed'
                             : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                            } shadow-sm ${typography.body.base} text-sm sm:text-base`}
+                            } shadow-sm ${typography.body.base}`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Store' : 'Create Store')}
+                            : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} text-sm sm:text-base`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
                     >
                         Cancel
                     </button>
@@ -738,4 +710,4 @@ const ShoppingForm: React.FC = () => {
     );
 };
 
-export default ShoppingForm;
+export default PlumberForm;

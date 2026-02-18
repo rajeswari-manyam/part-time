@@ -423,13 +423,13 @@ const BusinessForm = () => {
                 const response = await updateBusinessService(editId, formDataToSend);
                 if (response.success) {
                     setSuccessMessage('Service updated successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                    setTimeout(() => navigate('/my-business'), 1500);
                 } else throw new Error(response.message || 'Failed to update service');
             } else {
                 const response = await createBusinessService(formDataToSend);
                 if (response.success) {
                     setSuccessMessage('Service created successfully!');
-                    setTimeout(() => navigate('/listed-jobs'), 1500);
+                    setTimeout(() => navigate('/my-business'), 1500);
                 } else throw new Error(response.message || 'Failed to create service');
             }
         } catch (err: unknown) {

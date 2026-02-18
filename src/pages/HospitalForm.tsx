@@ -266,7 +266,7 @@ const HospitalForm = () => {
                     images: selectedImages,
                 });
                 setSuccessMessage('Hospital updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             } else {
                 // Create
                 const payload: CreateHospitalPayload = {
@@ -285,7 +285,7 @@ const HospitalForm = () => {
                 };
                 await createHospital(payload);
                 setSuccessMessage('Hospital created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+                setTimeout(() => navigate('/my-business'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');

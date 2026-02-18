@@ -11,18 +11,28 @@ const WorkerDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!user?._id) return;
-
         const fetchSkills = async () => {
             try {
-                console.log("Fetching worker with skills for ID:", user._id);
-                const res = await getWorkerWithSkills(user._id);
+                // ✅ FIX: getWorkerWithSkills expects a workerId, NOT a userId.
+                // The workerId is stored in localStorage after createWorkerBase succeeds.
+                // Using user._id (which is a userId) would return no results or an error.
+                const workerId =
+                    localStorage.getItem("workerId") ||
+                    localStorage.getItem("@worker_id");
+
+                if (!workerId) {
+                    console.warn("No workerId found in localStorage — redirecting to profile setup.");
+                    navigate("/worker-profile");
+                    return;
+                }
+
+                console.log("Fetching worker with skills for workerId:", workerId);
+                const res = await getWorkerWithSkills(workerId);
                 console.log("Worker with skills response:", res);
 
-                if (res?.workerSkills) {
+                if (res?.workerSkills && res.workerSkills.length > 0) {
                     setSkills(res.workerSkills);
                 } else {
-                    // If no skills, redirect to add skills page
                     navigate("/add-skills");
                 }
             } catch (err) {
@@ -34,8 +44,10 @@ const WorkerDashboard: React.FC = () => {
         };
 
         fetchSkills();
-        // Only run once per user
-    }, [user?._id, navigate]);
+    }, [navigate]);
+    // ✅ FIX: Removed user?._id from dependency array — workerId comes from
+    // localStorage, not from the user object. Adding user._id as a dep was
+    // causing unnecessary re-fetches and using the wrong ID.
 
     if (loading) return <p>Loading your dashboard...</p>;
 
@@ -51,7 +63,7 @@ const WorkerDashboard: React.FC = () => {
                         <div key={skill._id} className="p-4 bg-white rounded-xl shadow">
                             <h2 className="font-semibold text-lg">{skill.skill}</h2>
                             <p className="text-gray-600">
-                                {skill.category} / {skill.subCategory}
+                                {skill.category?.join(", ")} / {skill.subCategory}
                             </p>
                             <p className="text-green-600 mt-2">
                                 ₹{skill.serviceCharge} / {skill.chargeType}

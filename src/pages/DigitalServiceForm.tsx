@@ -131,7 +131,7 @@ const DigitalServiceForm: React.FC = () => {
         category: 'Tech & Digital Services',
         subCategory: defaultType,
         serviceCharge: '',
-        chargeType: 'per hour',
+        chargeType: 'hourly',   // ✅ FIXED: matches backend enum exactly
         area: '',
         city: '',
         state: '',
@@ -165,7 +165,7 @@ const DigitalServiceForm: React.FC = () => {
                     description: data.bio || '',
                     subCategory: data.category || defaultType,
                     serviceCharge: data.serviceCharge?.toString() || '',
-                    chargeType: data.chargeType || 'per hour',
+                    chargeType: data.chargeType || 'hourly',   // ✅ FIXED: matches backend enum
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
@@ -306,7 +306,7 @@ const DigitalServiceForm: React.FC = () => {
             fd.append('category', formData.category);
             fd.append('subCategory', formData.subCategory);
             fd.append('serviceCharge', formData.serviceCharge);
-            fd.append('chargeType', formData.chargeType);
+            fd.append('chargeType', formData.chargeType);   // ✅ Now sends "Per Hour" not "per hour"
             fd.append('area', formData.area);
             fd.append('city', formData.city);
             fd.append('state', formData.state);
@@ -339,7 +339,7 @@ const DigitalServiceForm: React.FC = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/listed-jobs'), 1500);
+            setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
             console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
@@ -385,10 +385,18 @@ const DigitalServiceForm: React.FC = () => {
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
-                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
+                {error && (
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                        {error}
+                    </div>
+                )}
+                {successMessage && (
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        ✓ {successMessage}
+                    </div>
+                )}
 
-                {/* 1. SERVICE NAME */}
+                {/* 1. BASIC INFO */}
                 <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
@@ -410,7 +418,9 @@ const DigitalServiceForm: React.FC = () => {
                             className={inputBase + ' appearance-none bg-white'}
                             style={selectStyle}
                         >
-                            {serviceTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                            {serviceTypes.map((t: string) => (
+                                <option key={t} value={t}>{t}</option>
+                            ))}
                         </select>
                     </div>
                 </SectionCard>
@@ -443,6 +453,7 @@ const DigitalServiceForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
+                            {/* ✅ FIXED: values match backend enum exactly (from API curl: "fixed") */}
                             <select
                                 name="chargeType"
                                 value={formData.chargeType}
@@ -450,10 +461,10 @@ const DigitalServiceForm: React.FC = () => {
                                 className={inputBase + ' appearance-none bg-white'}
                                 style={selectStyle}
                             >
-                                <option value="per hour">Per Hour</option>
-                                <option value="per project">Per Project</option>
-                                <option value="per day">Per Day</option>
-                                <option value="per month">Per Month</option>
+                                <option value="hourly">Per Hour</option>
+                                <option value="daily">Per Day</option>
+                                <option value="monthly">Per Month</option>
+                                <option value="per_project">Per Project</option>
                                 <option value="fixed">Fixed Rate</option>
                             </select>
                         </div>
@@ -482,21 +493,49 @@ const DigitalServiceForm: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
+                            <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleInputChange}
+                                placeholder="Area name"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleInputChange}
+                                placeholder="City"
+                                className={inputBase}
+                            />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleInputChange}
+                                placeholder="State"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={formData.pincode}
+                                onChange={handleInputChange}
+                                placeholder="PIN code"
+                                className={inputBase}
+                            />
                         </div>
                     </div>
                     <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
@@ -556,27 +595,43 @@ const DigitalServiceForm: React.FC = () => {
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`}
+                                    <img
+                                        src={url}
+                                        alt={`Saved ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                        onError={e => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
+                                        onError={e => {
+                                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
+                                        }}
                                     />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        Saved
+                                    </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                    <img
+                                        src={preview}
+                                        alt={`Preview ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-indigo-400"
                                     />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
