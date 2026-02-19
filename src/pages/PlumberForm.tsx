@@ -101,6 +101,7 @@ const PlumberForm = () => {
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
+           name: localStorage.getItem('userName') || '',
         title: '',
         description: '',
         category: 'plumbing',
@@ -324,6 +325,7 @@ const PlumberForm = () => {
 
             const jobPayload: CreateJobPayload = {
                 userId: formData.userId,
+                name: formData.name,       
                 title: formData.title,
                 description: formData.description,
                 category: formData.category,
@@ -344,11 +346,11 @@ const PlumberForm = () => {
             if (isEditMode && editId) {
                 const response = await updateJob(editId, jobPayload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
                 const response = await createJob(jobPayload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');

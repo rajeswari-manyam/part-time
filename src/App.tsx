@@ -194,6 +194,19 @@ const AppRoutes: React.FC = () => {
             <Layout>
                 <Routes location={background || location}>
                     <Route path="/" element={<HomePage />} />
+                    // ✅ KEEP these — already in your file:
+<Route path="/post-job" element={<UserProfile />} />
+<Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
+
+// ✅ Protected listed-jobs with wrapper — already in your file:
+<Route
+    path="/listed-jobs"
+    element={
+        <ProtectedRoute>
+            <ListedJobsWrapper />
+        </ProtectedRoute>
+    }
+/>
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/role-selection" element={<RoleSelection />} />
                     <Route path="/loginPage" element={<LoginPage />} />

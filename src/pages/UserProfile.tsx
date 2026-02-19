@@ -323,6 +323,7 @@ const UserProfile: React.FC = () => {
 
       const jobData: CreateJobPayload = {
         userId: user._id,
+          name: localStorage.getItem('userName') || '',   // ← ADD THIS
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category.trim(),

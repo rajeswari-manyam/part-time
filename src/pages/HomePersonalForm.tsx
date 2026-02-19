@@ -83,6 +83,7 @@ const HomePersonalForm = () => {
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
+        name: localStorage.getItem('userName') || '',
         serviceName: '',
         serviceType: defaultType,
         specializations: '',
@@ -254,6 +255,7 @@ const HomePersonalForm = () => {
                 // Update
                 const payload: CreateJobPayload = {
                     userId: formData.userId,
+                    name: formData.name,
                     title: formData.serviceName,
                     description: formData.specializations,
                     category: 'home-personal',
@@ -277,6 +279,7 @@ const HomePersonalForm = () => {
                 // Create
                 const payload: CreateJobPayload = {
                     userId: formData.userId,
+                    name: formData.name,
                     title: formData.serviceName,
                     description: formData.specializations,
                     category: 'home-personal',
@@ -295,7 +298,7 @@ const HomePersonalForm = () => {
                 };
                 await createJob(payload);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');

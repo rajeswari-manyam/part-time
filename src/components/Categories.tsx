@@ -63,9 +63,9 @@ const iconMap: Record<number, string> = {
 };
 
 // 🎨 Theme colors (same as screenshot)
-const BORDER_COLOR = "#1A5F9E";
-const ICON_BG_COLOR = "#1A5F9E";
-const TEXT_COLOR = "#1A5F9E";
+const BORDER_COLOR = "#f09b13";
+const ICON_BG_COLOR = "#f09b13";
+const TEXT_COLOR = "#f09b13";
 
 const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
     const navigate = useNavigate();

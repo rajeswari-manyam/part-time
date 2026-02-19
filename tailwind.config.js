@@ -8,19 +8,19 @@ module.exports = {
       colors: {
         // Primary brand colors - Change these to update your theme
         primary: {
-          DEFAULT: "#1A5F9E",  // Main brand color
-          light: "#2B7BC4",    // Lighter shade for hover effects
-          dark: "#0F4A7A",     // Darker shade for pressed states
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#1A5F9E",      // Main
-          700: "#0F4A7A",
-          800: "#1E3A8A",
-          900: "#1E293B",
+          DEFAULT: "#f09b13",  // Main brand color
+          light: "#f09b13",    // Lighter shade for hover effects
+          dark: "#f09b13",     // Darker shade for pressed states
+          50: "#f09b13",
+          100: "#f09b13",
+          200: "#f09b13",
+          300: "#f09b13",
+          400: "#f09b13",
+          500: "#f09b13",
+          600: "#f09b13",      // Main
+          700: "#f09b13",
+          800: "#f09b13",
+          900: "#f09b13",
         },
         // Secondary/Background colors
         secondary: {

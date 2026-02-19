@@ -33,7 +33,7 @@ const AGRICULTURE_CATEGORIES = getAgricultureSubcategories();
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#1A5F9E] focus:border-[#1A5F9E] ` +
+    `focus:ring-2 focus:ring-[#f09b13] focus:border-[#f09b13] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -506,7 +506,7 @@ const AgricultureForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A5F9E] mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f09b13] mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
@@ -559,10 +559,10 @@ const AgricultureForm: React.FC = () => {
 
                 {/* Success banner */}
                 {successMessage && (
-                    <div className="p-4 bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl">
+                    <div className="p-4 bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl">
                         <div className="flex items-center gap-2">
-                            <span className="text-[#1A5F9E] text-lg">✓</span>
-                            <p className={`${typography.body.small} text-[#1A5F9E] font-medium`}>{successMessage}</p>
+                            <span className="text-[#f09b13] text-lg">✓</span>
+                            <p className={`${typography.body.small} text-[#f09b13] font-medium`}>{successMessage}</p>
                         </div>
                     </div>
                 )}
@@ -693,7 +693,7 @@ const AgricultureForm: React.FC = () => {
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[#1A5F9E] hover:!bg-[#154a7e]"
+                            className="!py-1.5 !px-3 !bg-[#f09b13] hover:!bg-[#f09b13]"
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -773,8 +773,8 @@ const AgricultureForm: React.FC = () => {
 
                     {/* Tip box */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#1A5F9E]`}>
+                        <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-[#f09b13]`}>
                                 📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
                             </p>
                         </div>
@@ -782,8 +782,8 @@ const AgricultureForm: React.FC = () => {
 
                     {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#1A5F9E]`}>
+                        <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-[#f09b13]`}>
                                 <span className="font-semibold">✓ Location set:</span>
                                 <span className="ml-1 font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}

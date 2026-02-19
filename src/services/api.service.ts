@@ -105,6 +105,8 @@ export const resendOtp = async (phone: string): Promise<ApiResponse> => {
 export interface CreateJobPayload {
     userId: string;
     title: string;
+        name: string;        // ← ADD THIS
+
     description: string;
     category: string;
     subcategory?: string;
@@ -125,6 +127,7 @@ export const createJob = async (data: CreateJobPayload) => {
     const formData = new FormData();
     formData.append("userId", data.userId);
     formData.append("title", data.title);
+      formData.append("name", data.name);        // ← ADD THIS LINE
     formData.append("description", data.description);
     formData.append("category", data.category);
     if (data.subcategory) formData.append("subcategory", data.subcategory);

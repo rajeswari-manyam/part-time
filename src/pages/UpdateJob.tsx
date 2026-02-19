@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
-import { API_BASE_URL, updateJob, getJobById } from "../services/api.service";
+import { ArrowLeft, MapPin, Loader2, ImageOff } from "lucide-react";
+import { API_BASE_URL, getJobById } from "../services/api.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import categoriesData from "../data/categories.json";
@@ -9,6 +9,7 @@ import subcategoriesData from "../data/subcategories.json";
 
 interface JobData {
     _id: string;
+    title?: string;
     description: string;
     category: string;
     subcategory?: string;
@@ -24,6 +25,35 @@ interface JobData {
     longitude?: number;
     images?: string[];
 }
+
+// ── Resolve any image path to a full URL ─────────────────────────────────────
+const resolveImageUrl = (path?: string): string => {
+    if (!path || typeof path !== "string") return "";
+    const cleaned = path.trim().replace(/\\/g, "/");
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) return cleaned;
+    const base = (API_BASE_URL || "").replace(/\/$/, "");
+    return `${base}${cleaned.startsWith("/") ? cleaned : "/" + cleaned}`;
+};
+
+// ── Map category value (could be id, name, or number) to display name ────────
+const resolveCategoryName = (categoryValue: string | number): string => {
+    if (!categoryValue) return String(categoryValue);
+    const str = String(categoryValue);
+
+    // If it's already a name that matches, return it
+    const byName = categoriesData.categories.find(
+        (c) => c.name.toLowerCase() === str.toLowerCase()
+    );
+    if (byName) return byName.name;
+
+    // If it's a numeric id
+    const byId = categoriesData.categories.find(
+        (c) => String(c.id) === str
+    );
+    if (byId) return byId.name;
+
+    return str; // fallback
+};
 
 const UpdateJob: React.FC = () => {
     const navigate = useNavigate();
@@ -45,17 +75,19 @@ const UpdateJob: React.FC = () => {
         latitude: 0,
         longitude: 0,
     });
+
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [newImages, setNewImages] = useState<File[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedImage, setSelectedImage] = useState(0);
     const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([]);
+    const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
-    // Get categories and subcategories
     const categories = categoriesData.categories;
     const subcategories = subcategoriesData.subcategories;
 
+    // ── Fetch job data ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!jobId) return;
 
@@ -64,37 +96,47 @@ const UpdateJob: React.FC = () => {
                 setLoading(true);
                 const res = await getJobById(jobId);
 
-                if (res.success && res.data) {
-                    const job = res.data;
+                // API may return { success, job: {...} } or { success, data: {...} }
+                const job: JobData = res.job || res.data || res;
 
-                    setOriginalData(job);
-                    setFormData({
-                        description: job.description || "",
-                        category: job.category || "",
-                        subcategory: job.subcategory || "",
-                        jobType: job.jobType || "FULL_TIME",
-                        servicecharges: job.servicecharges || "",
-                        startDate: job.startDate ? job.startDate.split("T")[0] : "",
-                        endDate: job.endDate ? job.endDate.split("T")[0] : "",
-                        area: job.area || "",
-                        city: job.city || "",
-                        state: job.state || "",
-                        pincode: job.pincode || "",
-                        latitude: job.latitude || 0,
-                        longitude: job.longitude || 0,
-                    });
-                    setExistingImages(job.images || []);
-
-                    // Set filtered subcategories based on loaded category
-                    if (job.category) {
-                        const selectedCategory = categories.find(cat => cat.name === job.category);
-                        if (selectedCategory) {
-                            const subList = subcategories.find(sub => sub.categoryId === selectedCategory.id);
-                            setFilteredSubcategories(subList?.items || []);
-                        }
-                    }
-                } else {
+                if (!job || !job._id) {
                     alert("Failed to load job data");
+                    return;
+                }
+
+                setOriginalData(job);
+
+                // Resolve category: could be a numeric id — map to name
+                const resolvedCategory = resolveCategoryName(job.category);
+
+                setFormData({
+                    description: job.description || "",
+                    category: resolvedCategory,
+                    subcategory: job.subcategory || "",
+                    jobType: job.jobType || "FULL_TIME",
+                    servicecharges: String(job.servicecharges || ""),
+                    startDate: job.startDate ? job.startDate.split("T")[0] : "",
+                    endDate: job.endDate ? job.endDate.split("T")[0] : "",
+                    area: job.area || "",
+                    city: job.city || "",
+                    state: job.state || "",
+                    pincode: job.pincode || "",
+                    latitude: job.latitude || 0,
+                    longitude: job.longitude || 0,
+                });
+
+                // ✅ Store raw image paths — resolveImageUrl handles display
+                setExistingImages(job.images || []);
+
+                // Set subcategories for the loaded category
+                const selectedCat = categories.find(
+                    (c) => c.name.toLowerCase() === resolvedCategory.toLowerCase()
+                );
+                if (selectedCat) {
+                    const subList = subcategories.find(
+                        (s) => s.categoryId === selectedCat.id
+                    );
+                    setFilteredSubcategories(subList?.items || []);
                 }
             } catch (err) {
                 console.error("Fetch job error:", err);
@@ -107,6 +149,7 @@ const UpdateJob: React.FC = () => {
         fetchJob();
     }, [jobId]);
 
+    // ── Handlers ──────────────────────────────────────────────────────────────
     const handleInputChange = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
@@ -117,13 +160,9 @@ const UpdateJob: React.FC = () => {
     const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const categoryName = e.target.value;
         setFormData((prev) => ({ ...prev, category: categoryName, subcategory: "" }));
-
-        // Find the selected category by name
-        const selectedCategory = categories.find(cat => cat.name === categoryName);
-
-        if (selectedCategory) {
-            // Find subcategories for this category
-            const subList = subcategories.find(sub => sub.categoryId === selectedCategory.id);
+        const selectedCat = categories.find((c) => c.name === categoryName);
+        if (selectedCat) {
+            const subList = subcategories.find((s) => s.categoryId === selectedCat.id);
             setFilteredSubcategories(subList?.items || []);
         } else {
             setFilteredSubcategories([]);
@@ -142,8 +181,10 @@ const UpdateJob: React.FC = () => {
 
     const handleRemoveExistingImage = (index: number) => {
         setExistingImages((prev) => prev.filter((_, i) => i !== index));
+        setSelectedImage((prev) => (prev >= index && prev > 0 ? prev - 1 : 0));
     };
 
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         if (!jobId) return;
 
@@ -156,49 +197,30 @@ const UpdateJob: React.FC = () => {
             setIsSubmitting(true);
 
             const fd = new FormData();
-
-            // ===== REQUIRED FIELDS =====
             fd.append("jobType", formData.jobType.trim());
             fd.append("description", formData.description.trim());
             fd.append("category", formData.category.trim());
             fd.append("latitude", String(formData.latitude));
             fd.append("longitude", String(formData.longitude));
 
-            // ===== OPTIONAL FIELDS =====
             if (formData.subcategory) fd.append("subcategory", formData.subcategory.trim());
             if (formData.area) fd.append("area", formData.area.trim());
             if (formData.city) fd.append("city", formData.city.trim());
             if (formData.state) fd.append("state", formData.state.trim());
             if (formData.pincode) fd.append("pincode", formData.pincode.trim());
-            if (formData.servicecharges)
-                fd.append("servicecharges", String(formData.servicecharges));
+            if (formData.servicecharges) fd.append("servicecharges", String(formData.servicecharges));
+            if (formData.startDate) fd.append("startDate", formData.startDate);
+            if (formData.endDate) fd.append("endDate", formData.endDate);
 
-            // ===== DATE FORMAT (YYYY-MM-DD) =====
-            if (formData.startDate) {
-                fd.append("startDate", formData.startDate);
-            }
+            // ✅ Append new image files
+            newImages.forEach((file) => fd.append("images", file));
 
-            if (formData.endDate) {
-                fd.append("endDate", formData.endDate);
-            }
-
-            // ===== IMAGES =====
-            newImages.forEach((file) => {
-                fd.append("images", file);
+            const response = await fetch(`${API_BASE_URL}/updateJob/${jobId}`, {
+                method: "PUT",
+                body: fd,
             });
 
-            // ===== API CALL =====
-            const response = await fetch(
-                `${API_BASE_URL}/updateJob/${jobId}`,
-                {
-                    method: "PUT",
-                    body: fd,
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const result = await response.json();
 
@@ -210,18 +232,17 @@ const UpdateJob: React.FC = () => {
             }
         } catch (error) {
             console.error("Update Job Error:", error);
-
-            // Check if it's a network error
-            if (error instanceof TypeError && error.message.includes('fetch')) {
-                alert("Cannot connect to server. Please ensure the backend server is running at " + API_BASE_URL);
+            if (error instanceof TypeError && error.message.includes("fetch")) {
+                alert("Cannot connect to server. Please ensure the backend is running.");
             } else {
-                alert("Something went wrong while updating the job: " + (error instanceof Error ? error.message : "Unknown error"));
+                alert("Something went wrong: " + (error instanceof Error ? error.message : "Unknown error"));
             }
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // ── Loading / Not found ───────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -238,9 +259,13 @@ const UpdateJob: React.FC = () => {
         );
     }
 
+    // ── Resolved image URLs for display ──────────────────────────────────────
+    const resolvedImages = existingImages.map(resolveImageUrl);
+
     return (
         <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
             <div className="max-w-7xl mx-auto">
+
                 {/* Header */}
                 <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
                     <button
@@ -250,90 +275,154 @@ const UpdateJob: React.FC = () => {
                         <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                     <h1 className={typography.heading.h3}>Update Job</h1>
-                </div>  
+                </div>
 
-                {/* Split View Container */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    {/* LEFT SIDE - Current Job Details */}
-                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 h-fit lg:sticky lg:top-6">
-                        <h2 className={`${typography.heading.h5} mb-4 text-gray-800`}>Current Job Details</h2>
 
-                        {/* Images */}
-                        {existingImages.length > 0 && (
+                    {/* ── LEFT: Current Job Details ── */}
+                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 h-fit lg:sticky lg:top-6">
+                        <h2 className={`${typography.heading.h5} mb-4 text-gray-800`}>
+                            Current Job Details
+                        </h2>
+
+                        {/* ✅ FIXED: Image display with proper URL resolution */}
+                        {resolvedImages.length > 0 ? (
                             <>
-                                <div className="mb-4">
-                                    <img
-                                        src={`${API_BASE_URL}/${existingImages[selectedImage]}`}
-                                        alt="job"
-                                        className="w-full h-48 sm:h-64 object-cover rounded-lg sm:rounded-xl"
-                                        onError={(e) => {
-                                            e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                        }}
-                                    />
+                                {/* Main image */}
+                                <div className="mb-3 rounded-xl overflow-hidden bg-gray-100 h-48 sm:h-64 flex items-center justify-center">
+                                    {imgErrors[selectedImage] ? (
+                                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                                            <ImageOff size={36} />
+                                            <span className="text-xs">Image unavailable</span>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            key={resolvedImages[selectedImage]}
+                                            src={resolvedImages[selectedImage]}
+                                            alt={`Job image ${selectedImage + 1}`}
+                                            className="w-full h-full object-cover"
+                                            onError={() =>
+                                                setImgErrors((prev) => ({ ...prev, [selectedImage]: true }))
+                                            }
+                                        />
+                                    )}
                                 </div>
 
-                                {existingImages.length > 1 && (
-                                    <div className="grid grid-cols-4 gap-2 mb-4">
-                                        {existingImages.map((img, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => setSelectedImage(i)}
-                                                className={`relative w-full h-16 sm:h-20 rounded-lg overflow-hidden border-2 ${selectedImage === i
-                                                    ? "border-blue-500 ring-2 ring-blue-300"
-                                                    : "border-gray-300"
-                                                    }`}
-                                            >
-                                                <img
-                                                    src={`${API_BASE_URL}/${img}`}
-                                                    alt={`thumb-${i}`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </button>
+                                {/* Thumbnails */}
+                                {resolvedImages.length > 1 && (
+                                    <div className="flex gap-2 mb-4 flex-wrap">
+                                        {resolvedImages.map((url, i) => (
+                                            <div key={i} className="relative group">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedImage(i);
+                                                        setImgErrors((prev) => ({ ...prev, [i]: false }));
+                                                    }}
+                                                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition ${selectedImage === i
+                                                        ? "border-blue-500 ring-2 ring-blue-300"
+                                                        : "border-gray-200 hover:border-blue-300"
+                                                        }`}
+                                                >
+                                                    {imgErrors[i] ? (
+                                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                            <ImageOff size={14} className="text-gray-400" />
+                                                        </div>
+                                                    ) : (
+                                                        <img
+                                                            src={url}
+                                                            alt={`thumb-${i}`}
+                                                            className="w-full h-full object-cover"
+                                                            onError={() =>
+                                                                setImgErrors((prev) => ({ ...prev, [i]: true }))
+                                                            }
+                                                        />
+                                                    )}
+                                                </button>
+                                                {/* Remove existing image button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveExistingImage(i)}
+                                                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Remove single image button */}
+                                {resolvedImages.length === 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(0)}
+                                        className="mb-3 text-xs text-red-500 hover:text-red-700 transition"
+                                    >
+                                        Remove image
+                                    </button>
+                                )}
                             </>
+                        ) : (
+                            <div className="mb-4 h-48 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                                <div className="text-center">
+                                    <ImageOff size={32} className="mx-auto mb-2 opacity-50" />
+                                    <p className="text-xs">No images</p>
+                                </div>
+                            </div>
                         )}
 
                         {/* Details */}
-                        <div className="space-y-3">
+                        <div className="space-y-3 text-sm">
                             <div>
-                                <span className={`${typography.body.small} font-medium text-gray-600`}>Category: </span>
-                                <span className={`${typography.body.small} text-gray-800`}>{originalData.category}</span>
+                                <span className="font-medium text-gray-600">Category: </span>
+                                <span className="text-gray-800">
+                                    {resolveCategoryName(originalData.category)}
+                                </span>
                             </div>
 
                             {originalData.subcategory && (
                                 <div>
-                                    <span className={`${typography.body.small} font-medium text-gray-600`}>Subcategory: </span>
-                                    <span className={`${typography.body.small} text-gray-800`}>{originalData.subcategory}</span>
+                                    <span className="font-medium text-gray-600">Subcategory: </span>
+                                    <span className="text-gray-800">{originalData.subcategory}</span>
                                 </div>
                             )}
 
                             {originalData.jobType && (
                                 <div>
-                                    <span className={`${typography.body.small} font-medium text-gray-600`}>Job Type: </span>
-                                    <span className={`${typography.body.small} text-gray-800`}>{originalData.jobType}</span>
+                                    <span className="font-medium text-gray-600">Job Type: </span>
+                                    <span className="text-gray-800">
+                                        {originalData.jobType.replace("_", " ")}
+                                    </span>
                                 </div>
                             )}
 
                             {originalData.servicecharges && (
                                 <div>
-                                    <span className={`${typography.body.small} font-medium text-gray-600`}>Service Charges: </span>
-                                    <span className={`${typography.body.base} font-bold text-green-600`}>₹{originalData.servicecharges}</span>
+                                    <span className="font-medium text-gray-600">Service Charges: </span>
+                                    <span className="font-bold text-green-600">
+                                        ₹{originalData.servicecharges}
+                                    </span>
+                                </div>
+                            )}
+
+                            {originalData.title && (
+                                <div>
+                                    <span className="font-medium text-gray-600">Title: </span>
+                                    <span className="text-gray-800">{originalData.title}</span>
                                 </div>
                             )}
 
                             <div>
-                                <h4 className={`${typography.body.small} font-medium text-gray-600 mb-2`}>Description</h4>
-                                <p className={`${typography.body.small} text-gray-700 leading-relaxed`}>{originalData.description}</p>
+                                <h4 className="font-medium text-gray-600 mb-1">Description</h4>
+                                <p className="text-gray-700 leading-relaxed">{originalData.description}</p>
                             </div>
 
                             {(originalData.area || originalData.city || originalData.state) && (
                                 <div>
-                                    <h4 className={`${typography.body.small} font-medium text-gray-600 mb-2`}>Location</h4>
+                                    <h4 className="font-medium text-gray-600 mb-1">Location</h4>
                                     <div className="flex items-center gap-2 text-gray-700">
-                                        <MapPin size={16} className="text-blue-600 flex-shrink-0" />
-                                        <span className={typography.body.small}>
+                                        <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                                        <span>
                                             {[originalData.area, originalData.city, originalData.state, originalData.pincode]
                                                 .filter(Boolean)
                                                 .join(", ")}
@@ -350,22 +439,27 @@ const UpdateJob: React.FC = () => {
                                             "_blank"
                                         )
                                     }
-                                    className={`w-full mt-4 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2.5 sm:py-3 rounded-lg hover:bg-blue-100 transition ${typography.body.small} font-medium`}
+                                    className="w-full mt-2 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 py-2.5 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
                                 >
-                                    <MapPin size={16} /> View on Google Maps
+                                    <MapPin size={14} /> View on Google Maps
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* RIGHT SIDE - Edit Form */}
+                    {/* ── RIGHT: Edit Form ── */}
                     <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-                        <h2 className={`${typography.heading.h5} mb-4 sm:mb-6 text-gray-800`}>Edit Job Information</h2>
+                        <h2 className={`${typography.heading.h5} mb-4 sm:mb-6 text-gray-800`}>
+                            Edit Job Information
+                        </h2>
 
                         <div className="space-y-4 sm:space-y-5">
+
                             {/* Category */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Category *</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Category *
+                                </label>
                                 <select
                                     name="category"
                                     value={formData.category}
@@ -383,7 +477,9 @@ const UpdateJob: React.FC = () => {
 
                             {/* Subcategory */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Subcategory</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Subcategory
+                                </label>
                                 <select
                                     name="subcategory"
                                     value={formData.subcategory}
@@ -408,7 +504,9 @@ const UpdateJob: React.FC = () => {
 
                             {/* Job Type */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Job Type *</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Job Type *
+                                </label>
                                 <select
                                     name="jobType"
                                     value={formData.jobType}
@@ -422,7 +520,9 @@ const UpdateJob: React.FC = () => {
 
                             {/* Description */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Description *</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Description *
+                                </label>
                                 <textarea
                                     name="description"
                                     rows={5}
@@ -435,7 +535,9 @@ const UpdateJob: React.FC = () => {
 
                             {/* Service Charges */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Service Charges</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Service Charges
+                                </label>
                                 <input
                                     name="servicecharges"
                                     type="number"
@@ -449,7 +551,9 @@ const UpdateJob: React.FC = () => {
                             {/* Dates */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Start Date</label>
+                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                        Start Date
+                                    </label>
                                     <input
                                         name="startDate"
                                         type="date"
@@ -459,7 +563,9 @@ const UpdateJob: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>End Date</label>
+                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                        End Date
+                                    </label>
                                     <input
                                         name="endDate"
                                         type="date"
@@ -470,7 +576,7 @@ const UpdateJob: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Location Fields */}
+                            {/* Location */}
                             <div>
                                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Area</label>
                                 <input
@@ -516,9 +622,11 @@ const UpdateJob: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Images */}
+                            {/* Images Upload */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Add New Images</label>
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Add New Images
+                                </label>
                                 <input
                                     type="file"
                                     multiple
@@ -527,47 +635,25 @@ const UpdateJob: React.FC = () => {
                                     className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.body.small} file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:text-sm file:font-medium`}
                                 />
 
-                                {/* Existing Images */}
-                                {existingImages.length > 0 && (
-                                    <div className="mt-4">
-                                        <p className={`${typography.body.xs} text-gray-600 mb-2`}>Current Images:</p>
-                                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                                            {existingImages.map((img, index) => (
-                                                <div key={index} className="relative w-20 h-20 sm:w-24 sm:h-24 border-2 border-gray-200 rounded-lg sm:rounded-xl overflow-hidden group">
-                                                    <img
-                                                        src={`${API_BASE_URL}/${img}`}
-                                                        alt="Job"
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveExistingImage(index)}
-                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* New Images */}
+                                {/* New image previews */}
                                 {newImages.length > 0 && (
-                                    <div className="mt-4">
-                                        <p className={`${typography.body.xs} text-gray-600 mb-2`}>New Images to Upload:</p>
-                                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                                            {newImages.map((img, index) => (
-                                                <div key={index} className="relative w-20 h-20 sm:w-24 sm:h-24 border-2 border-green-300 rounded-lg sm:rounded-xl overflow-hidden group">
+                                    <div className="mt-3">
+                                        <p className="text-xs text-gray-500 mb-2">New images to upload:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {newImages.map((file, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="relative w-20 h-20 border-2 border-green-300 rounded-lg overflow-hidden group"
+                                                >
                                                     <img
-                                                        src={URL.createObjectURL(img)}
-                                                        alt="New"
+                                                        src={URL.createObjectURL(file)}
+                                                        alt={`new-${index}`}
                                                         className="w-full h-full object-cover"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveNewImage(index)}
-                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow"
                                                     >
                                                         ×
                                                     </button>
@@ -578,7 +664,7 @@ const UpdateJob: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Submit Button */}
+                            {/* Submit */}
                             <Button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}

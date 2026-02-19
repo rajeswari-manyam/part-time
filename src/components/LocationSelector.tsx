@@ -14,7 +14,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyA6myHzS10YXdcazAFalmXvDkrYCp5cLc8";
 
 // Theme colors
 const BG_COLOR = "#F0F0F0";
-const PRIMARY_COLOR = "#1A5F9E";
+const PRIMARY_COLOR = "#f09b13";
 
 // ─── IP-based location fallback (works on HTTP + any origin) ───────────────
 const getLocationByIP = async (): Promise<{ lat: number; lng: number; city: string } | null> => {
