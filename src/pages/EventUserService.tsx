@@ -27,7 +27,7 @@ const getImageUrls = (images?: string[]): string[] =>
 // ============================================================================
 interface EventUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -38,14 +38,13 @@ interface EventUserServiceProps {
 // ============================================================================
 const EventUserService: React.FC<EventUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to EventWorker[] so all existing field access works
     const [events, setEvents] = useState<EventWorker[]>(data as EventWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -59,6 +58,7 @@ const EventUserService: React.FC<EventUserServiceProps> = ({
 
     // ── Handlers ─────────────────────────────────────────────────────────────
     const handleEdit = (id: string) => navigate(`/add-event-service-form?id=${id}`);
+    const handleView = (id: string) => navigate(`/event-services/details/${id}`);
 
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this event service?")) return;
@@ -78,58 +78,52 @@ const EventUserService: React.FC<EventUserServiceProps> = ({
         }
     };
 
-    const handleView = (id: string) => navigate(`/event-services/details/${id}`);
-
     // ============================================================================
-    // CARD
+    // CARD — matches PetUserService card layout
     // ============================================================================
     const renderEventCard = (event: EventWorker) => {
         const id = event._id || "";
+        const imageUrls = getImageUrls(event.images);
         const location = [event.area, event.city, event.state]
             .filter(Boolean).join(", ") || "Location not specified";
-        const imageUrls = getImageUrls(event.images);
         const services = event.services || [];
+        const isAvailable = event.availability;
+        const description = event.description || event.bio || "";
+        const displayName = event.name || "Unnamed Service";
+        const phone = (event as any).phone || (event as any).contactNumber || (event as any).phoneNumber;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-purple-600/10 to-purple-600/5">
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
-                            alt={event.name || "Event Service"}
+                            alt={displayName}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.style.display = "none";
-                                const parent = target.parentElement;
-                                if (parent) {
-                                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100"><span style="font-size:3rem">🎉</span></div>`;
-                                }
-                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-purple-600/5">
                             <span className="text-6xl">🎉</span>
                         </div>
                     )}
 
-                    {/* Category badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-purple-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                    {/* Category badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {event.category || "Event Service"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
+                    {/* Action menu — top right */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -138,101 +132,90 @@ const EventUserService: React.FC<EventUserServiceProps> = ({
                             />
                         )}
                     </div>
-
-                    {/* Image count badge */}
-                    {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-0.5 rounded-md">
-                            1 / {imageUrls.length}
-                        </div>
-                    )}
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
-                        {event.name || "Unnamed Service"}
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                        {displayName}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Description / bio */}
-                    {(event.description || event.bio) && (
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
-                            {event.description || event.bio}
-                        </p>
+                    {/* Category pill + Availability status — side by side */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-purple-700 bg-purple-600/8 border border-purple-600/20 px-3 py-1.5 rounded-full truncate">
+                            {event.category || "Event Service"}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isAvailable
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-red-500"}`} />
+                            {isAvailable ? "Available" : "Busy"}
+                        </span>
+                    </div>
+
+                    {/* Description */}
+                    {description && (
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Availability + chargeType badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${event.availability
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-red-50 text-red-700 border-red-200"
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${event.availability ? "bg-green-500" : "bg-red-500"}`} />
-                            {event.availability ? "Available" : "Busy"}
+                    {/* Service detail chips (shown when no description) */}
+                    {!description && services.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {event.experience && (
+                                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                                    🎉 {event.experience} yrs exp
+                                </span>
+                            )}
+                            {event.chargeType && (
+                                <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                                    {event.chargeType}
+                                </span>
+                            )}
+                            {services.slice(0, 2).map((s, idx) => (
+                                <span key={idx} className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                                    {s}
+                                </span>
+                            ))}
+                            {services.length > 2 && (
+                                <span className="text-xs text-gray-400 px-1 self-center">
+                                    +{services.length - 2} more
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Rating row + optional phone + charge */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            ⭐ {(event as any).rating ? (event as any).rating : "N/A"}
                         </span>
 
-                        {event.chargeType && (
-                            <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200">
-                                {event.chargeType}
+                        {phone && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                {phone}
+                            </span>
+                        )}
+
+                        {event.serviceCharge && (
+                            <span className="ml-auto text-sm font-bold text-purple-700">
+                                ₹{Number(event.serviceCharge).toLocaleString()}
                             </span>
                         )}
                     </div>
 
-                    {/* Experience + Charge row */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
-                        <div className="flex items-center gap-1.5">
-                            {event.experience ? (
-                                <>
-                                    <span className="text-purple-500 text-base">⭐</span>
-                                    <span className="text-sm font-semibold text-gray-900">{event.experience} yrs exp</span>
-                                </>
-                            ) : (
-                                <span className="text-sm text-gray-400">—</span>
-                            )}
-                        </div>
-                        {event.serviceCharge && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">{event.chargeType || "Charge"}</p>
-                                <p className="text-base font-bold text-purple-600">₹{event.serviceCharge}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Services Tags */}
-                    {services.length > 0 && (
-                        <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Services:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {services.slice(0, 3).map((s, idx) => (
-                                    <span key={idx} className={`${typography.fontSize.xs} bg-purple-600/5 text-purple-700 px-2 py-0.5 rounded-full`}>
-                                        {s}
-                                    </span>
-                                ))}
-                                {services.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500`}>
-                                        +{services.length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* View Details */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleView(id)}
-                        className="w-full mt-2 border-purple-600 text-purple-600 hover:bg-purple-600/10"
-                    >
-                        View Details
-                    </Button>
                 </div>
             </div>
         );
@@ -251,7 +234,7 @@ const EventUserService: React.FC<EventUserServiceProps> = ({
                         <span>🎉</span> Event Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">🎉</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Event Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>

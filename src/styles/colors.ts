@@ -10,9 +10,9 @@
 export const colors = {
     // Primary Colors
     primary: {
-        main: '#1A5F9E',        // Main brand color (buttons, active states, etc.)
-        light: '#2B7BC4',       // Lighter shade for hover effects
-        dark: '#0F4A7A',        // Darker shade for pressed states
+        main: '#f09b13',        // Main brand color (buttons, active states, etc.)
+        light: '#f09b13',       // Lighter shade for hover effects
+        dark: '#f09b13',        // Darker shade for pressed states
     },
 
 
@@ -51,26 +51,26 @@ export const colors = {
     // Gradient Colors
     gradient: {
         orange: 'linear-gradient(to right, #FB923C, #EC4899)',
-        blue: 'linear-gradient(to right, #1A5F9E, #2B7BC4)',
+        blue: 'linear-gradient(to right, #f09b13, #f5b340)',
     },
 
     // Hover States
     hover: {
         background: '#F0F0F0',  // Background color on hover
-        primary: '#2B7BC4',     // Primary color on hover
+        primary: '#f5b340',     // Primary color on hover
     },
 
     // Active States
     active: {
-        tab: '#1A5F9E',         // Active tab color
-        border: '#1A5F9E',      // Active border color
-        text: '#1A5F9E',        // Active text color
+        tab: '#f09b13',         // Active tab color
+        border: '#f09b13',      // Active border color
+        text: '#f09b13',        // Active text color
     },
 
     // Border Colors
     border: {
         default: '#F0F0F0',     // Default border color
-        active: '#1A5F9E',      // Active border color
+        active: '#f09b13',      // Active border color
         light: '#E5E7EB',       // Light border
     },
 };

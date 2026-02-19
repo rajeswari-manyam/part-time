@@ -290,7 +290,7 @@ const WeddingServicesList: React.FC = () => {
                             </select>
                         </div>
                         <Button variant="primary" size="md" onClick={handleAddPost}
-                            className="w-full sm:w-auto justify-center bg-pink-600 hover:bg-pink-700">
+                            className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
                             + Add Post
                         </Button>
                     </div>

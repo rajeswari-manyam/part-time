@@ -10,20 +10,11 @@ import ActionDropdown from "../components/ActionDropDown";
 // ============================================================================
 // HELPERS
 // ============================================================================
-const getIcon = (type?: string): string => {
-    const t = (type || "").toLowerCase();
-    if (t.includes("restaurant")) return "🍽️";
-    if (t.includes("cafe")) return "☕";
-    if (t.includes("bakery")) return "🍰";
-    if (t.includes("street")) return "🌮";
-    if (t.includes("juice")) return "🥤";
-    if (t.includes("sweet")) return "🍬";
-    if (t.includes("ice")) return "🍦";
-    if (t.includes("fast")) return "🍔";
-    if (t.includes("cloud") || t.includes("kitchen")) return "🍱";
-    if (t.includes("catering")) return "🎂";
-    if (t.includes("tiffin") || t.includes("mess")) return "🥡";
-    return "🍽️";
+const ensureArray = (input: any): string[] => {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    if (typeof input === "string") return input.split(",").map(s => s.trim()).filter(Boolean);
+    return [];
 };
 
 // ============================================================================
@@ -31,7 +22,7 @@ const getIcon = (type?: string): string => {
 // ============================================================================
 interface FoodUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -42,14 +33,13 @@ interface FoodUserServiceProps {
 // ============================================================================
 const FoodUserService: React.FC<FoodUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to FoodService[] so all existing field access works
     const [services, setServices] = useState<FoodService[]>(data as FoodService[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -82,39 +72,27 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
         }
     };
 
-    const handleView = (id: string) => navigate(`/food-services/details/${id}`);
-
-    const openDirections = (service: FoodService) => {
-        if (service.latitude && service.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`,
-                "_blank"
-            );
-        } else if (service.area || service.city) {
-            const addr = encodeURIComponent(
-                [service.area, service.city, service.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
-    };
-
     // ============================================================================
-    // CARD — mirrors RealEstateUserService card structure
+    // CARD — matches AutomotiveUserService card layout
     // ============================================================================
     const renderCard = (service: FoodService) => {
         const id = service._id || "";
+        const imageUrls = ((service as any).images || []).filter(Boolean) as string[];
         const location = [service.area, service.city, service.state]
             .filter(Boolean).join(", ") || "Location not specified";
-        const imageUrls = ((service as any).images || []).filter(Boolean) as string[];
-        const icon = service.icon || getIcon(service.type);
+        const cuisines = ensureArray((service as any).cuisines);
+        const menuCategories = ensureArray((service as any).menuCategories);
+        const phone = (service as any).phone || (service as any).contactNumber || (service as any).phoneNumber;
+        const isActive = (service as any).status !== false;
+        const priceRange = (service as any).priceRange || (service as any).minPrice;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-orange-500/10 to-orange-500/5">
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -123,23 +101,23 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-6xl">{icon}</span>
+                        <div className="w-full h-full flex items-center justify-center bg-orange-500/5">
+                            <span className="text-6xl">🍽️</span>
                         </div>
                     )}
 
-                    {/* Type badge — top left */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-orange-500 text-white px-3 py-1 rounded-full shadow-md`}>
+                    {/* Type badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {service.type || "Food Service"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown — top right */}
+                    {/* Action menu — top right */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -148,69 +126,87 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                             />
                         )}
                     </div>
-
-                    {/* Image count badge */}
-                    {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-0.5 rounded-md">
-                            1 / {imageUrls.length}
-                        </div>
-                    )}
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {service.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-red-500 text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Status + Rating badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${service.status
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-red-50 text-red-700 border-red-200"
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${service.status ? "bg-green-500" : "bg-red-500"}`} />
-                            {service.status ? "Open" : "Closed"}
+                    {/* Type pill + Active status — side by side */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-orange-500 bg-orange-500/8 border border-orange-500/20 px-3 py-1.5 rounded-full truncate">
+                            {service.type || "Food & Catering"}
                         </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isActive
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-red-500"}`} />
+                            {isActive ? "Active" : "Inactive"}
+                        </span>
+                    </div>
 
-                        {service.rating && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-full border border-yellow-200 font-medium">
-                                ⭐ {service.rating.toFixed(1)}
-                                {service.user_ratings_total ? ` (${service.user_ratings_total})` : ""}
+                    {/* Cuisines chips (always show — key info for food) */}
+                    {cuisines.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {cuisines.slice(0, 3).map((cuisine, idx) => (
+                                <span key={idx} className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                                    {cuisine}
+                                </span>
+                            ))}
+                            {cuisines.length > 3 && (
+                                <span className="text-xs text-gray-400">+{cuisines.length - 3} more</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Menu categories (shown when no cuisines) */}
+                    {cuisines.length === 0 && menuCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {menuCategories.slice(0, 3).map((cat, idx) => (
+                                <span key={idx} className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                                    {cat}
+                                </span>
+                            ))}
+                            {menuCategories.length > 3 && (
+                                <span className="text-xs text-gray-400">+{menuCategories.length - 3} more</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Price row + optional phone */}
+                    <div className="flex items-center gap-2 mb-4">
+                        {priceRange ? (
+                            <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                                💰 ₹{priceRange}
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-sm font-semibold px-3 py-1 rounded-full">
+                                🍽️ {service.type || "Food Service"}
                             </span>
                         )}
 
-                        {service.pincode && (
-                            <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200">
-                                📮 {service.pincode}
+                        {phone && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                {phone}
                             </span>
                         )}
                     </div>
 
-                    {/* Directions + View Details */}
-                    <div className="flex gap-2 mt-2">
-                        <button
-                            onClick={() => openDirections(service)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-orange-500 text-orange-500 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors"
-                        >
-                            📍 Directions
-                        </button>
-                        <button
-                            onClick={() => handleView(id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700"
-                        >
-                            <span>👁️</span>
-                            <span className="truncate">View Details</span>
-                        </button>
-                    </div>
                 </div>
             </div>
         );
@@ -229,7 +225,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                         <span>🍽️</span> Food Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">🍽️</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Food Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>

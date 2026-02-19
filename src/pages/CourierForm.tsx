@@ -32,7 +32,7 @@ const getCourierSubcategories = () => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ` +
+    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -418,7 +418,6 @@ const CourierForm: React.FC = () => {
             if (isEditMode) {
                 const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
                 if (remainingExisting.length > 0) {
-                    // Send as JSON string or individual fields based on backend expectation
                     fd.append('existingImages', JSON.stringify(remainingExisting));
                     console.log('📎 Keeping existing images:', remainingExisting.length);
                 }
@@ -430,7 +429,7 @@ const CourierForm: React.FC = () => {
                 }
             }
 
-            // Debug log - check console to see what's being sent
+            // Debug log
             console.log('📤 Submitting courier service with data:', {
                 userId: formData.userId,
                 serviceName: formData.name,
@@ -477,7 +476,7 @@ const CourierForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#f09b13' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -639,7 +638,8 @@ const CourierForm: React.FC = () => {
                                         return (
                                             <span
                                                 key={i}
-                                                className={`inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium text-white`}
+                                                style={{ backgroundColor: '#f09b13' }}
                                             >
                                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -758,8 +758,8 @@ const CourierForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-indigo-800`}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
                             📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
                         </p>
                     </div>
@@ -788,13 +788,16 @@ const CourierForm: React.FC = () => {
                             className="hidden"
                             disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            style={{
+                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                            }}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-indigo-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -823,7 +826,6 @@ const CourierForm: React.FC = () => {
                                             alt={`Saved ${i + 1}`}
                                             className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                             onError={(e) => {
-                                                // Handle broken image URLs
                                                 (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
                                             }}
                                         />
@@ -834,7 +836,7 @@ const CourierForm: React.FC = () => {
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#f09b13' }}>
                                             Saved
                                         </span>
                                     </div>
@@ -846,7 +848,8 @@ const CourierForm: React.FC = () => {
                                     <img
                                         src={imagePreviews[i]}
                                         alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-indigo-400"
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }}
                                     />
                                     <button
                                         type="button"
@@ -855,7 +858,7 @@ const CourierForm: React.FC = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                         New
                                     </span>
                                     <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
@@ -893,10 +896,8 @@ const CourierForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading
-                            ? 'bg-indigo-400 cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-md hover:shadow-lg'
-                            } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                        style={{ backgroundColor: loading ? '#f0b35c' : '#f09b13' }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -911,8 +912,7 @@ const CourierForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

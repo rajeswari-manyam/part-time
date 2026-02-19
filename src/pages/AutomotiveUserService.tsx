@@ -21,7 +21,7 @@ const ensureArray = (input: any): string[] => {
 // ============================================================================
 interface AutomotiveUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -32,14 +32,13 @@ interface AutomotiveUserServiceProps {
 // ============================================================================
 const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to AutomotiveService[] so all existing field access works
     const [automotives, setAutomotives] = useState<AutomotiveService[]>(data as AutomotiveService[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -53,9 +52,7 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
         : automotives;
 
     // ── Handlers ─────────────────────────────────────────────────────────────
-    const handleEdit = (id: string) => {
-        navigate(`/add-automotive-form?id=${id}`);
-    };
+    const handleEdit = (id: string) => navigate(`/add-automotive-form?id=${id}`);
 
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this automotive service?")) return;
@@ -75,12 +72,8 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
         }
     };
 
-    const handleView = (id: string) => {
-        navigate(`/automotive-services/details/${id}`);
-    };
-
     // ============================================================================
-    // CARD
+    // CARD — matches ArtUserService card layout
     // ============================================================================
     const renderCard = (automotive: AutomotiveService) => {
         const id = automotive._id || "";
@@ -88,14 +81,18 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
         const imageUrls = (automotive.images || []).filter(Boolean) as string[];
         const location = [automotive.area, automotive.city, automotive.state]
             .filter(Boolean).join(", ") || "Location not specified";
+        const phone = (((automotive as any).phone || (automotive as any).mobile || (automotive as any).contact || (automotive as any).ownerPhone || (automotive as any).whatsapp || (automotive as any).phoneNumber) as string) || undefined;
+        const isActive = automotive.availability
+            ? automotive.availability.toLowerCase() !== "unavailable"
+            : true;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-50">
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -104,19 +101,19 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-blue-600/5">
                             <span className="text-6xl">🚗</span>
                         </div>
                     )}
 
-                    {/* Business Type Badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-blue-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                    {/* Business Type badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {automotive.businessType || "Automotive"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
+                    {/* Action menu — top right */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
@@ -131,70 +128,80 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
                     </div>
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {automotive.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-red-500 text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Experience & Price */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        {automotive.availability && (
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200 font-medium">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                                {automotive.availability}
-                            </span>
-                        )}
-
-                        {automotive.experience != null && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200 font-medium">
-                                📅 {automotive.experience} yrs exp
-                            </span>
-                        )}
-
-                        {automotive.priceRange && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200 font-semibold">
-                                💰 ₹{automotive.priceRange}
-                            </span>
-                        )}
+                    {/* Business Type pill + Availability status — side by side */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-blue-600 bg-blue-600/8 border border-blue-600/20 px-3 py-1.5 rounded-full truncate">
+                            {automotive.businessType || "Automotive"}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isActive
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-red-500"}`} />
+                            {isActive ? "Available" : "Unavailable"}
+                        </span>
                     </div>
 
-                    {/* Services list */}
+                    {/* Services chips (if present, always show as they're key info) */}
                     {servicesList.length > 0 && (
-                        <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Services:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {servicesList.slice(0, 3).map((service, idx) => (
-                                    <span key={idx} className={`${typography.fontSize.xs} bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full`}>
-                                        {service}
-                                    </span>
-                                ))}
-                                {servicesList.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500`}>
-                                        +{servicesList.length - 3} more
-                                    </span>
-                                )}
-                            </div>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {servicesList.slice(0, 3).map((service, idx) => (
+                                <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                    {service}
+                                </span>
+                            ))}
+                            {servicesList.length > 3 && (
+                                <span className="text-xs text-gray-400">+{servicesList.length - 3} more</span>
+                            )}
                         </div>
                     )}
 
-                    {/* View Details Button */}
-                    <button
-                        onClick={() => handleView(id)}
-                        disabled={deleteLoading === id}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 mt-2"
-                    >
-                        <span>👁️</span>
-                        <span>View Details</span>
-                    </button>
+                    {/* Experience chip (shown when no services) */}
+                    {servicesList.length === 0 && automotive.experience != null && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                📅 {automotive.experience} yrs exp
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Price row + optional phone */}
+                    <div className="flex items-center gap-2 mb-4">
+                        {automotive.priceRange ? (
+                            <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                                💰 ₹{automotive.priceRange}
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
+                                🚗 {automotive.businessType || "Automotive"}
+                            </span>
+                        )}
+
+                        {phone && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                {phone}
+                            </span>
+                        )}
+                    </div>
+
                 </div>
             </div>
         );
@@ -213,7 +220,7 @@ const AutomotiveUserService: React.FC<AutomotiveUserServiceProps> = ({
                         <span>🚗</span> Automotive Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">🚗</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Automotive Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>

@@ -432,7 +432,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                     ) : (
                         /* ── ALL WORKER SERVICES: show all non-customer categories ── */
                         <>
-                            <FoodUserService        userId={userId} data={allData.food}             hideHeader={false} hideEmptyState={true} />
+
 
                             <HospitalUserService    userId={userId} data={allData.healthcare}        hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hospital */}
                             <HotelUserService       userId={userId} data={allData.hotelTravel}       hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hotel */}
@@ -453,6 +453,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                             <ArtUserService         userId={userId} data={allData.creative}          hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.art */}
                              <AutomotiveUserService   userId={userId} data={allData.automotive}       hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.automotive */}   
                             <SportsUserService      userId={userId} data={allData.sports}            hideHeader={false} hideEmptyState={true} />
+                            <FoodUserService     userId={userId} data={allData.food}              hideHeader={false} hideEmptyState={true} />
                         </>
                     )}
                 </div>

@@ -311,8 +311,8 @@ const WorkerList: React.FC = () => {
 
                                     <button
                                         onClick={() => navigate(`/worker-details/${skill._id}`)}
-                                        className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-xl
-                      hover:bg-blue-700 active:bg-blue-800 transition-colors"
+                                        className="w-full py-2 bg-[#f09b13] text-white text-sm font-medium rounded-xl
+                      hover:bg-[#f5b340] active:bg-[#e88c00] transition-colors"
                                     >
                                         View Details
                                     </button>

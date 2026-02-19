@@ -6,41 +6,42 @@ import {
     getEducationById,
     EducationService
 } from '../services/EducationService.service';
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Charge type options ─────────────────────────────────────────────────────
+// ── #f09b13 ≈ Tailwind amber-500 ─────────────────────────────────────────────
+
 const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Month', 'Per Session', 'Per Course'];
 
-// ── Pull education subcategories from JSON (categoryId 8) ────────────────
 const getEducationSubcategories = () => {
     const educationCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 8);
     return educationCategory ? educationCategory.items.map((item: any) => item.name) : [];
 };
 
-// ============================================================================
-// SHARED INPUT CLASSES - Mobile First
-// ============================================================================
+// ── Shared input: amber focus ring ───────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
+    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// ============================================================================
-// REUSABLE LABEL
-// ============================================================================
+// Dropdown chevron in amber (#f09b13)
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
+        {children}{required && <span className="text-amber-500 ml-1">*</span>}
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -53,27 +54,19 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
-// ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
-// ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-
+        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
         const response = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
         );
         const data = await response.json();
-
         if (data.status === 'OK' && data.results.length > 0) {
             const location = data.results[0].geometry.location;
             return { lat: location.lat, lng: location.lng };
         }
         return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
-    }
+    } catch { return null; }
 };
 
 // ============================================================================
@@ -82,16 +75,12 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 const EducationForm: React.FC = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub
-            ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-            : null;
+        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -123,20 +112,15 @@ const EducationForm: React.FC = () => {
         longitude: '',
     });
 
-    // ── temp input fields ───────────────────────────────────────────────────
     const [subjectsInput, setSubjectsInput] = useState('');
     const [qualificationsInput, setQualificationsInput] = useState('');
-
-    // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
-
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
+    // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -144,7 +128,6 @@ const EducationForm: React.FC = () => {
             try {
                 const data = await getEducationById(editId);
                 if (!data) throw new Error('Service not found');
-
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
@@ -165,16 +148,10 @@ const EducationForm: React.FC = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-
                 setSubjectsInput(data.subjects?.join(', ') || '');
                 setQualificationsInput(data.qualifications?.join(', ') || '');
-
-                if (data.images && Array.isArray(data.images)) {
-                    setExistingImages(data.images);
-                    console.log('📸 Loaded existing images:', data.images.length);
-                }
+                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                console.error(err);
                 setError('Failed to load service data');
             } finally {
                 setLoadingData(false);
@@ -183,81 +160,54 @@ const EducationForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-detect coordinates when area is entered ────────────────────────
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = `${formData.area}, ${formData.city}, ${formData.state}, ${formData.pincode}`.replace(/, ,/g, ',').replace(/^,|,$/g, '');
-
+                const fullAddress = [formData.area, formData.city, formData.state, formData.pincode]
+                    .filter(Boolean).join(', ');
                 if (fullAddress.trim()) {
                     const coords = await geocodeAddress(fullAddress);
                     if (coords) {
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: coords.lat.toString(),
-                            longitude: coords.lng.toString(),
-                        }));
+                        setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
                     }
                 }
             }
         };
-
         const timer = setTimeout(detectCoordinates, 1000);
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── array field helpers ─────────────────────────────────────────────────
     const handleSubjectsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setSubjectsInput(value);
-        setFormData(prev => ({
-            ...prev,
-            subjects: value.split(',').map(s => s.trim()).filter(Boolean)
-        }));
+        setFormData(prev => ({ ...prev, subjects: value.split(',').map(s => s.trim()).filter(Boolean) }));
     };
 
     const handleQualificationsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setQualificationsInput(value);
-        setFormData(prev => ({
-            ...prev,
-            qualifications: value.split(',').map(q => q.trim()).filter(Boolean)
-        }));
+        setFormData(prev => ({ ...prev, qualifications: value.split(',').map(q => q.trim()).filter(Boolean) }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
         const remainingExisting = existingImages.filter(img => !imagesToDelete.includes(img)).length;
         const availableSlots = 5 - (remainingExisting + selectedImages.length);
-
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
+        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
         const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
             return true;
         });
-
         if (!validFiles.length) return;
-
         const newPreviews: string[] = [];
         validFiles.forEach(file => {
             const reader = new FileReader();
@@ -268,7 +218,6 @@ const EducationForm: React.FC = () => {
             };
             reader.readAsDataURL(file);
         });
-
         setSelectedImages(prev => [...prev, ...validFiles]);
         setError('');
     };
@@ -277,38 +226,22 @@ const EducationForm: React.FC = () => {
         setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
+    const handleRemoveExistingImage = (imageUrl: string) => setImagesToDelete(prev => [...prev, imageUrl]);
+    const handleRestoreExistingImage = (imageUrl: string) => setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
 
-    const handleRemoveExistingImage = (imageUrl: string) => {
-        setImagesToDelete(prev => [...prev, imageUrl]);
-    };
-
-    const handleRestoreExistingImage = (imageUrl: string) => {
-        setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
-    };
-
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
-
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported');
-            setLocationLoading(false);
-            return;
-        }
-
+        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
-
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev,
@@ -318,26 +251,19 @@ const EducationForm: React.FC = () => {
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
-
+                } catch (e) { console.error(e); }
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
+            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
         setSuccessMessage('');
-
         try {
             if (!formData.name || !formData.phone || !formData.email)
                 throw new Error('Please fill in all required fields (Name, Phone, Email)');
@@ -346,10 +272,7 @@ const EducationForm: React.FC = () => {
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // Create FormData for multipart/form-data submission
             const fd = new FormData();
-
-            // Append all text fields
             fd.append('userId', formData.userId);
             fd.append('name', formData.name);
             fd.append('type', formData.type);
@@ -368,47 +291,22 @@ const EducationForm: React.FC = () => {
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
-            // ✅ IMAGES HANDLING - Match backend expectations
-            // 1. Append NEW image files (File objects)
-            if (selectedImages.length > 0) {
-                selectedImages.forEach((img, index) => {
-                    fd.append('images', img, img.name);
-                    console.log(`📎 Appending new image ${index + 1}:`, img.name);
-                });
-            }
+            selectedImages.forEach(img => fd.append('images', img, img.name));
 
-            // 2. For EDIT mode: Send remaining existing images that weren't deleted
             if (isEditMode) {
                 const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
-                if (remainingExisting.length > 0) {
-                    fd.append('existingImages', JSON.stringify(remainingExisting));
-                    console.log('📎 Keeping existing images:', remainingExisting.length);
-                }
-
-                if (imagesToDelete.length > 0) {
-                    fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
-                    console.log('🗑️ Marked for deletion:', imagesToDelete.length);
-                }
+                if (remainingExisting.length > 0) fd.append('existingImages', JSON.stringify(remainingExisting));
+                if (imagesToDelete.length > 0) fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
             }
-
-            // Debug log
-            console.log('📤 Submitting education service:', {
-                userId: formData.userId,
-                name: formData.name,
-                type: formData.type,
-                newImagesCount: selectedImages.length,
-                existingImagesCount: isEditMode ? existingImages.filter(url => !imagesToDelete.includes(url)).length : 0,
-            });
 
             if (isEditMode && editId) {
                 await updateEducationService(editId, fd);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
             } else {
                 await createEducationService(fd);
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
             }
+            setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
@@ -418,17 +316,16 @@ const EducationForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // Calculate displayed images count
     const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
     const totalImagesCount = remainingExistingCount + selectedImages.length;
     const maxImagesReached = totalImagesCount >= 5;
 
-    // ── loading screen ───────────────────────────────────────────────────────
+    // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -436,18 +333,19 @@ const EducationForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER - Mobile First Design
+    // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="min-h-screen bg-amber-50">
+
+            {/* ── Sticky Header ── */}
+            <div className="sticky top-0 z-10 bg-white border-b border-amber-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-amber-50 rounded-full transition"
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -459,25 +357,25 @@ const EducationForm: React.FC = () => {
                             {isEditMode ? 'Update your education listing' : 'Create new education listing'}
                         </p>
                     </div>
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
-                {/* ── Alerts ── */}
+                {/* Alerts */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
                         {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        {successMessage}
+                    <div className="p-4 bg-amber-50 border border-amber-400 rounded-xl text-amber-800 text-sm font-medium">
+                        ✓ {successMessage}
                     </div>
                 )}
 
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
+                {/* 1. NAME */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Institution/Teacher Name</FieldLabel>
@@ -492,33 +390,19 @@ const EducationForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────── */}
+                {/* 2. CONTACT */}
                 <SectionCard title="Contact Information">
                     <div>
                         <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
                     </div>
                     <div>
                         <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. CATEGORY ────────────────────────────────────── */}
+                {/* 3. CATEGORY */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Category</FieldLabel>
@@ -526,21 +410,15 @@ const EducationForm: React.FC = () => {
                             name="type"
                             value={formData.type}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
+                            className={inputBase + ' appearance-none'}
+                            style={selectStyle}
                         >
                             {educationTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. SUBJECTS & QUALIFICATIONS ────────────────────── */}
+                {/* 4. TEACHING DETAILS */}
                 <SectionCard title="Teaching Details">
                     <div>
                         <FieldLabel required>Subjects Taught</FieldLabel>
@@ -554,8 +432,6 @@ const EducationForm: React.FC = () => {
                         <p className={`${typography.misc.caption} mt-2`}>
                             💡 Enter subjects separated by commas
                         </p>
-
-                        {/* Subjects Preview */}
                         {formData.subjects.length > 0 && (
                             <div className="mt-3">
                                 <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Subjects:</p>
@@ -563,7 +439,7 @@ const EducationForm: React.FC = () => {
                                     {formData.subjects.map((subject, i) => (
                                         <span
                                             key={i}
-                                            className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                            className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-xs font-medium"
                                         >
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -588,15 +464,13 @@ const EducationForm: React.FC = () => {
                         <p className={`${typography.misc.caption} mt-2`}>
                             💡 Enter qualifications separated by commas
                         </p>
-
-                        {/* Qualifications Preview */}
                         {formData.qualifications.length > 0 && (
                             <div className="mt-3">
                                 <div className="flex flex-wrap gap-2">
                                     {formData.qualifications.map((qual, i) => (
                                         <span
                                             key={i}
-                                            className={`inline-flex items-center bg-green-50 text-green-700 px-3 py-1.5 rounded-full ${typography.misc.badge}`}
+                                            className="inline-flex items-center bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-xs"
                                         >
                                             🎓 {qual}
                                         </span>
@@ -607,55 +481,33 @@ const EducationForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. PROFESSIONAL DETAILS ───────────────────────── */}
+                {/* 5. PROFESSIONAL DETAILS */}
                 <SectionCard title="Professional Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Experience (years)</FieldLabel>
-                            <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years"
-                                min="0"
-                                className={inputBase}
-                            />
+                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} placeholder="Years" min="0" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>Charges (₹)</FieldLabel>
-                            <input
-                                type="text"
-                                name="charges"
-                                value={formData.charges}
-                                onChange={handleInputChange}
-                                placeholder="Amount"
-                                className={inputBase}
-                            />
+                            <input type="text" name="charges" value={formData.charges} onChange={handleInputChange} placeholder="Amount" className={inputBase} />
                         </div>
                     </div>
-
                     <div>
                         <FieldLabel>Charge Type</FieldLabel>
                         <select
                             name="chargeType"
                             value={formData.chargeType}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
+                            className={inputBase + ' appearance-none'}
+                            style={selectStyle}
                         >
                             {chargeTypeOptions.map((t: string) => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </SectionCard>
 
-                {/* ─── 6. DESCRIPTION ──────────────────────────────────── */}
+                {/* 6. DESCRIPTION */}
                 <SectionCard title="Description">
                     <textarea
                         name="description"
@@ -667,102 +519,66 @@ const EducationForm: React.FC = () => {
                     />
                 </SectionCard>
 
-                {/* ─── 7. LOCATION DETAILS ────────────────────────────── */}
+                {/* 7. LOCATION */}
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button
-                            variant="success"
-                            size="sm"
+                        <button
+                            type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
-                            )}
-                        </Button>
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                            }
+                        </button>
                     }
                 >
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
                         </div>
                     </div>
 
-                    {/* Location Tip */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>
+                    {/* Tip box — amber */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-amber-800`}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                                <span className="font-semibold">✓ Location detected: </span>
+                                <span className="ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* ─── 8. PORTFOLIO PHOTOS ────────────────────────────── */}
+                {/* 8. PORTFOLIO PHOTOS */}
                 <SectionCard title={`Portfolio Photos (${totalImagesCount}/5)`}>
-                    <label className="cursor-pointer block">
+                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
                             type="file"
                             accept="image/*"
@@ -771,13 +587,14 @@ const EducationForm: React.FC = () => {
                             className="hidden"
                             disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
+                            maxImagesReached
+                                ? 'border-gray-200 bg-gray-50'
+                                : 'border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
+                        }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-amber-500" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -788,15 +605,20 @@ const EducationForm: React.FC = () => {
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
                                         Upload photos of your institution, certificates, or teaching
                                     </p>
+                                    {selectedImages.length > 0 && (
+                                        <p className="text-amber-600 text-sm font-medium mt-1">
+                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {/* Images Grid - Shows both existing and new images */}
+                    {/* Image Grid */}
                     {(existingImages.length > 0 || selectedImages.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {/* EXISTING IMAGES (not marked for deletion) */}
+                            {/* Existing images (not marked for deletion) */}
                             {existingImages
                                 .filter(url => !imagesToDelete.includes(url))
                                 .map((url, i) => (
@@ -805,9 +627,7 @@ const EducationForm: React.FC = () => {
                                             src={url}
                                             alt={`Saved ${i + 1}`}
                                             className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
-                                            }}
+                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
                                         />
                                         <button
                                             type="button"
@@ -816,19 +636,19 @@ const EducationForm: React.FC = () => {
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className={`absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                        <span className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
                                             Saved
                                         </span>
                                     </div>
                                 ))}
 
-                            {/* NEW IMAGES (to be uploaded) */}
+                            {/* New images */}
                             {selectedImages.map((file, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img
                                         src={imagePreviews[i]}
                                         alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-blue-400"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-amber-400"
                                     />
                                     <button
                                         type="button"
@@ -837,7 +657,7 @@ const EducationForm: React.FC = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                         New
                                     </span>
                                     <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
@@ -848,7 +668,7 @@ const EducationForm: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Deleted Images (Undo section) */}
+                    {/* Deleted images — undo section */}
                     {imagesToDelete.length > 0 && (
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                             <p className={`${typography.body.small} text-red-700 mb-2`}>
@@ -859,7 +679,7 @@ const EducationForm: React.FC = () => {
                                     <button
                                         key={`del-${i}`}
                                         onClick={() => handleRestoreExistingImage(url)}
-                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50"
+                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50 transition"
                                     >
                                         <span>↩</span> Restore image {i + 1}
                                     </button>
@@ -875,10 +695,11 @@ const EducationForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? 'bg-blue-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                            } shadow-sm ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-colors shadow-sm ${
+                            loading
+                                ? 'bg-amber-300 cursor-not-allowed'
+                                : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700'
+                        } ${typography.body.base}`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -887,7 +708,7 @@ const EducationForm: React.FC = () => {
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-amber-50 active:bg-amber-100 transition-colors ${typography.body.base}`}
                     >
                         Cancel
                     </button>

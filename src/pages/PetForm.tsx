@@ -19,7 +19,7 @@ const priceTypeOptions = ['Per Service', 'Per Hour', 'Per Day', 'Per Month'];
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
+    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -58,7 +58,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 };
 
 // ============================================================================
-// ✅ Scans all common localStorage keys to find userId — mirrors RealEstateForm
+// Scans all common localStorage keys to find userId
 // ============================================================================
 const resolveUserId = (): string => {
     const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
@@ -175,7 +175,7 @@ const PetForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually — mirrors RealEstateForm ────
+    // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -195,7 +195,7 @@ const PetForm = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── Image helpers — mirrors RealEstateForm ───────────────────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -227,7 +227,7 @@ const PetForm = () => {
     };
     const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
-    // ── GPS location — mirrors RealEstateForm ────────────────────────────────
+    // ── GPS location ─────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true); setError(''); setLocationWarning('');
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
@@ -259,13 +259,10 @@ const PetForm = () => {
         );
     };
 
-    // ============================================================================
-    // SUBMIT — FormData matching the API curl exactly
-    // ============================================================================
+    // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true); setError(''); setSuccessMessage('');
         try {
-            // ✅ Validate userId — mirrors RealEstateForm
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
@@ -277,7 +274,6 @@ const PetForm = () => {
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // ✅ Build FormData exactly matching the API curl
             const fd = new FormData();
             fd.append('userId', uid);
             fd.append('serviceName', formData.serviceName);
@@ -297,13 +293,11 @@ const PetForm = () => {
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
-            // ✅ Append images exactly like the API: append("images", file, file.name)
             selectedImages.forEach(f => fd.append('images', f, f.name));
 
             if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
 
-            // Debug log
             console.log('📤 Sending FormData:');
             Array.from(fd.entries()).forEach(([k, v]) => {
                 if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
@@ -326,17 +320,20 @@ const PetForm = () => {
         } finally { setLoading(false); }
     };
 
+    const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
+
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#f09b13' }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
     );
 
     // ============================================================================
-    // RENDER — mirrors RealEstateForm layout exactly
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -356,8 +353,19 @@ const PetForm = () => {
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
-                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
+                {error && (
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <p className="text-red-700">{error}</p>
+                        </div>
+                    </div>
+                )}
+                {successMessage && (
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        <div className="flex items-center gap-2"><span>✓</span><p>{successMessage}</p></div>
+                    </div>
+                )}
 
                 {/* 1. BASIC INFO */}
                 <SectionCard title="Basic Information">
@@ -426,7 +434,13 @@ const PetForm = () => {
 
                 {/* 4. LOCATION */}
                 <SectionCard title="Location Details" action={
-                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
+                    <Button
+                        variant="success"
+                        size="sm"
+                        onClick={getCurrentLocation}
+                        disabled={locationLoading}
+                        className="!py-1.5 !px-3 !bg-[#f09b13] !border-[#f09b13] hover:!bg-[#d4870f]"
+                    >
                         {locationLoading
                             ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
                             : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
@@ -450,8 +464,10 @@ const PetForm = () => {
                         <div><FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.</p>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.
+                        </p>
                     </div>
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
@@ -471,27 +487,30 @@ const PetForm = () => {
                 </SectionCard>
 
                 {/* 6. PHOTOS */}
-                <SectionCard title="Service Photos (Optional)">
+                <SectionCard title={`Service Photos (${totalImages}/5)`}>
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                            disabled={maxImagesReached} />
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            style={{
+                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                            }}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
+                                        {maxImagesReached
                                             ? 'Maximum limit reached (5 images)'
-                                            : 'Tap to upload service photos'}
+                                            : `Tap to upload service photos (${5 - totalImages} slots left)`}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-blue-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: '#f09b13' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -503,19 +522,32 @@ const PetForm = () => {
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                                <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span
+                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}
+                                    >
+                                        Saved
+                                    </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -524,12 +556,22 @@ const PetForm = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-2 pb-8">
-                    <button onClick={handleSubmit} disabled={loading} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'} ${typography.body.base}`}>
-                        {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Service' : 'Add Service')}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                        style={{ backgroundColor: loading ? '#f0b35c' : '#f09b13' }}
+                    >
+                        {loading
+                            ? <span className="flex items-center justify-center gap-2"><span className="animate-spin">⏳</span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
+                            : (isEditMode ? 'Update Service' : 'Add Service')}
                     </button>
-                    <button onClick={() => window.history.back()} type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>
+                    <button
+                        onClick={() => window.history.back()}
+                        type="button"
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                    >
                         Cancel
                     </button>
                 </div>

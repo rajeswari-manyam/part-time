@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addEventService, updateEventService, getEventServiceById } from "../services/EventWorker.service";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
+// ── #f09b13 ≈ Tailwind amber-500 ─────────────────────────────────────────────
+
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
-// ── Build a proper absolute image URL from a raw backend path ────────────────
 const buildImageUrl = (path: string): string => {
     if (!path) return "";
     if (/^(https?:\/\/|blob:|data:)/i.test(path)) return path;
@@ -16,7 +16,6 @@ const buildImageUrl = (path: string): string => {
     return `${API_BASE_URL}/${clean.replace(/^\//, "")}`;
 };
 
-// ── Pull event subcategories from JSON (categoryId 14) ──────────────────────
 const getEventSubcategories = () => {
     const cat = subcategoriesData.subcategories.find(c => c.categoryId === 14);
     return cat ? cat.items.map(i => i.name) : [];
@@ -24,18 +23,26 @@ const getEventSubcategories = () => {
 
 const chargeTypeOptions = ['per event', 'per day', 'per hour', 'fixed rate'];
 
-// ============================================================================
-// SHARED INPUT CLASSES
-// ============================================================================
+// ── Shared input: amber focus ring ───────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ` +
+    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
+// Dropdown chevron in amber (#f09b13)
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem'
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
+        {children}{required && <span className="text-amber-500 ml-1">*</span>}
     </label>
 );
 
@@ -79,19 +86,12 @@ const resolveUserId = (): string => {
     return '';
 };
 
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem'
-};
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 const EventForm = () => {
     const navigate = useNavigate();
+
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -130,15 +130,12 @@ const EventForm = () => {
 
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
-    // ✅ existingImages stores raw paths from API; existingImageUrls stores display URLs
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
-
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
+    // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -167,18 +164,16 @@ const EventForm = () => {
                 }));
                 if (data.images && Array.isArray(data.images)) {
                     setExistingImages(data.images);
-                    // ✅ Build display URLs for existing images
                     setExistingImageUrls(data.images.map(buildImageUrl));
                 }
             } catch (err) {
-                console.error(err);
                 setError('Failed to load service data');
             } finally { setLoadingData(false); }
         };
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -197,7 +192,7 @@ const EventForm = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── Image helpers ────────────────────────────────────────────────────────
+    // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -227,14 +222,12 @@ const EventForm = () => {
         setSelectedImages(p => p.filter((_, idx) => idx !== i));
         setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-
-    // ✅ Remove from both the raw paths array and the display URLs array
     const handleRemoveExistingImage = (i: number) => {
         setExistingImages(p => p.filter((_, idx) => idx !== i));
         setExistingImageUrls(p => p.filter((_, idx) => idx !== i));
     };
 
-    // ── GPS location ─────────────────────────────────────────────────────────
+    // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true); setError(''); setLocationWarning('');
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
@@ -266,14 +259,13 @@ const EventForm = () => {
         );
     };
 
-    // ── Submit ────────────────────────────────────────────────────────────────
+    // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true); setError(''); setSuccessMessage('');
         try {
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-
             if (!formData.name) throw new Error('Please enter a service / business name');
             if (!formData.serviceCharge) throw new Error('Please enter a service charge');
             if (!formData.latitude || !formData.longitude) throw new Error('Please provide a valid location');
@@ -295,18 +287,9 @@ const EventForm = () => {
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
-            // ✅ Append new images with filename — matches the API curl exactly
             selectedImages.forEach(f => fd.append('images', f, f.name));
-
-            // ✅ Send raw existing image paths (not display URLs) to backend
             if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
-
-            console.log('📤 Sending FormData:');
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
-                else console.log(`  ${k}: ${v}`);
-            });
 
             if (isEditMode && editId) {
                 const res = await updateEventService(editId, fd);
@@ -319,30 +302,36 @@ const EventForm = () => {
             }
             setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
         } finally { setLoading(false); }
     };
 
+    // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4" />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
     );
 
+    const totalImages = selectedImages.length + existingImages.length;
+
     // ============================================================================
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="min-h-screen bg-amber-50">
+
+            {/* ── Sticky Header ── */}
+            <div className="sticky top-0 z-10 bg-white border-b border-amber-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button
+                        onClick={() => window.history.back()}
+                        className="p-2 -ml-2 hover:bg-amber-50 rounded-full transition"
+                    >
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -354,24 +343,46 @@ const EventForm = () => {
                             {isEditMode ? 'Update your event service listing' : 'Create new event service listing'}
                         </p>
                     </div>
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
                 </div>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
-                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
+
+                {/* Alerts */}
+                {error && (
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                        {error}
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="p-4 bg-amber-50 border border-amber-400 rounded-xl text-amber-800 text-sm font-medium">
+                        ✓ {successMessage}
+                    </div>
+                )}
 
                 {/* 1. BASIC INFO */}
                 <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Service / Business Name</FieldLabel>
-                        <input type="text" name="name" value={formData.name} onChange={handleInputChange}
-                            placeholder="e.g., DJ Services, Party Decoration" className={inputBase} />
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="e.g., DJ Services, Party Decoration"
+                            className={inputBase}
+                        />
                     </div>
                     <div>
                         <FieldLabel required>Category</FieldLabel>
-                        <select name="category" value={formData.category} onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                        <select
+                            name="category"
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none'}
+                            style={selectStyle}
+                        >
                             {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
@@ -381,13 +392,25 @@ const EventForm = () => {
                 <SectionCard title="Contact Information">
                     <div>
                         <FieldLabel>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
-                            placeholder="Enter phone number" className={inputBase} />
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="Enter phone number"
+                            className={inputBase}
+                        />
                     </div>
                     <div>
                         <FieldLabel>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange}
-                            placeholder="Enter email address" className={inputBase} />
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            placeholder="Enter email address"
+                            className={inputBase}
+                        />
                     </div>
                 </SectionCard>
 
@@ -396,32 +419,61 @@ const EventForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
-                            <input type="number" name="serviceCharge" value={formData.serviceCharge} onChange={handleInputChange}
-                                placeholder="5000" className={inputBase} />
+                            <input
+                                type="number"
+                                name="serviceCharge"
+                                value={formData.serviceCharge}
+                                onChange={handleInputChange}
+                                placeholder="5000"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
-                            <select name="chargeType" value={formData.chargeType} onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
-                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                            <select
+                                name="chargeType"
+                                value={formData.chargeType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {chargeTypeOptions.map(t => (
+                                    <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
                     <div>
                         <FieldLabel>Experience (years)</FieldLabel>
-                        <input type="number" name="experience" value={formData.experience} onChange={handleInputChange}
-                            placeholder="e.g. 5" min="0" className={inputBase} />
+                        <input
+                            type="number"
+                            name="experience"
+                            value={formData.experience}
+                            onChange={handleInputChange}
+                            placeholder="e.g. 5"
+                            min="0"
+                            className={inputBase}
+                        />
                     </div>
                 </SectionCard>
 
                 {/* 4. LOCATION */}
-                <SectionCard title="Location Details" action={
-                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
-                        {locationLoading
-                            ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                    </Button>
-                }>
+                <SectionCard
+                    title="Location Details"
+                    action={
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                            }
+                        </button>
+                    }
+                >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
@@ -429,20 +481,33 @@ const EventForm = () => {
                         </div>
                     )}
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} /></div>
-                        <div><FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} /></div>
-                        <div><FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
+                        </div>
                     </div>
-                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-purple-800`}>📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.</p>
+
+                    {/* Tip box — amber */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-amber-800`}>
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.
+                        </p>
                     </div>
+
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
@@ -455,33 +520,47 @@ const EventForm = () => {
 
                 {/* 5. DESCRIPTION */}
                 <SectionCard title="Description">
-                    <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4}
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={4}
                         placeholder="Describe your event service, expertise, and what makes you special..."
-                        className={inputBase + ' resize-none'} />
+                        className={inputBase + ' resize-none'}
+                    />
                 </SectionCard>
 
                 {/* 6. PHOTOS */}
                 <SectionCard title="Portfolio Photos (Optional)">
-                    <label className="cursor-pointer block">
-                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50'
-                            }`}>
+                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            disabled={totalImages >= 5}
+                        />
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
+                            totalImages >= 5
+                                ? 'border-gray-200 bg-gray-50'
+                                : 'border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
+                        }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-purple-600" />
+                                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-amber-500" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
+                                        {totalImages >= 5
                                             ? 'Maximum limit reached (5 images)'
                                             : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
+                                    </p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-purple-600 text-sm font-medium mt-1">
+                                        <p className="text-amber-600 text-sm font-medium mt-1">
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -490,7 +569,7 @@ const EventForm = () => {
                         </div>
                     </label>
 
-                    {/* ✅ Image Previews — existingImageUrls for display, existingImages for submit */}
+                    {/* Image Previews */}
                     {(existingImageUrls.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImageUrls.map((url, i) => (
@@ -502,27 +581,36 @@ const EventForm = () => {
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
                                             target.onerror = null;
-                                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3e8ff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='32'%3E🎉%3C/text%3E%3C/svg%3E";
+                                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23fff3d9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='32'%3E🎉%3C/text%3E%3C/svg%3E";
                                         }}
                                     />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-purple-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
                                         Saved
                                     </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-purple-400" />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <img
+                                        src={preview}
+                                        alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-amber-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                         New
                                     </span>
                                 </div>
@@ -531,19 +619,27 @@ const EventForm = () => {
                     )}
                 </SectionCard>
 
-                {/* Action Buttons */}
+                {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
-                    <button onClick={handleSubmit} disabled={loading} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading
-                            ? 'bg-purple-400 cursor-not-allowed'
-                            : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
-                            } ${typography.body.base}`}>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-colors shadow-sm ${
+                            loading
+                                ? 'bg-amber-300 cursor-not-allowed'
+                                : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700'
+                        } ${typography.body.base}`}
+                    >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
                             : (isEditMode ? 'Update Service' : 'Add Service')}
                     </button>
-                    <button onClick={() => window.history.back()} type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>
+                    <button
+                        onClick={() => window.history.back()}
+                        type="button"
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-amber-50 active:bg-amber-100 transition-colors ${typography.body.base}`}
+                    >
                         Cancel
                     </button>
                 </div>

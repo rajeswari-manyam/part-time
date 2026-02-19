@@ -17,6 +17,7 @@
 
 
 import React, { useState } from "react";
+import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   User,
@@ -164,65 +165,67 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       </div>
 
       {/* ================= LOGOUT MODAL ================= */}
-      {showLogoutPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-md"
-            onClick={() => setShowLogoutPopup(false)}
-          />
-
-          <div className="relative bg-[#F0F0F0] rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in">
-            {/* Header */}
-            <div className="bg-[#f09b13] px-6 py-8 text-center">
-              <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                <LogOut className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-white">
-                Logout?
-              </h3>
-            </div>
-
-            {/* Body */}
-            <div className="p-6">
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to logout?
-              </p>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={handleLogout}
-                  fullWidth
-                  className="bg-[#f09b13] text-white hover:brightness-110"
-                >
-                  Yes, Logout
-                </Button>
-
-                <Button
-                  onClick={() => setShowLogoutPopup(false)}
-                  fullWidth
-                  variant="secondary"
-                  className="bg-[#F0F0F0] hover:brightness-95"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-
-            {/* Close */}
-            <button
+      {showLogoutPopup &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setShowLogoutPopup(false)}
-              className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
+            />
+
+            <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in">
+              {/* Header */}
+              <div className="bg-[#f09b13] px-6 py-8 text-center">
+                <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <LogOut className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">
+                  Logout?
+                </h3>
+              </div>
+
+              {/* Body */}
+              <div className="p-6">
+                <p className="text-gray-600 text-center mb-6">
+                  Are you sure you want to logout?
+                </p>
+
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleLogout}
+                    fullWidth
+                    className="bg-[#f09b13] text-white hover:brightness-110"
+                  >
+                    Yes, Logout
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowLogoutPopup(false)}
+                    fullWidth
+                    variant="secondary"
+                    className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+
+              {/* Close */}
+              <button
+                onClick={() => setShowLogoutPopup(false)}
+                className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
 
-/* ================= MENU ITEM ================= */
+
 
 interface MenuItemProps {
   icon: React.ReactNode;

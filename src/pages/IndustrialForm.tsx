@@ -10,6 +10,9 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
+// ── Brand color ──────────────────────────────────────────────────────────────
+const BRAND = '#f09b13';
+
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['per hour', 'per day', 'per project', 'fixed rate', 'negotiable', 'per event'];
 
@@ -28,17 +31,13 @@ const resolveUserId = (): string => {
     for (const key of candidates) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
-        if (raw.length > 10 && !raw.startsWith('{')) {
-            console.log(`✅ userId from localStorage["${key}"] =`, raw);
-            return raw;
-        }
+        if (raw.length > 10 && !raw.startsWith('{')) return raw;
         try {
             const parsed = JSON.parse(raw);
             const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
-            if (id) { console.log(`✅ userId from localStorage["${key}"] (JSON) =`, id); return String(id); }
+            if (id) return String(id);
         } catch { }
     }
-    console.warn("⚠️ userId not found. localStorage keys:", Object.keys(localStorage));
     return '';
 };
 
@@ -46,13 +45,13 @@ const resolveUserId = (): string => {
 // SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
+    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `focus:outline-none focus:ring-2 focus:ring-[#f09b13] focus:border-transparent ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
 const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
     backgroundPosition: 'right 0.75rem center',
     backgroundSize: '1.5em 1.5em',
@@ -64,7 +63,7 @@ const selectStyle = {
 // ============================================================================
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
+        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
     </label>
 );
 
@@ -104,7 +103,6 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 const IndustrialForm = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -113,7 +111,6 @@ const IndustrialForm = () => {
             : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -129,8 +126,8 @@ const IndustrialForm = () => {
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
         serviceName: '',
-        category: 'Industrial',       // ✅ always "Industrial" per API curl
-        subCategory: defaultType,     // ✅ e.g. "Borewell Services"
+        category: 'Industrial',
+        subCategory: defaultType,
         description: '',
         serviceCharge: '',
         chargeType: chargeTypeOptions[0],
@@ -142,12 +139,9 @@ const IndustrialForm = () => {
         longitude: '',
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const [isAvailable, setIsAvailable] = useState(true);
     const isGPSDetected = useRef(false);
@@ -167,8 +161,8 @@ const IndustrialForm = () => {
                     ...prev,
                     userId: data.userId || prev.userId,
                     serviceName: data.serviceName || '',
-                    category: 'Industrial',           // ✅ always fixed
-                    subCategory: data.subCategory || data.category || defaultType,  // ✅ real subcategory
+                    category: 'Industrial',
+                    subCategory: data.subCategory || data.category || defaultType,
                     description: data.description || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
                     chargeType: data.chargeType || chargeTypeOptions[0],
@@ -192,13 +186,12 @@ const IndustrialForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
+    // ── Auto-geocode ─────────────────────────────────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const addr = [formData.area, formData.city, formData.state, formData.pincode]
-                    .filter(Boolean).join(', ');
+                const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
                 const coords = await geocodeAddress(addr);
                 if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
@@ -207,7 +200,6 @@ const IndustrialForm = () => {
         return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -250,39 +242,23 @@ const IndustrialForm = () => {
         setLocationLoading(true);
         setError('');
         setLocationWarning('');
-
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported by your browser');
-            setLocationLoading(false);
-            return;
-        }
-
+        if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
                 isGPSDetected.current = true;
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
                 const accuracy = pos.coords.accuracy;
-
                 if (accuracy > 500) {
-                    setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Your device may not have GPS. ` +
-                        `The address fields below may be approximate — please verify and correct if needed.`
-                    );
+                    setLocationWarning(`⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Please verify and correct the address if needed.`);
                 }
-
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
-                            ...prev,
-                            latitude: lat,
-                            longitude: lng,
+                            ...prev, latitude: lat, longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
@@ -290,68 +266,26 @@ const IndustrialForm = () => {
                         }));
                     }
                 } catch (e) { console.error(e); }
-
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
+            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    // ── submit — FormData exactly matching the API curl ──────────────────────
+    // ── submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
         setSuccessMessage('');
-
         try {
-            // Validate userId first
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-
             if (!formData.serviceName || !formData.subCategory || !formData.description)
                 throw new Error('Please fill in all required fields (Service Name, Service Type, Description)');
-            if (!formData.serviceCharge)
-                throw new Error('Please enter service charge');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
-
-            // Build FormData exactly like the API curl:
-            const fd = new FormData();
-            fd.append('userId', uid);
-            fd.append('serviceName', formData.serviceName);
-            fd.append('description', formData.description);
-            fd.append('category', formData.category);
-            fd.append('subCategory', formData.subCategory);
-            fd.append('serviceCharge', formData.serviceCharge);
-            fd.append('chargeType', formData.chargeType);
-            fd.append('latitude', formData.latitude);
-            fd.append('longitude', formData.longitude);
-            fd.append('area', formData.area);
-            fd.append('city', formData.city);
-            fd.append('state', formData.state);
-            fd.append('pincode', formData.pincode);
-            fd.append('availability', String(isAvailable));
-
-            // Append images exactly like the API: append("images", file, file.name)
-            selectedImages.forEach(f => fd.append('images', f, f.name));
-
-            // Preserve existing images on edit
-            if (isEditMode && existingImages.length > 0) {
-                fd.append('existingImages', JSON.stringify(existingImages));
-            }
-
-            // Debug log
-            console.log('📤 Sending FormData:');
-            console.log('  userId:', uid);
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b, ${v.type})`);
-                else console.log(`  ${k}: ${v}`);
-            });
+            if (!formData.serviceCharge) throw new Error('Please enter service charge');
+            if (!formData.latitude || !formData.longitude) throw new Error('Please provide a valid location');
 
             if (isEditMode && editId) {
                 const res = await updateIndustrialService(editId, {
@@ -401,9 +335,9 @@ const IndustrialForm = () => {
     // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#fdf6ec' }}>
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -414,15 +348,16 @@ const IndustrialForm = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="min-h-screen" style={{ backgroundColor: '#fdf6ec' }}>
+
+            {/* ── Sticky Header ── */}
+            <div className="sticky top-0 z-10 bg-white border-b border-orange-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+                        className="p-2 -ml-2 rounded-full transition hover:bg-orange-50"
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -434,6 +369,7 @@ const IndustrialForm = () => {
                             {isEditMode ? 'Update your service details' : 'Create new industrial service listing'}
                         </p>
                     </div>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
@@ -447,8 +383,9 @@ const IndustrialForm = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        {successMessage}
+                    <div className="p-4 rounded-xl border text-sm font-medium"
+                        style={{ backgroundColor: '#fff8ed', borderColor: BRAND, color: '#92570a' }}>
+                        ✓ {successMessage}
                     </div>
                 )}
 
@@ -505,7 +442,9 @@ const IndustrialForm = () => {
                                 className={inputBase + ' appearance-none bg-white'}
                                 style={selectStyle}
                             >
-                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                                {chargeTypeOptions.map(t => (
+                                    <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -515,7 +454,8 @@ const IndustrialForm = () => {
                         <button
                             type="button"
                             onClick={() => setIsAvailable(!isAvailable)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isAvailable ? 'bg-blue-500' : 'bg-gray-300'}`}
+                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+                            style={{ backgroundColor: isAvailable ? BRAND : '#d1d5db' }}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -538,22 +478,22 @@ const IndustrialForm = () => {
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button
-                            variant="success"
-                            size="sm"
+                        <button
+                            type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60"
+                            style={{ backgroundColor: BRAND }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d98610'; }}
+                            onMouseLeave={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = BRAND; }}
                         >
-                            {locationLoading ? (
-                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
-                            )}
-                        </Button>
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                            }
+                        </button>
                     }
                 >
-                    {/* Low accuracy warning */}
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
@@ -583,14 +523,13 @@ const IndustrialForm = () => {
                         </div>
                     </div>
 
-                    {/* Location Tip */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>
+                    {/* Tip box */}
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: `1px solid #fcd596` }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#92570a' }}>
                             📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
@@ -601,7 +540,7 @@ const IndustrialForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 5. SERVICE PHOTOS ────────────────────────────────────── */}
+                {/* ─── 5. SERVICE PHOTOS ──────────────────────────────────── */}
                 <SectionCard title="Service Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
@@ -612,13 +551,17 @@ const IndustrialForm = () => {
                             className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            style={
+                                selectedImages.length + existingImages.length >= 5
+                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
+                                    : { borderColor: '#fcd596', backgroundColor: '#fffbf2' }
+                            }
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff3d9' }}>
+                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -630,7 +573,7 @@ const IndustrialForm = () => {
                                         Max 5 images · 5 MB each · JPG, PNG, WEBP
                                     </p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-blue-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -649,19 +592,21 @@ const IndustrialForm = () => {
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
+                                        style={{ backgroundColor: BRAND }}>
                                         Saved
                                     </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
+                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: BRAND }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                         New
                                     </span>
                                 </div>
@@ -676,10 +621,13 @@ const IndustrialForm = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading
-                            ? 'bg-blue-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                            } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
+                        style={{
+                            backgroundColor: loading ? '#f5be72' : BRAND,
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                        }}
+                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d98610'; }}
+                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = BRAND; }}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -688,7 +636,7 @@ const IndustrialForm = () => {
                     <button
                         onClick={() => window.history.back()}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-orange-50 active:bg-orange-100 transition-all ${typography.body.base}`}
                     >
                         Cancel
                     </button>

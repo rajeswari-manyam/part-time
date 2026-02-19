@@ -185,7 +185,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
             <div className="text-center pt-6">
                 <div className="flex justify-center mb-4">
-                    <div className="bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] p-4 rounded-full">
+                    <div className="bg-gradient-to-r from-[#f09b13] to-[#f5b340] p-4 rounded-full">
                         <span className={`text-white ${typography.logo.icon}`}>⚡</span>
                     </div>
                 </div>
@@ -201,10 +201,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <button
                 type="button"
                 onClick={handleVoiceInput}
-                className={`w-full rounded-full py-3 px-6 text-center transition-all flex items-center justify-center gap-2 ${isListening
+                className={`w-full rounded-full py-3 px-6 text-center transition-all flex items-center justify-center gap-2 ${
+                  isListening
                     ? "bg-red-600 animate-pulse"
-                    : "bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:brightness-110"
-                    }`}
+                    : "bg-gradient-to-r from-[#f09b13] to-[#f5b340] hover:brightness-110"
+                }`}
             >
                 <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
                 <p className={`text-white ${typography.body.small}`}>
@@ -232,17 +233,18 @@ const LoginForm: React.FC<LoginFormProps> = ({
                             onChange={handlePhoneChange}
                             placeholder="98765 43210"
                             maxLength={10}
-                            className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 transition-colors duration-200 ${typography.form.input}`}
+                            className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#f09b13] transition-colors duration-200 ${typography.form.input}`}
                             required
                         />
 
                         <button
                             type="button"
                             onClick={handleVoiceInput}
-                            className={`absolute inset-y-0 right-0 flex items-center pr-4 transition-colors duration-200 ${isListening
+                            className={`absolute inset-y-0 right-0 flex items-center pr-4 transition-colors duration-200 ${
+                              isListening
                                 ? "text-red-500 animate-pulse"
-                                : "text-gray-400 hover:text-blue-600"
-                                }`}
+                                : "text-gray-400 hover:text-[#f09b13]"
+                            }`}
                             title={isListening ? "Stop listening" : "Use voice input"}
                         >
                             {isListening ? (
@@ -281,7 +283,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                         Agree to{" "}
                         <a
                             href="/terms"
-                            className="text-blue-600 hover:underline"
+                            className="text-[#f09b13] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -291,7 +293,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                         and{" "}
                         <a
                             href="/privacy"
-                            className="text-blue-600 hover:underline"
+                            className="text-[#f09b13] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                             target="_blank"
                             rel="noopener noreferrer"

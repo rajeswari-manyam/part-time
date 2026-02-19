@@ -401,7 +401,7 @@ const DailyWagesList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-orange-500 hover:bg-orange-600 text-white"
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white"
                     >
                         + Add Worker
                     </Button>

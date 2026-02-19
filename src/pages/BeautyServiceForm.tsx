@@ -10,10 +10,8 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Availability options ─────────────────────────────────────────────────────
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-// ── Pull beauty subcategories from JSON (categoryId 5) — module-level constant ──
 const getBeautyWellnessSubcategories = (): string[] => {
     const beautyCategory = subcategoriesData.subcategories.find(
         (cat: any) => cat.categoryId === 5
@@ -41,15 +39,23 @@ const getCategoryFromSubcategory = (sub: string): string => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-rose-500 focus:border-rose-500 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
+    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
     `${typography.form.input} bg-white`;
 
 const inputError =
     `w-full px-4 py-3 border border-red-400 rounded-xl ` +
-    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
+    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
     `${typography.form.input} bg-white`;
+
+// Focus handlers reused across all inputs
+const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#f09b13';
+    e.target.style.boxShadow = '0 0 0 2px #f09b1340';
+};
+const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, hasError = false) => {
+    e.target.style.borderColor = hasError ? '#f87171' : '#D1D5DB';
+    e.target.style.boxShadow = 'none';
+};
 
 // ============================================================================
 // REUSABLE COMPONENTS
@@ -78,6 +84,14 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
         {children}
     </div>
 );
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
 
 // ============================================================================
 // GEOCODING HELPER
@@ -125,32 +139,22 @@ const validateForm = (
     isEditMode: boolean
 ): FieldErrors => {
     const errors: FieldErrors = {};
-
-    if (!isEditMode && !formData.userId.trim())
-        errors.userId = 'You must be logged in to add a service';
-    if (!formData.name.trim())
-        errors.name = 'Business / professional name is required';
-    if (!formData.phone.trim())
-        errors.phone = 'Phone number is required';
-    else if (!/^\+?[\d\s\-()]{7,}$/.test(formData.phone.trim()))
-        errors.phone = 'Enter a valid phone number';
-    if (!formData.email.trim())
-        errors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()))
-        errors.email = 'Enter a valid email address';
-    if (!formData.services.trim())
-        errors.services = 'Please enter at least one service';
+    if (!isEditMode && !formData.userId.trim()) errors.userId = 'You must be logged in to add a service';
+    if (!formData.name.trim()) errors.name = 'Business / professional name is required';
+    if (!formData.phone.trim()) errors.phone = 'Phone number is required';
+    else if (!/^\+?[\d\s\-()]{7,}$/.test(formData.phone.trim())) errors.phone = 'Enter a valid phone number';
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.email = 'Enter a valid email address';
+    if (!formData.services.trim()) errors.services = 'Please enter at least one service';
     if (formData.serviceCharge.trim()) {
         const charge = parseFloat(formData.serviceCharge);
-        if (isNaN(charge) || charge < 0)
-            errors.serviceCharge = 'Enter a valid service charge';
+        if (isNaN(charge) || charge < 0) errors.serviceCharge = 'Enter a valid service charge';
     }
     if (!formData.area.trim()) errors.area = 'Area is required';
     if (!formData.city.trim()) errors.city = 'City is required';
     if (!formData.state.trim()) errors.state = 'State is required';
     if (!formData.latitude || !formData.longitude)
         errors.location = 'Location is required — use Auto Detect or enter your address';
-
     return errors;
 };
 
@@ -198,13 +202,10 @@ const BeautyServiceForm: React.FC = () => {
     });
 
     const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
-
-    // selectedImages holds File objects — passed directly to service functions
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [locationLoading, setLocationLoading] = useState(false);
-
     const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
     // ── Fetch for edit ───────────────────────────────────────────────────────
@@ -215,15 +216,12 @@ const BeautyServiceForm: React.FC = () => {
             try {
                 const data = await getBeautyWorkerById(editId);
                 if (!data) throw new Error('Service not found');
-
                 const servicesString = Array.isArray(data.services)
                     ? data.services.join(', ')
                     : (data.services || '');
-
                 const availStr = typeof data.availability === 'boolean'
                     ? (data.availability ? 'Full Time' : availabilityOptions[0])
                     : (data.availability || availabilityOptions[0]);
-
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
@@ -243,15 +241,12 @@ const BeautyServiceForm: React.FC = () => {
                     experience: data.experience?.toString() || '',
                     availability: availStr,
                 }));
-
                 setIsCurrentlyAvailable(
                     typeof data.availability === 'boolean'
                         ? data.availability
                         : (data.availability === 'Full Time' || data.availability === 'On Demand')
                 );
-
-                if (data.images && Array.isArray(data.images))
-                    setExistingImages(data.images);
+                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load service data');
@@ -262,13 +257,12 @@ const BeautyServiceForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when lat/lng are empty and not set by GPS ──────────────
+    // ── Auto-geocode ─────────────────────────────────────────────────────────
     useEffect(() => {
         const { area, city, state, latitude, longitude } = formData;
         if (!area.trim()) return;
         if (latitude && longitude) return;
         if (gpsCoords.current?.lat === latitude && gpsCoords.current?.lng === longitude) return;
-
         const fullAddress = [area, city, state].filter(Boolean).join(', ');
         const timer = setTimeout(async () => {
             const coords = await geocodeAddress(fullAddress);
@@ -283,19 +277,13 @@ const BeautyServiceForm: React.FC = () => {
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state]);
 
-    // ── Availability toggle ──────────────────────────────────────────────────
     const handleAvailabilityToggle = () => {
         const next = !isCurrentlyAvailable;
         setIsCurrentlyAvailable(next);
-        setFormData(prev => ({
-            ...prev,
-            availability: next ? 'Full Time' : 'Part Time',
-        }));
+        setFormData(prev => ({ ...prev, availability: next ? 'Full Time' : 'Part Time' }));
     };
 
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         if (fieldErrors[name as keyof FieldErrors])
@@ -378,7 +366,6 @@ const BeautyServiceForm: React.FC = () => {
     const handleSubmit = async () => {
         setError('');
         setSuccessMessage('');
-
         const errors = validateForm(formData, isEditMode);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
@@ -388,20 +375,10 @@ const BeautyServiceForm: React.FC = () => {
         }
         setFieldErrors({});
         setLoading(true);
-
         try {
-            // Build the services array from the comma-separated string
-            const servicesArray = formData.services
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean);
-
+            const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
             const charge = formData.serviceCharge.trim() ? parseFloat(formData.serviceCharge) : 0;
             const exp = formData.experience.trim() ? parseInt(formData.experience, 10) : 0;
-
-            // ── Payload passed to service functions ──────────────────────────
-            // Images are NOT included here — they are passed as a separate
-            // File[] argument so the service can append them to FormData correctly.
             const payload = {
                 userId: formData.userId,
                 name: formData.name,
@@ -409,7 +386,7 @@ const BeautyServiceForm: React.FC = () => {
                 phone: formData.phone,
                 category: formData.category,
                 bio: formData.bio,
-                services: servicesArray,          // string[] — service sends as services[]
+                services: servicesArray,
                 serviceCharge: charge,
                 experience: exp,
                 area: formData.area,
@@ -420,19 +397,14 @@ const BeautyServiceForm: React.FC = () => {
                 longitude: parseFloat(formData.longitude),
                 availability: formData.availability,
             };
-
             if (isEditMode && editId) {
-                // selectedImages = new File[] to upload; existing image URLs are
-                // already on the server — no need to re-send them.
                 await updateBeautyWorker(editId, payload, selectedImages);
                 setSuccessMessage('Service updated successfully!');
             } else {
                 await createBeautyWorker(payload, selectedImages);
                 setSuccessMessage('Service created successfully!');
             }
-
             setTimeout(() => navigate('/my-business'), 1500);
-
         } catch (err: unknown) {
             if (err instanceof Error) setError(err.message);
             else if (typeof err === 'string') setError(err);
@@ -448,7 +420,8 @@ const BeautyServiceForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                        style={{ borderColor: '#f09b13' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
@@ -513,12 +486,12 @@ const BeautyServiceForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Business / Professional Name</FieldLabel>
                         <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
+                            type="text" name="name" value={formData.name}
                             onChange={handleInputChange}
                             placeholder="e.g. Glam Beauty Salon"
                             className={fieldErrors.name ? inputError : inputBase}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e, !!fieldErrors.name)}
                         />
                         <FieldError message={fieldErrors.name} />
                     </div>
@@ -529,24 +502,24 @@ const BeautyServiceForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Phone</FieldLabel>
                         <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
+                            type="tel" name="phone" value={formData.phone}
                             onChange={handleInputChange}
                             placeholder="Enter phone number"
                             className={fieldErrors.phone ? inputError : inputBase}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e, !!fieldErrors.phone)}
                         />
                         <FieldError message={fieldErrors.phone} />
                     </div>
                     <div>
                         <FieldLabel required>Email</FieldLabel>
                         <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
+                            type="email" name="email" value={formData.email}
                             onChange={handleInputChange}
                             placeholder="Enter email address"
                             className={fieldErrors.email ? inputError : inputBase}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e, !!fieldErrors.email)}
                         />
                         <FieldError message={fieldErrors.email} />
                     </div>
@@ -557,17 +530,12 @@ const BeautyServiceForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Service Category</FieldLabel>
                         <select
-                            name="category"
-                            value={formData.category}
+                            name="category" value={formData.category}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
+                            className={`${inputBase} appearance-none`}
+                            style={selectStyle}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e)}
                         >
                             {['Beautician', 'Hair Stylist', 'Makeup Artist', 'Spa Therapist',
                                 'Massage Therapist', 'Nail Technician', 'Skincare Specialist',
@@ -584,17 +552,17 @@ const BeautyServiceForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Services</FieldLabel>
                         <textarea
-                            name="services"
-                            value={formData.services}
+                            name="services" value={formData.services}
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                            className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
+                            className={`${fieldErrors.services ? inputError : inputBase} resize-none`}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e, !!fieldErrors.services)}
                         />
                         <p className={`${typography.misc.caption} mt-2`}>💡 Separate each service with a comma</p>
                         <FieldError message={fieldErrors.services} />
                     </div>
-                    {/* Service chips preview */}
                     {formData.services.trim() && (
                         <div className="mt-1">
                             <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
@@ -605,7 +573,9 @@ const BeautyServiceForm: React.FC = () => {
                                     const t = s.trim();
                                     if (!t) return null;
                                     return (
-                                        <span key={i} className={`inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}>
+                                        <span key={i}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white ${typography.misc.badge} font-medium`}
+                                            style={{ backgroundColor: '#f09b13' }}>
                                             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
@@ -624,25 +594,23 @@ const BeautyServiceForm: React.FC = () => {
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
                             <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
+                                type="number" name="experience" value={formData.experience}
                                 onChange={handleInputChange}
-                                placeholder="Years"
-                                min="0"
+                                placeholder="Years" min="0"
                                 className={inputBase}
+                                onFocus={focusStyle}
+                                onBlur={e => blurStyle(e)}
                             />
                         </div>
                         <div>
                             <FieldLabel>Service Charge (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
                                 onChange={handleInputChange}
-                                placeholder="Amount"
-                                min="0"
+                                placeholder="Amount" min="0"
                                 className={fieldErrors.serviceCharge ? inputError : inputBase}
+                                onFocus={focusStyle}
+                                onBlur={e => blurStyle(e, !!fieldErrors.serviceCharge)}
                             />
                             <FieldError message={fieldErrors.serviceCharge} />
                         </div>
@@ -651,17 +619,12 @@ const BeautyServiceForm: React.FC = () => {
                     <div>
                         <FieldLabel>Availability</FieldLabel>
                         <select
-                            name="availability"
-                            value={formData.availability}
+                            name="availability" value={formData.availability}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem',
-                            }}
+                            className={`${inputBase} appearance-none`}
+                            style={selectStyle}
+                            onFocus={focusStyle}
+                            onBlur={e => blurStyle(e)}
                         >
                             {availabilityOptions.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
@@ -674,10 +637,12 @@ const BeautyServiceForm: React.FC = () => {
                                 Toggle on to appear as available to clients
                             </p>
                         </div>
+                        {/* Toggle — uses #f09b13 when active */}
                         <button
                             type="button"
                             onClick={handleAvailabilityToggle}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isCurrentlyAvailable ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+                            style={{ backgroundColor: isCurrentlyAvailable ? '#f09b13' : '#D1D5DB' }}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -687,12 +652,13 @@ const BeautyServiceForm: React.FC = () => {
                 {/* 6. BIO */}
                 <SectionCard title="Bio">
                     <textarea
-                        name="bio"
-                        value={formData.bio}
+                        name="bio" value={formData.bio}
                         onChange={handleInputChange}
                         rows={4}
                         placeholder="Tell clients about yourself and your expertise..."
-                        className={inputBase + ' resize-none'}
+                        className={`${inputBase} resize-none`}
+                        onFocus={focusStyle}
+                        onBlur={e => blurStyle(e)}
                     />
                 </SectionCard>
 
@@ -700,24 +666,36 @@ const BeautyServiceForm: React.FC = () => {
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
+                            style={{ backgroundColor: '#f09b13' }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                        </Button>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>}
+                        </button>
                     }
                 >
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area} onChange={handleInputChange}
-                                placeholder="e.g. Banjara Hills" className={fieldErrors.area ? inputError : inputBase} />
+                                placeholder="e.g. Banjara Hills"
+                                className={fieldErrors.area ? inputError : inputBase}
+                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.area)} />
                             <FieldError message={fieldErrors.area} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input type="text" name="city" value={formData.city} onChange={handleInputChange}
-                                placeholder="e.g. Hyderabad" className={fieldErrors.city ? inputError : inputBase} />
+                                placeholder="e.g. Hyderabad"
+                                className={fieldErrors.city ? inputError : inputBase}
+                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.city)} />
                             <FieldError message={fieldErrors.city} />
                         </div>
                     </div>
@@ -725,13 +703,17 @@ const BeautyServiceForm: React.FC = () => {
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state} onChange={handleInputChange}
-                                placeholder="e.g. Telangana" className={fieldErrors.state ? inputError : inputBase} />
+                                placeholder="e.g. Telangana"
+                                className={fieldErrors.state ? inputError : inputBase}
+                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.state)} />
                             <FieldError message={fieldErrors.state} />
                         </div>
                         <div>
                             <FieldLabel>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
-                                placeholder="e.g. 500016" className={inputBase} />
+                                placeholder="e.g. 500016"
+                                className={inputBase}
+                                onFocus={focusStyle} onBlur={e => blurStyle(e)} />
                         </div>
                     </div>
 
@@ -742,8 +724,8 @@ const BeautyServiceForm: React.FC = () => {
                     )}
 
                     {!formData.latitude && !formData.longitude && (
-                        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-rose-800`}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                            <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
                                 📍 <span className="font-medium">Tip:</span> Click "Auto Detect" or type your address — coordinates set automatically.
                             </p>
                         </div>
@@ -765,16 +747,24 @@ const BeautyServiceForm: React.FC = () => {
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-rose-300 hover:border-rose-400 hover:bg-rose-50'}`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
+                                selectedImages.length + existingImages.length >= 5
+                                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                    : 'hover:bg-orange-50'
+                            }`}
+                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-rose-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#fff0d6' }}>
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5 ? 'Maximum 5 images reached' : 'Tap to upload portfolio photos'}
+                                        {selectedImages.length + existingImages.length >= 5
+                                            ? 'Maximum 5 images reached'
+                                            : 'Tap to upload portfolio photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>JPG, PNG, WebP — max 5 MB each</p>
                                 </div>
@@ -786,7 +776,8 @@ const BeautyServiceForm: React.FC = () => {
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                    <img src={url} alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                         onError={e => { (e.target as HTMLImageElement).src = ''; }} />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
@@ -797,12 +788,15 @@ const BeautyServiceForm: React.FC = () => {
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-rose-400" />
+                                    <img src={preview} alt={`New ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}>New</span>
                                 </div>
                             ))}
                         </div>
@@ -811,8 +805,15 @@ const BeautyServiceForm: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-2 pb-8">
-                    <button onClick={handleSubmit} disabled={loading || !!successMessage} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading || successMessage ? 'bg-rose-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-md'} ${typography.body.base}`}>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading || !!successMessage}
+                        type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md ${typography.body.base}`}
+                        style={{ backgroundColor: loading || successMessage ? '#f5b340' : '#f09b13', cursor: loading || successMessage ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                        onMouseLeave={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                    >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="animate-spin">⏳</span>
@@ -820,8 +821,12 @@ const BeautyServiceForm: React.FC = () => {
                             </span>
                         ) : successMessage ? '✓ Done' : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
-                    <button onClick={handleCancel} type="button" disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
                         Cancel
                     </button>
                 </div>

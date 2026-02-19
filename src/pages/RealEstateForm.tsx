@@ -12,9 +12,18 @@ const availabilityStatusOptions = ['Available', 'Sold', 'Rented', 'Under Constru
 
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-green-500 focus:border-green-500 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
+    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
     `${typography.form.input} bg-white`;
+
+// Shared focus/blur handlers
+const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#f09b13';
+    e.target.style.boxShadow = '0 0 0 2px #f09b1340';
+};
+const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#D1D5DB';
+    e.target.style.boxShadow = 'none';
+};
 
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -47,23 +56,18 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
     } catch { return null; }
 };
 
-// ✅ Scans all common localStorage keys to find userId
 const resolveUserId = (): string => {
     const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
     for (const key of candidates) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
-        if (raw.length > 10 && !raw.startsWith('{')) {
-            console.log(`✅ userId from localStorage["${key}"] =`, raw);
-            return raw;
-        }
+        if (raw.length > 10 && !raw.startsWith('{')) return raw;
         try {
             const parsed = JSON.parse(raw);
             const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
-            if (id) { console.log(`✅ userId from localStorage["${key}"] (JSON) =`, id); return String(id); }
+            if (id) return String(id);
         } catch { }
     }
-    console.warn("⚠️ userId not found. localStorage keys:", Object.keys(localStorage));
     return '';
 };
 
@@ -164,7 +168,7 @@ const RealEstateForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
+    // ── Auto-geocode ─────────────────────────────────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -248,17 +252,13 @@ const RealEstateForm = () => {
         );
     };
 
-    // ============================================================================
-    // SUBMIT — FormData exactly matching the API curl
-    // ============================================================================
+    // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true); setError(''); setSuccessMessage('');
         try {
-            // ✅ Validate userId first — prevents "User not found" 404
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-
             if (!formData.name || !formData.phone || !formData.email)
                 throw new Error('Please fill in all required fields (Name, Phone, Email)');
             if (!formData.price || !formData.areaSize)
@@ -266,9 +266,6 @@ const RealEstateForm = () => {
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // ✅ Build FormData exactly like the API curl:
-            // formdata.append("userId", "69921fc1717d1df32c7fdca1");
-            // formdata.append("images", fileInput.files[0], filename);
             const fd = new FormData();
             fd.append('userId', uid);
             fd.append('name', formData.name);
@@ -291,22 +288,10 @@ const RealEstateForm = () => {
             fd.append('longitude', formData.longitude);
             fd.append('amenities', formData.amenities);
             fd.append('description', formData.description);
-
-            // ✅ Append images exactly like the API: append("images", file, file.name)
             selectedImages.forEach(f => fd.append('images', f, f.name));
-
-            // Preserve existing images on edit
             if (isEditMode && existingImages.length > 0) {
                 fd.append('existingImages', JSON.stringify(existingImages));
             }
-
-            // Debug log
-            console.log('📤 Sending FormData:');
-            console.log('  userId:', uid);
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b, ${v.type})`);
-                else console.log(`  ${k}: ${v}`);
-            });
 
             if (isEditMode && editId) {
                 const res = await updateRealEstateService(editId, fd);
@@ -319,7 +304,6 @@ const RealEstateForm = () => {
             }
             setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
         } finally { setLoading(false); }
     };
@@ -327,7 +311,8 @@ const RealEstateForm = () => {
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                    style={{ borderColor: '#f09b13' }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
@@ -361,18 +346,24 @@ const RealEstateForm = () => {
                 <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Owner / Agent Name</FieldLabel>
-                        <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter name" className={inputBase} />
+                        <input type="text" name="name" value={formData.name} onChange={handleInputChange}
+                            placeholder="Enter name" className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Property Type</FieldLabel>
-                            <select name="propertyType" value={formData.propertyType} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            <select name="propertyType" value={formData.propertyType} onChange={handleInputChange}
+                                className={`${inputBase} appearance-none`} style={selectStyle}
+                                onFocus={focusStyle} onBlur={blurStyle}>
                                 {propertyTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                         <div>
                             <FieldLabel required>Listing Type</FieldLabel>
-                            <select name="listingType" value={formData.listingType} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            <select name="listingType" value={formData.listingType} onChange={handleInputChange}
+                                className={`${inputBase} appearance-none`} style={selectStyle}
+                                onFocus={focusStyle} onBlur={blurStyle}>
                                 {listingTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
@@ -383,11 +374,15 @@ const RealEstateForm = () => {
                 <SectionCard title="Contact Information">
                     <div>
                         <FieldLabel required>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
+                            placeholder="Enter phone number" className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle} />
                     </div>
                     <div>
                         <FieldLabel required>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange}
+                            placeholder="Enter email address" className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle} />
                     </div>
                 </SectionCard>
 
@@ -396,52 +391,77 @@ const RealEstateForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Price (₹)</FieldLabel>
-                            <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="15000" className={inputBase} />
+                            <input type="number" name="price" value={formData.price} onChange={handleInputChange}
+                                placeholder="15000" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                         <div>
                             <FieldLabel required>Area Size (sq ft)</FieldLabel>
-                            <input type="number" name="areaSize" value={formData.areaSize} onChange={handleInputChange} placeholder="1200" className={inputBase} />
+                            <input type="number" name="areaSize" value={formData.areaSize} onChange={handleInputChange}
+                                placeholder="1200" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Bedrooms</FieldLabel>
-                            <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} placeholder="2" className={inputBase} />
+                            <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange}
+                                placeholder="2" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                         <div>
                             <FieldLabel>Bathrooms</FieldLabel>
-                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} placeholder="2" className={inputBase} />
+                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange}
+                                placeholder="2" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Furnishing Status</FieldLabel>
-                            <select name="furnishingStatus" value={formData.furnishingStatus} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            <select name="furnishingStatus" value={formData.furnishingStatus} onChange={handleInputChange}
+                                className={`${inputBase} appearance-none`} style={selectStyle}
+                                onFocus={focusStyle} onBlur={blurStyle}>
                                 {furnishingStatusOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                         <div>
                             <FieldLabel>Availability</FieldLabel>
-                            <select name="availabilityStatus" value={formData.availabilityStatus} onChange={handleInputChange} className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            <select name="availabilityStatus" value={formData.availabilityStatus} onChange={handleInputChange}
+                                className={`${inputBase} appearance-none`} style={selectStyle}
+                                onFocus={focusStyle} onBlur={blurStyle}>
                                 {availabilityStatusOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                     </div>
                     <div>
                         <FieldLabel>Amenities</FieldLabel>
-                        <input type="text" name="amenities" value={formData.amenities} onChange={handleInputChange} placeholder="Parking, Lift, Power Backup" className={inputBase} />
+                        <input type="text" name="amenities" value={formData.amenities} onChange={handleInputChange}
+                            placeholder="Parking, Lift, Power Backup" className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle} />
                         <p className={`${typography.misc.caption} mt-2`}>💡 Separate with commas</p>
                     </div>
                 </SectionCard>
 
                 {/* 4. LOCATION */}
-                <SectionCard title="Location Details" action={
-                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
-                        {locationLoading
-                            ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                    </Button>
-                }>
+                <SectionCard
+                    title="Location Details"
+                    action={
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
+                            style={{ backgroundColor: '#f09b13' }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        >
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>}
+                        </button>
+                    }
+                >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
@@ -450,19 +470,45 @@ const RealEstateForm = () => {
                     )}
                     <div>
                         <FieldLabel required>Address</FieldLabel>
-                        <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Flat No, Building Name" className={inputBase} />
+                        <input type="text" name="address" value={formData.address} onChange={handleInputChange}
+                            placeholder="Flat No, Building Name" className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>Area</FieldLabel><input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} /></div>
-                        <div><FieldLabel required>City</FieldLabel><input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
+                                placeholder="Area name" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                                placeholder="City" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>State</FieldLabel><input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} /></div>
-                        <div><FieldLabel required>PIN Code</FieldLabel><input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
+                                placeholder="State" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
+                                placeholder="PIN code" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-green-800`}>📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.</p>
+
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
+                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter manually above.
+                        </p>
                     </div>
+
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
@@ -476,7 +522,9 @@ const RealEstateForm = () => {
                 {/* 5. DESCRIPTION */}
                 <SectionCard title="Description">
                     <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4}
-                        placeholder="2BHK flat near metro station, prime location..." className={inputBase + ' resize-none'} />
+                        placeholder="2BHK flat near metro station, prime location..."
+                        className={`${inputBase} resize-none`}
+                        onFocus={focusStyle} onBlur={blurStyle} />
                 </SectionCard>
 
                 {/* 6. PHOTOS */}
@@ -484,13 +532,18 @@ const RealEstateForm = () => {
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-green-300 hover:border-green-400 hover:bg-green-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
+                                selectedImages.length + existingImages.length >= 5
+                                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                    : 'hover:bg-orange-50'
+                            }`}
+                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-green-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#fff0d6' }}>
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -500,7 +553,7 @@ const RealEstateForm = () => {
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-green-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: '#f09b13' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -515,16 +568,23 @@ const RealEstateForm = () => {
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-green-400" />
+                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}>New</span>
                                 </div>
                             ))}
                         </div>
@@ -533,9 +593,18 @@ const RealEstateForm = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-2 pb-8">
-                    <button onClick={handleSubmit} disabled={loading} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:bg-green-800'} ${typography.body.base}`}>
-                        {loading ? (isEditMode ? 'Updating...' : 'Listing...') : (isEditMode ? 'Update Property' : 'List Property')}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
+                        style={{ backgroundColor: loading ? '#f5b340' : '#f09b13', cursor: loading ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                    >
+                        {loading
+                            ? (isEditMode ? 'Updating...' : 'Listing...')
+                            : (isEditMode ? 'Update Property' : 'List Property')}
                     </button>
                     <button onClick={() => window.history.back()} type="button"
                         className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>

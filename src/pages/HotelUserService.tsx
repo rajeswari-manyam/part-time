@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteHotel, Hotel } from "../services/HotelService.service";
 import { ServiceItem } from "../services/api.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
-import ActionDropdown from "../components/ActionDropDown";
 
 // ============================================================================
 // HELPERS
@@ -17,11 +16,75 @@ const ensureArray = (input: any): string[] => {
 };
 
 // ============================================================================
+// THREE-DOT DROPDOWN
+// ============================================================================
+interface ThreeDotMenuProps {
+    onEdit: () => void;
+    onDelete: () => void;
+}
+
+const ThreeDotMenu: React.FC<ThreeDotMenuProps> = ({ onEdit, onDelete }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors"
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-10 z-50 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden min-w-[130px]">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit
+                    </button>
+                    <div className="h-px bg-gray-100" />
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
 // PROPS
 // ============================================================================
 interface HotelUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -32,26 +95,19 @@ interface HotelUserServiceProps {
 // ============================================================================
 const HotelUserService: React.FC<HotelUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
-
-    // Cast to Hotel[] so all existing field access works
     const [hotels, setHotels] = useState<Hotel[]>(data as Hotel[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-    // ── Filter ────────────────────────────────────────────────────────────────
     const filteredHotels = selectedSubcategory
-        ? hotels.filter(h =>
-            h.type &&
-            h.type.toLowerCase().includes(selectedSubcategory.toLowerCase())
-        )
+        ? hotels.filter(h => h.type?.toLowerCase().includes(selectedSubcategory.toLowerCase()))
         : hotels;
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
     const handleEdit = (id: string) => navigate(`/add-hotel-service-form?id=${id}`);
 
     const handleDelete = async (id: string) => {
@@ -76,35 +132,31 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
 
     const openDirections = (hotel: Hotel) => {
         if (hotel.latitude && hotel.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`,
-                "_blank"
-            );
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`, "_blank");
         } else if (hotel.area || hotel.city) {
-            const addr = encodeURIComponent(
-                [hotel.area, hotel.city, hotel.state].filter(Boolean).join(", ")
-            );
+            const addr = encodeURIComponent([hotel.area, hotel.city, hotel.state].filter(Boolean).join(", "));
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
     };
 
     // ============================================================================
-    // CARD
+    // CARD — matches the screenshot style
     // ============================================================================
     const renderCard = (hotel: Hotel) => {
         const id = hotel._id || "";
-        const location = [hotel.area, hotel.city, hotel.state]
-            .filter(Boolean).join(", ") || "Location not specified";
+        const location = [hotel.area, hotel.city, hotel.state].filter(Boolean).join(", ") || "Location not specified";
         const servicesList = ensureArray(hotel.service);
         const imageUrls = (hotel.images || []).filter(Boolean) as string[];
+        const isActive = hotel.status === "active" || hotel.isActive;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 cursor-pointer"
+                onClick={() => handleView(id)}
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/10 to-blue-600/5">
+                {/* ── Image ── */}
+                <div className="relative w-full" style={{ height: "200px" }}>
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -113,26 +165,29 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-6xl">🏨</span>
+                        <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                            <span className="text-7xl">🏨</span>
                         </div>
                     )}
 
-                    {/* Type badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-blue-600 text-white px-3 py-1 rounded-full shadow-md`}>
-                            {hotel.type || "Hotel"}
+                    {/* Dark gradient overlay at bottom for badge */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+
+                    {/* Type badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="text-white text-xs font-semibold bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
+                            {hotel.type || "Hotel & Travel"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
-                    <div className="absolute top-3 right-3">
+                    {/* Three-dot menu — top right */}
+                    <div className="absolute top-3 right-3" onClick={e => e.stopPropagation()}>
                         {deleteLoading === id ? (
-                            <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-black/40">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                             </div>
                         ) : (
-                            <ActionDropdown
+                            <ThreeDotMenu
                                 onEdit={() => handleEdit(id)}
                                 onDelete={() => handleDelete(id)}
                             />
@@ -140,81 +195,71 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
                     </div>
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Card Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+                    {/* Name */}
+                    <h3 className="text-[17px] font-bold text-gray-900 mb-1 truncate">
                         {hotel.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-sm">📍</span>
+                        <p className="text-sm text-gray-500 truncate">{location}</p>
+                    </div>
+
+                    {/* Category pill + Active badge */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full font-medium">
+                            {hotel.type || "Hotel & Travel"}
+                        </span>
+                        {isActive !== undefined && (
+                            <span className={`text-sm font-semibold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                                isActive
+                                    ? "text-green-600 bg-green-50 border-green-200"
+                                    : "text-gray-400 bg-gray-50 border-gray-200"
+                            }`}>
+                                <span className={`inline-block w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
+                                {isActive ? "Active" : "Inactive"}
+                            </span>
+                        )}
                     </div>
 
                     {/* Description */}
                     {hotel.description && (
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">
                             {hotel.description}
                         </p>
                     )}
 
-                    {/* Rating + Price */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-yellow-400">⭐</span>
-                            <span className="text-sm font-semibold text-gray-900">
-                                {hotel.ratings || "N/A"}
-                            </span>
-                        </div>
-                        {hotel.priceRange && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Starting at</p>
-                                <p className="text-base font-bold text-green-600">₹{hotel.priceRange}</p>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Services Tags */}
                     {servicesList.length > 0 && (
-                        <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Services:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {servicesList.slice(0, 3).map((s, idx) => (
-                                    <span key={idx} className={`${typography.fontSize.xs} bg-blue-600/5 text-blue-600 px-2 py-0.5 rounded-full`}>
-                                        {s}
-                                    </span>
-                                ))}
-                                {servicesList.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500`}>
-                                        +{servicesList.length - 3} more
-                                    </span>
-                                )}
-                            </div>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                            {servicesList.slice(0, 3).map((s, idx) => (
+                                <span key={idx} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                    {s}
+                                </span>
+                            ))}
+                            {servicesList.length > 3 && (
+                                <span className="text-xs text-gray-400">+{servicesList.length - 3} more</span>
+                            )}
                         </div>
                     )}
 
-                    {/* Directions + View Details */}
-                    <div className="flex gap-2 mt-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDirections(hotel)}
-                            className="flex-1 justify-center border-blue-600 text-blue-600 hover:bg-blue-600/10"
-                        >
-                            📍 Directions
-                        </Button>
-                        <button
-                            onClick={() => handleView(id)}
-                            disabled={deleteLoading === id}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-                        >
-                            <span>👁️</span>
-                            <span className="truncate">View Details</span>
-                        </button>
+                    {/* Rating */}
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            ⭐ {hotel.ratings || "4.5"}
+                        </span>
+                        {hotel.priceRange && (
+                            <span className="ml-auto text-base font-bold text-green-600">
+                                ₹{hotel.priceRange}
+                            </span>
+                        )}
                     </div>
+
+                 
+                   
                 </div>
             </div>
         );
@@ -225,7 +270,6 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
     // ============================================================================
     if (filteredHotels.length === 0) {
         if (hideEmptyState) return null;
-
         return (
             <div>
                 {!hideHeader && (
@@ -233,20 +277,18 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
                         <span>🏨</span> Hotel & Travel Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
                     <div className="text-6xl mb-4">🏨</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Hotel Services Yet</h3>
-                    <p className={`${typography.body.small} text-gray-500 mb-4`}>
+                    <h3 className="text-lg font-bold text-gray-700 mb-2">No Hotel Services Yet</h3>
+                    <p className="text-sm text-gray-500 mb-5">
                         Start adding your hotel and travel services to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={() => navigate("/add-hotel-service-form")}
-                        className="gap-1.5 bg-blue-600 hover:bg-blue-700"
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
                     >
                         + Add Hotel Service
-                    </Button>
+                    </button>
                 </div>
             </div>
         );
@@ -258,11 +300,12 @@ const HotelUserService: React.FC<HotelUserServiceProps> = ({
     return (
         <div>
             {!hideHeader && (
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-4 flex items-center gap-2`}>
                     <span>🏨</span> Hotel & Travel Services ({filteredHotels.length})
                 </h2>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {/* Single column on mobile (like screenshot), 2-3 on larger screens */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredHotels.map(renderCard)}
             </div>
         </div>

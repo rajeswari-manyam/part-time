@@ -21,7 +21,7 @@ const ensureArray = (input: any): string[] => {
 // ============================================================================
 interface RealEstateUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -32,14 +32,13 @@ interface RealEstateUserServiceProps {
 // ============================================================================
 const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to RealEstateWorker[] so all existing field access works
     const [realEstates, setRealEstates] = useState<RealEstateWorker[]>(data as RealEstateWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -53,6 +52,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
 
     // ── Handlers ─────────────────────────────────────────────────────────────
     const handleEdit = (id: string) => navigate(`/add-real-estate-form?id=${id}`);
+    const handleView = (id: string) => navigate(`/real-estate/details/${id}`);
 
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this listing?")) return;
@@ -72,50 +72,52 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
         }
     };
 
-    const handleView = (id: string) => navigate(`/real-estate/details/${id}`);
-
     // ============================================================================
-    // CARD
+    // CARD — matches HospitalUserService card layout
     // ============================================================================
     const renderCard = (re: RealEstateWorker) => {
         const id = re._id || "";
+        const imageUrls = (re.images || []).filter(Boolean) as string[];
         const location = [re.area, re.city, re.state]
             .filter(Boolean).join(", ") || "Location not specified";
         const amenitiesList = ensureArray(re.amenities);
-        const imageUrls = (re.images || []).filter(Boolean) as string[];
+        const isAvailable = re.availabilityStatus === "Available";
+        const description = re.description || "";
+        const displayName = re.name || `${re.propertyType || "Property"} — ${re.listingType || ""}`;
+        const phone = (re as any).phone || (re as any).contactNumber || (re as any).phoneNumber;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-green-600/10 to-green-600/5">
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
-                            alt={re.name || "Property"}
+                            alt={displayName}
                             className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-green-600/5">
                             <span className="text-6xl">🏠</span>
                         </div>
                     )}
 
-                    {/* Property Type badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-green-600 text-white px-3 py-1 rounded-full shadow-md`}>
-                            {re.propertyType || "Property"}
+                    {/* Property Type badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                            {re.propertyType || "Real Estate"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
+                    {/* Action menu — top right */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -126,96 +128,93 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     </div>
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
-                        {re.propertyType} — {re.listingType}
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                        {displayName}
                     </h3>
 
-                    {re.name && (
-                        <p className="text-sm font-medium text-gray-700 mb-2">{re.name}</p>
-                    )}
-
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
+                    </div>
+
+                    {/* Category pill + Availability status — side by side */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-green-700 bg-green-600/8 border border-green-600/20 px-3 py-1.5 rounded-full truncate">
+                            {re.propertyType || "Real Estate"}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isAvailable
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-red-500"}`} />
+                            {isAvailable ? "Available" : "Unavailable"}
+                        </span>
                     </div>
 
                     {/* Description */}
-                    {re.description && (
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
-                            {re.description}
-                        </p>
+                    {description && (
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Availability + Listing type badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${re.availabilityStatus === "Available"
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-red-50 text-red-700 border-red-200"
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${re.availabilityStatus === "Available" ? "bg-green-500" : "bg-red-500"}`} />
-                            {re.availabilityStatus || "Available"}
-                        </span>
-
-                        {re.listingType && (
-                            <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200">
-                                {re.listingType}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Bedrooms + Area + Price */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
-                        <div className="flex items-center gap-3">
+                    {/* Amenity / detail chips (shown when no description) */}
+                    {!description && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {re.listingType && (
+                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                    {re.listingType}
+                                </span>
+                            )}
                             {re.bedrooms > 0 && (
-                                <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
                                     🛏️ {re.bedrooms} BHK
                                 </span>
                             )}
                             {re.areaSize && (
-                                <span className="text-xs text-gray-500">📏 {re.areaSize} sq ft</span>
+                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                    📏 {re.areaSize} sq ft
+                                </span>
                             )}
-                        </div>
-                        {re.price && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">{re.listingType}</p>
-                                <p className="text-base font-bold text-green-600">₹{Number(re.price).toLocaleString()}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Amenities */}
-                    {amenitiesList.length > 0 && (
-                        <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1 font-medium`}>Amenities:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {amenitiesList.slice(0, 3).map((a, idx) => (
-                                    <span key={idx} className={`${typography.fontSize.xs} bg-green-600/5 text-green-700 px-2 py-0.5 rounded-full`}>
-                                        {a}
-                                    </span>
-                                ))}
-                                {amenitiesList.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500`}>
-                                        +{amenitiesList.length - 3} more
-                                    </span>
-                                )}
-                            </div>
+                            {amenitiesList.slice(0, 2).map((a, idx) => (
+                                <span key={idx} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                    {a}
+                                </span>
+                            ))}
+                            {amenitiesList.length > 2 && (
+                                <span className="text-xs text-gray-400 px-1 self-center">
+                                    +{amenitiesList.length - 2} more
+                                </span>
+                            )}
                         </div>
                     )}
 
-                    {/* View Details */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleView(id)}
-                        className="w-full mt-2 border-green-600 text-green-600 hover:bg-green-600/10"
-                    >
-                        View Details
-                    </Button>
+                    {/* Rating row + optional phone + price */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            ⭐ {(re as any).rating ? (re as any).rating : "N/A"}
+                        </span>
+
+                        {phone && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                {phone}
+                            </span>
+                        )}
+
+                        {re.price && (
+                            <span className="ml-auto text-sm font-bold text-green-700">
+                                ₹{Number(re.price).toLocaleString()}
+                            </span>
+                        )}
+                    </div>
+
                 </div>
             </div>
         );
@@ -234,7 +233,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         <span>🏠</span> Real Estate Listings (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">🏠</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Property Listings Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
@@ -263,6 +262,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     <span>🏠</span> Real Estate Listings ({filteredRealEstates.length})
                 </h2>
             )}
+            {/* Grid layout — matches HospitalUserService */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredRealEstates.map(renderCard)}
             </div>

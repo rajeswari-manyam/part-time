@@ -1,17 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteShoppingRetail, ShoppingStore } from "../services/ShoppingService.service";
 import { ServiceItem } from "../services/api.service";
 import { typography } from "../styles/typography";
 import Button from "../components/ui/Buttons";
-import ActionDropdown from "../components/ActionDropDown";
+
+// ============================================================================
+// THREE-DOT DROPDOWN
+// ============================================================================
+interface ThreeDotMenuProps {
+    onEdit: () => void;
+    onDelete: () => void;
+}
+
+const ThreeDotMenu: React.FC<ThreeDotMenuProps> = ({ onEdit, onDelete }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors"
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-10 z-50 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden min-w-[130px]">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit
+                    </button>
+                    <div className="h-px bg-gray-100" />
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // ============================================================================
 // PROPS
 // ============================================================================
 interface ShoppingUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideEmptyState?: boolean;
     hideHeader?: boolean;
@@ -22,22 +85,19 @@ interface ShoppingUserServiceProps {
 // ============================================================================
 const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideEmptyState = false,
     hideHeader = false,
 }) => {
     const navigate = useNavigate();
-
-    // Cast to ShoppingStore[] so all existing field access works
     const [stores, setStores] = useState<ShoppingStore[]>(data as ShoppingStore[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
     // ── Filter ────────────────────────────────────────────────────────────────
     const filteredStores = selectedSubcategory
         ? stores.filter(s =>
-            s.storeType &&
-            s.storeType.toLowerCase().includes(selectedSubcategory.toLowerCase())
+            s.storeType?.toLowerCase().includes(selectedSubcategory.toLowerCase())
         )
         : stores;
 
@@ -81,21 +141,23 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
     // ============================================================================
-    // CARD
+    // CARD — matches screenshot style
     // ============================================================================
     const renderCard = (store: ShoppingStore) => {
         const id = store._id || "";
         const location = [store.area, store.city, store.state]
             .filter(Boolean).join(", ") || "Location not specified";
         const imageUrls = (store.images || []).filter(Boolean) as string[];
+        const isActive = (store as any).status === "active" || (store as any).isActive;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 cursor-pointer"
+                onClick={() => handleView(id)}
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/10 to-blue-600/5">
+                {/* ── Image ── */}
+                <div className="relative w-full" style={{ height: "200px" }}>
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -104,26 +166,29 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-6xl">🛒</span>
+                        <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                            <span className="text-7xl">🛒</span>
                         </div>
                     )}
 
-                    {/* Store Type badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-blue-600 text-white px-3 py-1 rounded-full shadow-md`}>
-                            {store.storeType || "Store"}
+                    {/* Dark gradient overlay at bottom */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+
+                    {/* Store type badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="text-white text-xs font-semibold bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
+                            {store.storeType || "Shopping & Retail"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
-                    <div className="absolute top-3 right-3">
+                    {/* Three-dot menu — top right */}
+                    <div className="absolute top-3 right-3" onClick={e => e.stopPropagation()}>
                         {deleteLoading === id ? (
-                            <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-black/40">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                             </div>
                         ) : (
-                            <ActionDropdown
+                            <ThreeDotMenu
                                 onEdit={() => handleEdit(id)}
                                 onDelete={() => handleDelete(id)}
                             />
@@ -131,82 +196,62 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                     </div>
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Card Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+                    {/* Name */}
+                    <h3 className="text-[17px] font-bold text-gray-900 mb-1 truncate">
                         {store.storeName || "Unnamed Store"}
                     </h3>
 
-                    {store.storeType && (
-                        <p className="text-sm font-medium text-gray-700 mb-2">{store.storeType}</p>
-                    )}
-
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-sm">📍</span>
+                        <p className="text-sm text-gray-500 truncate">{location}</p>
                     </div>
 
-                    {/* Description */}
-                    {store.description && (
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
-                            {store.description}
-                        </p>
-                    )}
-
-                    {/* Open Now + Store Type badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium bg-green-50 text-green-700 border-green-200">
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
-                            Open Now
+                    {/* Category pill + Active badge */}
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span className="text-sm text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full font-medium">
+                            {store.storeType || "Shopping & Retail"}
                         </span>
-                        {store.storeType && (
-                            <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200">
-                                {store.storeType}
+                        {isActive !== undefined && (
+                            <span className={`text-sm font-semibold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                                isActive
+                                    ? "text-green-600 bg-green-50 border-green-200"
+                                    : "text-gray-400 bg-gray-50 border-gray-200"
+                            }`}>
+                                <span className={`inline-block w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-gray-400"}`} />
+                                {isActive ? "Active" : "Inactive"}
                             </span>
                         )}
                     </div>
 
+                    {/* Description */}
+                    {store.description && (
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+                            {store.description}
+                        </p>
+                    )}
+
                     {/* Phone */}
                     {store.phone && (
-                        <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
-                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                                📞 {store.phone}
-                            </span>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-sm text-gray-600">📞 {store.phone}</span>
                         </div>
                     )}
 
-                    {/* Directions + Call */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                        <button
-                            onClick={() => openDirections(store)}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
-                        >
-                            <span>📍</span> Directions
-                        </button>
-                        <button
-                            onClick={() => store.phone && openCall(store.phone)}
-                            disabled={!store.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${store.phone
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
-                        >
-                            <span>📞</span> Call
-                        </button>
+                    {/* Rating row */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            ⭐ {(store as any).ratings || "N/A"}
+                        </span>
                     </div>
 
-                    {/* View Details */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleView(id)}
-                        className="w-full mt-3 border-blue-600 text-blue-600 hover:bg-blue-600/10"
-                    >
-                        View Details
-                    </Button>
+                    {/* Action buttons */}
+
+                       
+                      
+                 
                 </div>
             </div>
         );
@@ -225,20 +270,18 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                         <span>🛒</span> Shopping & Retail (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
                     <div className="text-6xl mb-4">🛒</div>
-                    <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Shopping Services Yet</h3>
-                    <p className={`${typography.body.small} text-gray-500 mb-4`}>
+                    <h3 className="text-lg font-bold text-gray-700 mb-2">No Shopping Services Yet</h3>
+                    <p className="text-sm text-gray-500 mb-5">
                         Start adding your shopping and retail services to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={() => navigate("/add-shopping-form")}
-                        className="gap-1.5"
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
                     >
                         + Add Shopping Service
-                    </Button>
+                    </button>
                 </div>
             </div>
         );
@@ -250,11 +293,11 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
     return (
         <div>
             {!hideHeader && (
-                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-4 flex items-center gap-2`}>
                     <span>🛒</span> Shopping & Retail ({filteredStores.length})
                 </h2>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredStores.map(renderCard)}
             </div>
         </div>

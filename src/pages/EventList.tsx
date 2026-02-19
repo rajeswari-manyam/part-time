@@ -366,7 +366,7 @@ const EventServicesList: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-1">Find event services near you</p>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-purple-600 hover:bg-purple-700">
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
                         + Add Post
                     </Button>
                 </div>

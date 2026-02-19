@@ -4,9 +4,9 @@
 
 @layer components {
   .logo { @apply text-lg; }
-  .brand-name { @apply text-xl font-bold text-blue-800; }
+  .brand-name { @apply text-xl font-bold text-[#f09b13]; }
   .brand-tagline { @apply text-xs text-gray-500; }
-  .menu-item { @apply text-gray-700 font-medium hover:text-blue-600; }
+  .menu-item { @apply text-gray-700 font-medium hover:text-[#f09b13]; }
   .btn { @apply px-4 py-2 text-white rounded; }
-  .language-btn { @apply text-gray-700 hover:text-blue-600 space-x-1; }
+  .language-btn { @apply text-gray-700 hover:text-[#f09b13] space-x-1; }
 }

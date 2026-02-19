@@ -30,7 +30,7 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     if (validImages.length === 0) {
         return (
             <div className="w-full h-full flex items-center justify-center">
-                <Briefcase size={36} className="text-blue-300" />
+                <Briefcase size={36} className="text-[#f09b13]/50" />
             </div>
         );
     }
@@ -143,7 +143,7 @@ const JobActionDropdown: React.FC<{
                             setOpen(false);
                             onEdit();
                         }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#f09b13]/10 hover:text-[#f09b13] transition"
                     >
                         <Pencil size={14} />
                         Edit
@@ -193,13 +193,13 @@ const MyJobCard: React.FC<{
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
 
             {/* ── Image Carousel ── */}
-            <div className="relative h-36 bg-gradient-to-br from-blue-50 to-blue-100 flex-shrink-0">
+            <div className="relative h-36 bg-gradient-to-br from-[#f09b13]/10 to-[#f5b340]/10 flex-shrink-0">
                 <ImageCarousel images={images} title={job.title || job.category} />
 
                 {/* Job type badge — bottom-left (above dots) */}
                 <div className="absolute top-2 left-2 z-10">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                        ${job.jobType === "FULL_TIME" ? "bg-green-500 text-white" : "bg-blue-500 text-white"}`}>
+                        ${job.jobType === "FULL_TIME" ? "bg-green-500 text-white" : "bg-[#f09b13] text-white"}`}>
                         <Clock size={9} />
                         {job.jobType === "FULL_TIME" ? "Full Time" : "Part Time"}
                     </span>
@@ -207,7 +207,7 @@ const MyJobCard: React.FC<{
 
                 {/* Duration badge */}
                 <div className="absolute bottom-7 left-2 z-10">
-                    <span className="inline-flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 bg-[#f09b13] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         <Calendar size={9} />
                         {duration} day{duration !== 1 ? "s" : ""}
                     </span>
@@ -233,7 +233,7 @@ const MyJobCard: React.FC<{
             {/* Body */}
             <div className="p-3 flex flex-col flex-1">
                 <div className="flex flex-wrap gap-1 mb-1.5">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-200 font-medium">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#f09b13]/10 text-[#f09b13] border border-[#f09b13]/20 font-medium">
                         {job.category}
                     </span>
                     {job.subcategory && (
@@ -328,7 +328,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <Briefcase className="w-6 h-6 text-blue-600" />
+                            <Briefcase className="w-6 h-6 text-[#f09b13]" />
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Find Jobs</h1>
                         </div>
                         <p className="text-sm text-gray-500">
@@ -337,7 +337,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                     </div>
                     <button
                         onClick={() => navigate("/post-job")}
-                        className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition active:scale-95"
+                        className="inline-flex items-center gap-1.5 bg-[#f09b13] hover:bg-[#f5b340] text-white text-sm font-bold px-4 py-2 rounded-xl transition active:scale-95"
                     >
                         <Plus size={16} /> Post Job
                     </button>
@@ -348,7 +348,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                     <div className="flex items-center gap-2 mb-3">
                         <h2 className="text-lg font-bold text-gray-800">My Posted Jobs</h2>
                         {!loadingMyJobs && (
-                            <span className="text-xs bg-blue-100 text-blue-600 font-bold px-2 py-0.5 rounded-full">
+                            <span className="text-xs bg-[#f09b13]/10 text-[#f09b13] font-bold px-2 py-0.5 rounded-full">
                                 {myJobs.length}
                             </span>
                         )}
@@ -356,7 +356,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
 
                     {loadingMyJobs ? (
                         <div className="flex justify-center items-center py-10">
-                            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                            <Loader2 className="w-8 h-8 animate-spin text-[#f09b13]" />
                         </div>
                     ) : myJobs.length === 0 ? (
                         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
@@ -365,7 +365,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                             <p className="text-xs text-gray-400 mb-4">Post your first job to find workers near you</p>
                             <button
                                 onClick={() => navigate("/post-job")}
-                                className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-xl"
+                                className="inline-flex items-center gap-1.5 bg-[#f09b13] text-white text-sm font-bold px-4 py-2 rounded-xl"
                             >
                                 <Plus size={14} /> Post a Job
                             </button>

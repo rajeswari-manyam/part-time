@@ -54,7 +54,7 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-[#f09b13]/10 via-white to-[#f5b340]/10 flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8 relative">
                 {/* Back Arrow Button */}
                 <button
@@ -110,10 +110,11 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                         type="button"
                         onClick={onVoiceInput}
                         disabled={isVerifying}
-                        className={`w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${isListening
-                                ? "bg-red-600 hover:bg-red-700 animate-pulse"
-                                : "bg-gradient-to-r from-[#0B0E92] to-[#69A6F0] hover:brightness-110"
-                            } ${isVerifying ? "opacity-50 cursor-not-allowed" : ""} ${typography.body.base}`}
+                        className={`w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${
+                          isListening
+                            ? "bg-red-600 hover:bg-red-700 animate-pulse"
+                            : "bg-gradient-to-r from-[#f09b13] to-[#f5b340] hover:brightness-110"
+                        } ${isVerifying ? "opacity-50 cursor-not-allowed" : ""} ${typography.body.base}`}
                     >
                         {isListening ? (
                             <>
@@ -133,10 +134,11 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                         type="button"
                         onClick={handleReadAloud}
                         disabled={!otp.some((digit) => digit !== "") || isVerifying}
-                        className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border-2 ${!otp.some((digit) => digit !== "") || isVerifying
-                                ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
-                                : "border-blue-600 text-blue-600 hover:bg-blue-50 bg-white"
-                            } ${typography.body.base}`}
+                        className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border-2 ${
+                          !otp.some((digit) => digit !== "") || isVerifying
+                            ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
+                            : "border-[#f09b13] text-[#f09b13] hover:bg-[#f09b13]/5 bg-white"
+                        } ${typography.body.base}`}
                     >
                         <Volume2 className="w-5 h-5" />
                         Read OTP Aloud
@@ -172,10 +174,11 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                             type="button"
                             onClick={onResend}
                             disabled={timer > 0 || isVerifying}
-                            className={`w-full py-3 rounded-xl font-semibold transition-all border-2 ${timer > 0 || isVerifying
-                                    ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
-                                    : "border-blue-600 text-blue-600 hover:bg-blue-50 bg-white"
-                                } ${typography.body.base}`}
+                            className={`w-full py-3 rounded-xl font-semibold transition-all border-2 ${
+                              timer > 0 || isVerifying
+                                ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
+                                : "border-[#f09b13] text-[#f09b13] hover:bg-[#f09b13]/5 bg-white"
+                            } ${typography.body.base}`}
                         >
                             Resend OTP
                         </button>

@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 export interface Hospital {   
   id?: string;
   _id?: string;  // Added for MongoDB compatibility
-  name?: string;
+  hospitalName?: string;
   hospitalType?: string;
   departments?: string;
   area?: string;

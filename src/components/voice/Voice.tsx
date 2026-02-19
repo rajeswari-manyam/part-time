@@ -34,8 +34,8 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
 
             {/* Transcript Display */}
             {transcript && (
-                <div className="mt-4 sm:mt-6 px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-blue-50 border border-blue-200 rounded-lg animate-fade-in w-full sm:w-auto">
-                    <p className="text-xs sm:text-sm md:text-base text-blue-900 text-center">
+                <div className="mt-4 sm:mt-6 px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-lg animate-fade-in w-full sm:w-auto">
+                    <p className="text-xs sm:text-sm md:text-base text-[#f09b13] text-center">
                         Heard: <span className="font-semibold">{transcript}</span>
                     </p>
                 </div>

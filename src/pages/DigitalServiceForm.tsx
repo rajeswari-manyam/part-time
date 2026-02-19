@@ -5,38 +5,40 @@ import {
     updateDigitalService,
     getDigitalServiceById,
 } from '../services/DigitalService.service';
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Pull digital service subcategories from JSON (categoryId 12) ────────────
+// ── #f09b13 ≈ Tailwind amber-500 ─────────────────────────────────────────────
+
 const getDigitalServiceSubcategories = () => {
     const digitalCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 12);
     return digitalCategory ? digitalCategory.items.map((item: any) => item.name) : [];
 };
 
-// ============================================================================
-// SHARED INPUT CLASSES - Mobile First
-// ============================================================================
+// ── Shared input: amber focus ring ───────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ` +
+    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// ============================================================================
-// REUSABLE LABEL
-// ============================================================================
+// Dropdown chevron in amber (#f09b13)
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem'
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
+        {children}{required && <span className="text-amber-500 ml-1">*</span>}
     </label>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -49,15 +51,10 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
-// ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
-// ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
         const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
-        );
+        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`);
         const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
             const loc = data.results[0].geometry.location;
@@ -67,34 +64,19 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
     } catch { return null; }
 };
 
-// ============================================================================
-// RESOLVE USER ID — scans all common localStorage keys
-// ============================================================================
 const resolveUserId = (): string => {
     const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
     for (const key of candidates) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
-        if (raw.length > 10 && !raw.startsWith('{')) {
-            console.log(`✅ userId from localStorage["${key}"] =`, raw);
-            return raw;
-        }
+        if (raw.length > 10 && !raw.startsWith('{')) return raw;
         try {
             const parsed = JSON.parse(raw);
             const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
-            if (id) { console.log(`✅ userId from localStorage["${key}"] (JSON) =`, id); return String(id); }
+            if (id) return String(id);
         } catch { }
     }
-    console.warn("⚠️ userId not found. localStorage keys:", Object.keys(localStorage));
     return '';
-};
-
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem'
 };
 
 // ============================================================================
@@ -103,16 +85,12 @@ const selectStyle = {
 const DigitalServiceForm: React.FC = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub
-            ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-            : null;
+        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    // ── State ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -131,7 +109,7 @@ const DigitalServiceForm: React.FC = () => {
         category: 'Tech & Digital Services',
         subCategory: defaultType,
         serviceCharge: '',
-        chargeType: 'hourly',   // ✅ FIXED: matches backend enum exactly
+        chargeType: 'hourly',
         area: '',
         city: '',
         state: '',
@@ -140,16 +118,13 @@ const DigitalServiceForm: React.FC = () => {
         longitude: '',
     });
 
-    // ── Images ───────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // ── Geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
-    // ── Fetch for edit ───────────────────────────────────────────────────────
+    // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -157,7 +132,6 @@ const DigitalServiceForm: React.FC = () => {
             try {
                 const data = await getDigitalServiceById(editId);
                 if (!data) throw new Error('Service not found');
-
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
@@ -165,7 +139,7 @@ const DigitalServiceForm: React.FC = () => {
                     description: data.bio || '',
                     subCategory: data.category || defaultType,
                     serviceCharge: data.serviceCharge?.toString() || '',
-                    chargeType: data.chargeType || 'hourly',   // ✅ FIXED: matches backend enum
+                    chargeType: data.chargeType || 'hourly',
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
@@ -173,13 +147,8 @@ const DigitalServiceForm: React.FC = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-
-                if (Array.isArray(data.images)) {
-                    setExistingImages(data.images);
-                    console.log('📸 Loaded existing images:', data.images.length);
-                }
+                if (Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                console.error(err);
                 setError('Failed to load service data');
             } finally {
                 setLoadingData(false);
@@ -188,32 +157,26 @@ const DigitalServiceForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const addr = [formData.area, formData.city, formData.state, formData.pincode]
-                    .filter(Boolean).join(', ');
+                const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
                 const coords = await geocodeAddress(addr);
-                if (coords) setFormData(prev => ({
-                    ...prev,
-                    latitude: coords.lat.toString(),
-                    longitude: coords.lng.toString()
-                }));
+                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
         };
         const t = setTimeout(detect, 1000);
         return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    // ── Generic input ────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── Image helpers ────────────────────────────────────────────────────────
+    // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -243,10 +206,9 @@ const DigitalServiceForm: React.FC = () => {
         setSelectedImages(p => p.filter((_, idx) => idx !== i));
         setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-
     const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
-    // ── GPS location ─────────────────────────────────────────────────────────
+    // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
@@ -258,15 +220,11 @@ const DigitalServiceForm: React.FC = () => {
                 const lng = pos.coords.longitude.toString();
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
-                            ...prev,
-                            latitude: lat,
-                            longitude: lng,
+                            ...prev, latitude: lat, longitude: lng,
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
@@ -281,24 +239,20 @@ const DigitalServiceForm: React.FC = () => {
         );
     };
 
-    // ── Submit ───────────────────────────────────────────────────────────────
+    // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
         setSuccessMessage('');
-
         try {
-            // ✅ Validate userId first
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-
             if (!formData.serviceName || !formData.description)
                 throw new Error('Please fill in all required fields (Service Name, Description)');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
-            // ✅ Build FormData exactly matching the API curl
             const fd = new FormData();
             fd.append('userId', uid);
             fd.append('serviceName', formData.serviceName);
@@ -306,7 +260,7 @@ const DigitalServiceForm: React.FC = () => {
             fd.append('category', formData.category);
             fd.append('subCategory', formData.subCategory);
             fd.append('serviceCharge', formData.serviceCharge);
-            fd.append('chargeType', formData.chargeType);   // ✅ Now sends "Per Hour" not "per hour"
+            fd.append('chargeType', formData.chargeType);
             fd.append('area', formData.area);
             fd.append('city', formData.city);
             fd.append('state', formData.state);
@@ -314,21 +268,9 @@ const DigitalServiceForm: React.FC = () => {
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
-            // ✅ Append images exactly like the API: append("images", file, file.name)
             selectedImages.forEach(f => fd.append('images', f, f.name));
-
-            // Preserve existing images on edit
-            if (isEditMode && existingImages.length > 0) {
+            if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
-            }
-
-            // Debug log
-            console.log('📤 Sending FormData:');
-            console.log('  userId:', uid);
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b, ${v.type})`);
-                else console.log(`  ${k}: ${v}`);
-            });
 
             if (isEditMode && editId) {
                 const res = await updateDigitalService(editId, fd);
@@ -341,17 +283,17 @@ const DigitalServiceForm: React.FC = () => {
             }
             setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
         } finally {
             setLoading(false);
         }
     };
 
+    // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4" />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
@@ -364,12 +306,16 @@ const DigitalServiceForm: React.FC = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="min-h-screen bg-amber-50">
+
+            {/* ── Sticky Header ── */}
+            <div className="sticky top-0 z-10 bg-white border-b border-amber-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button
+                        onClick={() => window.history.back()}
+                        className="p-2 -ml-2 hover:bg-amber-50 rounded-full transition"
+                    >
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -381,17 +327,20 @@ const DigitalServiceForm: React.FC = () => {
                             {isEditMode ? 'Update your service listing' : 'Create new digital service listing'}
                         </p>
                     </div>
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
                 </div>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+                {/* Alerts */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
                         {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                    <div className="p-4 bg-amber-50 border border-amber-400 rounded-xl text-amber-800 text-sm font-medium">
                         ✓ {successMessage}
                     </div>
                 )}
@@ -415,7 +364,7 @@ const DigitalServiceForm: React.FC = () => {
                             name="subCategory"
                             value={formData.subCategory}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
+                            className={inputBase + ' appearance-none'}
                             style={selectStyle}
                         >
                             {serviceTypes.map((t: string) => (
@@ -453,12 +402,11 @@ const DigitalServiceForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
-                            {/* ✅ FIXED: values match backend enum exactly (from API curl: "fixed") */}
                             <select
                                 name="chargeType"
                                 value={formData.chargeType}
                                 onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
+                                className={inputBase + ' appearance-none'}
                                 style={selectStyle}
                             >
                                 <option value="hourly">Per Hour</option>
@@ -475,74 +423,47 @@ const DigitalServiceForm: React.FC = () => {
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button
-                            variant="success"
-                            size="sm"
+                        <button
+                            type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {locationLoading ? (
-                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
-                            )}
-                        </Button>
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                            }
+                        </button>
                     }
                 >
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="Area name"
-                                className={inputBase}
-                            />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="City"
-                                className={inputBase}
-                            />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="State"
-                                className={inputBase}
-                            />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="PIN code"
-                                className={inputBase}
-                            />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
                         </div>
                     </div>
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-indigo-800`}>
+
+                    {/* Tip box — amber */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-amber-800`}>
                             📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
                         </p>
                     </div>
+
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
@@ -555,7 +476,7 @@ const DigitalServiceForm: React.FC = () => {
 
                 {/* 4. PHOTOS */}
                 <SectionCard title={`Service Photos (${totalImagesCount}/5)`}>
-                    <label className="cursor-pointer block">
+                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
                             type="file"
                             accept="image/*"
@@ -564,13 +485,14 @@ const DigitalServiceForm: React.FC = () => {
                             className="hidden"
                             disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-indigo-300 hover:border-indigo-400 hover:bg-indigo-50'
-                            }`}>
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
+                            maxImagesReached
+                                ? 'border-gray-200 bg-gray-50'
+                                : 'border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
+                        }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-indigo-600" />
+                                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-amber-500" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -582,7 +504,7 @@ const DigitalServiceForm: React.FC = () => {
                                         Max 5 images · 5 MB each · JPG, PNG, WEBP
                                     </p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-indigo-600 text-sm font-medium mt-1">
+                                        <p className="text-amber-600 text-sm font-medium mt-1">
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -599,9 +521,7 @@ const DigitalServiceForm: React.FC = () => {
                                         src={url}
                                         alt={`Saved ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                        onError={e => {
-                                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
-                                        }}
+                                        onError={e => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
                                     />
                                     <button
                                         type="button"
@@ -610,7 +530,7 @@ const DigitalServiceForm: React.FC = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
                                         Saved
                                     </span>
                                 </div>
@@ -620,7 +540,7 @@ const DigitalServiceForm: React.FC = () => {
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-indigo-400"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-amber-400"
                                     />
                                     <button
                                         type="button"
@@ -629,7 +549,7 @@ const DigitalServiceForm: React.FC = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-indigo-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
                                         New
                                     </span>
                                 </div>
@@ -638,16 +558,17 @@ const DigitalServiceForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* Action Buttons */}
+                {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading
-                            ? 'bg-indigo-400 cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800'
-                            } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-colors shadow-sm ${
+                            loading
+                                ? 'bg-amber-300 cursor-not-allowed'
+                                : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700'
+                        } ${typography.body.base}`}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -656,7 +577,7 @@ const DigitalServiceForm: React.FC = () => {
                     <button
                         onClick={() => window.history.back()}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-amber-50 active:bg-amber-100 transition-colors ${typography.body.base}`}
                     >
                         Cancel
                     </button>

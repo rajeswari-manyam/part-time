@@ -21,7 +21,7 @@ const ensureArray = (input: any): string[] => {
 // ============================================================================
 interface BeautyUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -32,14 +32,13 @@ interface BeautyUserServiceProps {
 // ============================================================================
 const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to BeautyWorker[] so all existing field access works
     const [services, setServices] = useState<BeautyWorker[]>(data as BeautyWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -53,7 +52,6 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleEdit = (id: string) => navigate(`/add-beauty-service-form?id=${id}`);
-
     const handleView = (id: string) => navigate(`/beauty-services/details/${id}`);
 
     const handleDelete = async (id: string) => {
@@ -96,41 +94,43 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     // ============================================================================
     const renderCard = (beauty: BeautyWorker) => {
         const id = beauty._id || "";
+        const imageUrls = (beauty.images || []).filter(Boolean) as string[];
         const location = [beauty.area, beauty.city, beauty.state]
             .filter(Boolean).join(", ") || "Location not specified";
-        const firstImage = beauty.images && beauty.images.length > 0 ? beauty.images[0] : null;
         const servicesList = ensureArray(beauty.services);
-        const hasPhone = Boolean(beauty.phone);
+        const isAvailable = beauty.availability;
+        const phone = beauty.phone;
+        const description = beauty.bio || "";
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-rose-50 to-pink-100">
-                    {firstImage ? (
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
+                    {imageUrls.length > 0 ? (
                         <img
-                            src={firstImage}
+                            src={imageUrls[0]}
                             alt={beauty.name}
                             className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-rose-50">
                             <span className="text-6xl">💅</span>
                         </div>
                     )}
 
-                    {/* Category badge */}
-                    <div className="absolute top-3 left-3 z-10">
-                        <span className={`${typography.misc.badge} bg-rose-600 text-white px-3 py-1 rounded-full shadow-md`}>
-                            {beauty.category || "Beauty"}
+                    {/* Category badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                            {beauty.category || "Beauty & Wellness"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
-                    <div className="absolute top-3 right-3 z-10">
+                    {/* Action menu — top right */}
+                    <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-rose-600" />
@@ -142,108 +142,73 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                             />
                         )}
                     </div>
-
-                    {/* Availability badge — bottom left */}
-                    <div className="absolute bottom-3 left-3 z-10">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${beauty.availability
-                            ? "bg-green-100/90 text-green-800 border-green-300"
-                            : "bg-gray-100/90 text-gray-700 border-gray-300"
-                            }`}>
-                            {beauty.availability ? "✓ Available" : "⏸ Unavailable"}
-                        </span>
-                    </div>
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-1 truncate`}>
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {beauty.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-red-500 text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Rating + experience + charge */}
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                        {beauty.rating && (
-                            <span className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                                <span className="text-yellow-500">⭐</span> {beauty.rating}
-                            </span>
-                        )}
+                    {/* Category pill + Active status */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-full truncate">
+                            {beauty.category || "Beauty & Wellness"}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isAvailable
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-gray-500 bg-gray-50 border-gray-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-gray-400"}`} />
+                            {isAvailable ? "Active" : "Inactive"}
+                        </span>
+                    </div>
+
+                    {/* Description */}
+                    {description && (
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
+                    )}
+
+                    {/* Services chips (if no description, show these) */}
+                    {!description && servicesList.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {servicesList.slice(0, 3).map((svc, idx) => (
+                                <span key={idx} className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200">
+                                    {svc}
+                                </span>
+                            ))}
+                            {servicesList.length > 3 && (
+                                <span className="text-xs text-gray-400">+{servicesList.length - 3} more</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Star rating row */}
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            ⭐ {beauty.rating ? beauty.rating : "4.5"}
+                        </span>
                         {beauty.experience && (
-                            <span className={`${typography.body.xs} text-gray-500`}>
-                                • {beauty.experience} yr{beauty.experience !== 1 ? "s" : ""} exp
+                            <span className="text-sm text-gray-500">
+                                {beauty.experience} yr{beauty.experience !== 1 ? "s" : ""} exp
                             </span>
                         )}
                         {beauty.serviceCharge && (
-                            <span className={`ml-auto ${typography.body.xs} font-bold text-rose-700`}>
+                            <span className="ml-auto text-sm font-bold text-rose-700">
                                 ₹{beauty.serviceCharge}+
                             </span>
                         )}
                     </div>
 
-                    {/* Services */}
-                    {servicesList.length > 0 && (
-                        <div className="mb-3">
-                            <p className={`${typography.body.xs} text-gray-500 mb-1.5 font-medium`}>Services:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {servicesList.slice(0, 3).map((svc, idx) => (
-                                    <span key={idx} className={`${typography.fontSize.xs} bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200`}>
-                                        {svc}
-                                    </span>
-                                ))}
-                                {servicesList.length > 3 && (
-                                    <span className={`${typography.fontSize.xs} text-gray-500 px-1`}>
-                                        +{servicesList.length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Bio */}
-                    {beauty.bio && (
-                        <p className={`${typography.body.xs} text-gray-500 italic line-clamp-2 mb-3`}>
-                            "{beauty.bio}"
-                        </p>
-                    )}
-
-                    {/* Directions + Call */}
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                        <button
-                            onClick={() => openDirections(beauty)}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-rose-600 text-rose-600 rounded-lg font-medium text-sm hover:bg-rose-50 active:bg-rose-100 transition-colors"
-                        >
-                            <span>📍</span>
-                            <span>Directions</span>
-                        </button>
-                        <button
-                            onClick={() => hasPhone && openCall(beauty.phone!)}
-                            disabled={!hasPhone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${hasPhone
-                                ? "bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
-                        >
-                            <span>📞</span>
-                            <span>Call</span>
-                        </button>
-                    </div>
-
-                    {/* View Details */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleView(id)}
-                        className="w-full mt-2"
-                    >
-                        View Details
-                    </Button>
                 </div>
             </div>
         );
@@ -262,7 +227,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                         <span>💅</span> Beauty & Wellness Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
                     <div className="text-6xl mb-4">💅</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Beauty Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>

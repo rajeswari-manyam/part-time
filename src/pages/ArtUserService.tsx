@@ -24,7 +24,7 @@ const getCategoryIcon = (subcategory?: string): string => {
 // ============================================================================
 interface ArtUserServiceProps {
     userId: string;
-    data?: ServiceItem[];           // ✅ received from MyBusiness via getAllDataByUserId
+    data?: ServiceItem[];
     selectedSubcategory?: string | null;
     hideHeader?: boolean;
     hideEmptyState?: boolean;
@@ -35,14 +35,13 @@ interface ArtUserServiceProps {
 // ============================================================================
 const ArtUserService: React.FC<ArtUserServiceProps> = ({
     userId,
-    data = [],                      // ✅ no internal fetch — use prop directly
+    data = [],
     selectedSubcategory,
     hideHeader = false,
     hideEmptyState = false,
 }) => {
     const navigate = useNavigate();
 
-    // Cast to CreativeArtWorker[] so all existing field access works
     const [arts, setArts] = useState<CreativeArtWorker[]>(data as CreativeArtWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
@@ -72,24 +71,8 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
         }
     };
 
-    const handleView = (id: string) => navigate(`/art-services/details/${id}`);
-
-    const openDirections = (art: CreativeArtWorker) => {
-        if (art.latitude && art.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${art.latitude},${art.longitude}`,
-                "_blank"
-            );
-        } else if (art.area || art.city) {
-            const addr = encodeURIComponent(
-                [art.area, art.city, art.state].filter(Boolean).join(", ")
-            );
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
-        }
-    };
-
     // ============================================================================
-    // CARD
+    // CARD — matches WeddingUserService card layout
     // ============================================================================
     const renderArtCard = (art: CreativeArtWorker) => {
         const id = art._id || "";
@@ -97,14 +80,16 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
         const location = [art.area, art.city, art.state]
             .filter(Boolean).join(", ") || "Location not specified";
         const icon = getCategoryIcon(art.subCategory);
+        const isActive = art.availability !== false;
+        const phone = (art as any).phone || (art as any).contactNumber || (art as any).phoneNumber;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
             >
-                {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-amber-600/10 to-amber-600/5">
+                {/* ── Image ── */}
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -113,23 +98,23 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-amber-600/5">
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
 
-                    {/* SubCategory badge */}
-                    <div className="absolute top-3 left-3">
-                        <span className={`${typography.misc.badge} bg-amber-600 text-white px-3 py-1 rounded-full shadow-md`}>
+                    {/* SubCategory badge — bottom left over image */}
+                    <div className="absolute bottom-3 left-3">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {art.subCategory || "Art Service"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
+                    {/* Action menu — top right */}
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-600" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -138,90 +123,81 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                             />
                         )}
                     </div>
-
-                    {/* Image count */}
-                    {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
-                            1 / {imageUrls.length}
-                        </div>
-                    )}
                 </div>
 
-                {/* ── Details ── */}
+                {/* ── Body ── */}
                 <div className="p-4">
-                    <h3 className={`${typography.heading.h6} text-gray-900 mb-2 truncate`}>
+
+                    {/* Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {art.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-2 mb-3">
-                        <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2`}>{location}</p>
+                    <div className="flex items-center gap-1.5 mb-3">
+                        <span className="text-red-500 text-sm">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
+                    </div>
+
+                    {/* SubCategory pill + Available status — side by side */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex-1 text-center text-sm font-medium text-amber-600 bg-amber-600/8 border border-amber-600/20 px-3 py-1.5 rounded-full truncate">
+                            {art.subCategory || "Creative & Art"}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isActive
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-red-500"}`} />
+                            {isActive ? "Available" : "Busy"}
+                        </span>
                     </div>
 
                     {/* Description */}
                     {art.description && (
-                        <p className={`${typography.body.small} text-gray-600 line-clamp-2 mb-3`}>
-                            {art.description}
-                        </p>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{art.description}</p>
                     )}
 
-                    {/* Availability + chargeType badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium ${art.availability !== false
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-red-50 text-red-700 border-red-200"
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${art.availability !== false ? "bg-green-500" : "bg-red-500"}`} />
-                            {art.availability !== false ? "Available" : "Busy"}
-                        </span>
-
-                        {art.chargeType && (
-                            <span className="inline-flex items-center text-xs bg-gray-50 text-gray-700 px-2.5 py-1 rounded-full border border-gray-200">
-                                {art.chargeType}
-                            </span>
-                        )}
-
-                        {art.experience != null && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-amber-600/5 text-amber-700 px-2.5 py-1 rounded-full border border-amber-600/20 font-medium">
-                                🏅 {art.experience} yrs exp
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Charge */}
-                    {art.serviceCharge != null && (
-                        <div className="flex items-center justify-between py-2 border-t border-gray-100 mb-3">
-                            <span className="text-xs text-gray-500 uppercase tracking-wide">
-                                {art.chargeType || "Charge"}
-                            </span>
-                            <span className="text-base font-bold text-amber-600">
-                                💰 ₹{art.serviceCharge}
-                            </span>
+                    {/* Detail chips (shown when no description) */}
+                    {!art.description && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                            {art.chargeType && (
+                                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                                    {art.chargeType}
+                                </span>
+                            )}
+                            {art.experience != null && (
+                                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                                    🏅 {art.experience} yrs exp
+                                </span>
+                            )}
                         </div>
                     )}
 
-                    {/* Directions + View */}
-                    <div className="flex gap-2 mt-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDirections(art)}
-                            className="flex-1 justify-center border-amber-600 text-amber-600 hover:bg-amber-50"
-                        >
-                            📍 Directions
-                        </Button>
-                        <button
-                            onClick={() => handleView(id)}
-                            disabled={deleteLoading === id}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors bg-amber-600 text-white hover:bg-amber-700 active:bg-amber-800"
-                        >
-                            <span>👁️</span>
-                            <span className="truncate">View Details</span>
-                        </button>
+                    {/* Charge row + optional phone */}
+                    <div className="flex items-center gap-2 mb-4">
+                        {art.serviceCharge != null ? (
+                            <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                                💰 ₹{Number(art.serviceCharge).toLocaleString()}
+                                {art.chargeType ? ` / ${art.chargeType}` : ""}
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold px-3 py-1 rounded-full">
+                                🎨 {art.subCategory || "Art Service"}
+                            </span>
+                        )}
+
+                        {phone && (
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                {phone}
+                            </span>
+                        )}
                     </div>
+
                 </div>
             </div>
         );
@@ -240,7 +216,7 @@ const ArtUserService: React.FC<ArtUserServiceProps> = ({
                         <span>🎨</span> Creative & Art Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">🎨</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Art Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>

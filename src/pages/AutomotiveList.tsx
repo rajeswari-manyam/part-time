@@ -486,7 +486,7 @@ const AutomotiveList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white"
                     >
                         + Create Automotive Service
                     </Button>

@@ -11,19 +11,14 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
-// ── Charge Type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Hour', 'Day', 'Session', 'Month', 'Package'];
-
-// ✅ FIXED: API requires this exact 'category' string — was missing before
 const CATEGORY_NAME = 'Sports & Activities';
 
-// ── Pull sports subcategories from JSON (categoryId 17) ─────────────────────
 const getSportsSubcategories = () => {
     const sportsCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 17);
     return sportsCategory ? sportsCategory.items.map(item => item.name) : [];
 };
 
-// ── Common sports services by category ───────────────────────────────────────
 const getCommonServices = (subCategory: string): string[] => {
     const normalized = subCategory.toLowerCase();
     if (normalized.includes('gym') || normalized.includes('fitness'))
@@ -54,9 +49,17 @@ const getCommonServices = (subCategory: string): string[] => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
+    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
     `${typography.form.input} bg-white`;
+
+const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#f09b13';
+    e.target.style.boxShadow = '0 0 0 2px #f09b1340';
+};
+const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#D1D5DB';
+    e.target.style.boxShadow = 'none';
+};
 
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
@@ -185,12 +188,10 @@ const SportsForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── update quick-select chips when subcategory changes ───────────────────
     useEffect(() => {
         setCommonServices(getCommonServices(formData.subCategory));
     }, [formData.subCategory]);
 
-    // ── Auto-geocode when address typed manually ─────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -284,31 +285,21 @@ const SportsForm = () => {
         );
     };
 
-    // ============================================================================
-    // SUBMIT — FormData built to match Postman curl exactly
-    // ============================================================================
+    // ── submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setLoading(true); setError(''); setSuccessMessage('');
         try {
-            if (!formData.serviceName.trim())
-                throw new Error('Please enter a Service Name');
-            if (!formData.subCategory)
-                throw new Error('Please select a Category');
-            if (formData.services.length === 0)
-                throw new Error('Please add at least one service');
+            if (!formData.serviceName.trim()) throw new Error('Please enter a Service Name');
+            if (!formData.subCategory) throw new Error('Please select a Category');
+            if (formData.services.length === 0) throw new Error('Please add at least one service');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location (use Auto Detect or enter address)');
 
             const fd = new FormData();
-
-            // ── Fields in the same order as Postman curl ─────────────────────
             fd.append('userId', formData.userId);
             fd.append('serviceName', formData.serviceName);
             fd.append('description', formData.description);
-
-            // ✅ CRITICAL FIX #1: 'category' field was completely missing before
             fd.append('category', CATEGORY_NAME);
-
             fd.append('subCategory', formData.subCategory);
             fd.append('serviceCharge', formData.serviceCharge);
             fd.append('chargeType', formData.chargeType);
@@ -319,26 +310,11 @@ const SportsForm = () => {
             fd.append('state', formData.state);
             fd.append('pincode', formData.pincode);
             fd.append('availability', formData.availability.toString());
-
-            // ✅ CRITICAL FIX #2: services — append individually (not as JSON string)
-            // The backend likely uses multer/express which parses repeated keys as array.
-            // JSON.stringify was sending a raw JSON string which the backend couldn't parse.
             formData.services.forEach(s => fd.append('services', s));
-
-            // ✅ Images — append with filename exactly like Postman curl
             selectedImages.forEach(f => fd.append('images', f, f.name));
-
-            // Preserve existing images on edit
             if (isEditMode && existingImages.length > 0) {
                 fd.append('existingImages', JSON.stringify(existingImages));
             }
-
-            // Debug — check console before submit
-            console.log('📤 Sports FormData:');
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
-                else console.log(`  ${k}: ${v}`);
-            });
 
             if (isEditMode && editId) {
                 const res = await updateSportsActivity(editId, fd);
@@ -351,7 +327,6 @@ const SportsForm = () => {
             }
             setTimeout(() => navigate('/my-business'), 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
         } finally {
             setLoading(false);
@@ -362,7 +337,8 @@ const SportsForm = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                        style={{ borderColor: '#f09b13' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -404,27 +380,25 @@ const SportsForm = () => {
                     </div>
                 )}
 
-                {/* ─── 1. BASIC INFO ─────────────────────────────────────────── */}
+                {/* ─── 1. BASIC INFO ── */}
                 <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
                         <input
-                            type="text"
-                            name="serviceName"
-                            value={formData.serviceName}
+                            type="text" name="serviceName" value={formData.serviceName}
                             onChange={handleInputChange}
                             placeholder="e.g., Elite Fitness Training, Pro Cricket Academy"
                             className={inputBase}
+                            onFocus={focusStyle} onBlur={blurStyle}
                         />
                     </div>
                     <div>
                         <FieldLabel required>Category</FieldLabel>
                         <select
-                            name="subCategory"
-                            value={formData.subCategory}
+                            name="subCategory" value={formData.subCategory}
                             onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={selectStyle}
+                            className={`${inputBase} appearance-none`} style={selectStyle}
+                            onFocus={focusStyle} onBlur={blurStyle}
                         >
                             {sportsTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
@@ -435,17 +409,17 @@ const SportsForm = () => {
                     <div>
                         <FieldLabel>Description</FieldLabel>
                         <textarea
-                            name="description"
-                            value={formData.description}
+                            name="description" value={formData.description}
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="Brief description of your service..."
-                            className={inputBase + ' resize-none'}
+                            className={`${inputBase} resize-none`}
+                            onFocus={focusStyle} onBlur={blurStyle}
                         />
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. SERVICES OFFERED ──────────────────────────────────── */}
+                {/* ─── 2. SERVICES OFFERED ── */}
                 <SectionCard title="Services Offered">
                     <div>
                         <p className={`${typography.body.small} text-gray-700 mb-2`}>Quick Select:</p>
@@ -456,10 +430,22 @@ const SportsForm = () => {
                                     type="button"
                                     onClick={() => handleAddService(service)}
                                     disabled={formData.services.includes(service)}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition ${formData.services.includes(service)
-                                        ? 'bg-blue-100 text-blue-700 cursor-not-allowed'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                                        }`}
+                                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
+                                        formData.services.includes(service)
+                                            ? 'text-white cursor-not-allowed'
+                                            : 'bg-gray-100 text-gray-700 hover:text-white'
+                                    }`}
+                                    style={formData.services.includes(service)
+                                        ? { backgroundColor: '#f09b13' }
+                                        : undefined}
+                                    onMouseEnter={e => {
+                                        if (!formData.services.includes(service))
+                                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13';
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (!formData.services.includes(service))
+                                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '';
+                                    }}
                                 >
                                     {formData.services.includes(service) ? '✓ ' : '+ '}{service}
                                 </button>
@@ -477,10 +463,18 @@ const SportsForm = () => {
                                 onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddService(customService); } }}
                                 placeholder="Type custom service..."
                                 className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle}
                             />
-                            <Button variant="primary" size="sm" onClick={() => handleAddService(customService)} className="whitespace-nowrap">
+                            <button
+                                type="button"
+                                onClick={() => handleAddService(customService)}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition whitespace-nowrap"
+                                style={{ backgroundColor: '#f09b13' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                            >
                                 Add
-                            </Button>
+                            </button>
                         </div>
                     </div>
 
@@ -491,9 +485,11 @@ const SportsForm = () => {
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 {formData.services.map((service, idx) => (
-                                    <span key={idx} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200">
+                                    <span key={idx}
+                                        className="inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-full"
+                                        style={{ backgroundColor: '#f09b13' }}>
                                         <span className={typography.misc.badge}>{service}</span>
-                                        <button type="button" onClick={() => handleRemoveService(idx)} className="hover:text-blue-900">
+                                        <button type="button" onClick={() => handleRemoveService(idx)} className="hover:opacity-70">
                                             <X size={14} />
                                         </button>
                                     </span>
@@ -503,29 +499,26 @@ const SportsForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 3. PRICING & AVAILABILITY ───────────────────────────── */}
+                {/* ─── 3. PRICING & AVAILABILITY ── */}
                 <SectionCard title="Pricing & Availability">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Service Charge (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
                                 onChange={handleInputChange}
-                                placeholder="Amount"
-                                min="0"
+                                placeholder="Amount" min="0"
                                 className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle}
                             />
                         </div>
                         <div>
                             <FieldLabel>Charge Type</FieldLabel>
                             <select
-                                name="chargeType"
-                                value={formData.chargeType}
+                                name="chargeType" value={formData.chargeType}
                                 onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
+                                className={`${inputBase} appearance-none`} style={selectStyle}
+                                onFocus={focusStyle} onBlur={blurStyle}
                             >
                                 {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
@@ -537,22 +530,31 @@ const SportsForm = () => {
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+                            style={{ backgroundColor: formData.availability ? '#f09b13' : '#D1D5DB' }}
                         >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`} />
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. LOCATION ──────────────────────────────────────────── */}
+                {/* ─── 4. LOCATION ── */}
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
+                            style={{ backgroundColor: '#f09b13' }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                        </Button>
+                                : <><MapPin className="w-4 h-4" />Auto Detect</>}
+                        </button>
                     }
                 >
                     {locationWarning && (
@@ -565,26 +567,34 @@ const SportsForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
+                                placeholder="Area name" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                                placeholder="City" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
+                                placeholder="State" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
+                                placeholder="PIN code" className={inputBase}
+                                onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-blue-800`}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
                             📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
                         </p>
                     </div>
@@ -599,28 +609,35 @@ const SportsForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 5. PHOTOS ────────────────────────────────────────────── */}
+                {/* ─── 5. PHOTOS ── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
                             type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
+                                selectedImages.length + existingImages.length >= 5
+                                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                    : 'hover:bg-orange-50'
+                            }`}
+                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#fff0d6' }}>
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload portfolio photos'}
+                                        {selectedImages.length + existingImages.length >= 5
+                                            ? 'Maximum limit reached (5 images)'
+                                            : 'Tap to upload portfolio photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-blue-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: '#f09b13' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -634,7 +651,8 @@ const SportsForm = () => {
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
@@ -642,11 +660,15 @@ const SportsForm = () => {
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }} />
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}>New</span>
                                 </div>
                             ))}
                         </div>
@@ -659,7 +681,10 @@ const SportsForm = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'} ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
+                        style={{ backgroundColor: loading ? '#f5b340' : '#f09b13', cursor: loading ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
+                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
                     >
                         {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>

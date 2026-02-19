@@ -35,7 +35,7 @@ const BUSINESS_CATEGORIES = getBusinessSubcategories();
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ` +
+    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -91,7 +91,7 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 };
 
 // ============================================================================
-// VALIDATION HELPER  (mirrors AgricultureForm's validateForm exactly)
+// VALIDATION HELPER
 // ============================================================================
 interface FieldErrors {
     name?: string;
@@ -202,7 +202,7 @@ const BusinessForm = () => {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
 
-    // ── geo — gpsCoords ref prevents auto-geocode overwriting GPS fix ─────────
+    // ── geo ───────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
@@ -276,7 +276,7 @@ const BusinessForm = () => {
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state]);
 
-    // ── generic input — clears field error on change ──────────────────────────
+    // ── generic input ─────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -343,7 +343,6 @@ const BusinessForm = () => {
                     );
                 }
 
-                // Record GPS coords in ref BEFORE setting state
                 gpsCoords.current = { lat, lng };
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
@@ -379,7 +378,6 @@ const BusinessForm = () => {
         setError('');
         setSuccessMessage('');
 
-        // Run full validation before touching the API
         const errors = validateForm(formData, isEditMode);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
@@ -448,12 +446,18 @@ const BusinessForm = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <div
+                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                        style={{ borderColor: '#f09b13' }}
+                    />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
         );
     }
+
+    const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER — Mobile First
@@ -599,7 +603,11 @@ const BusinessForm = () => {
                                         const trimmed = s.trim();
                                         if (!trimmed) return null;
                                         return (
-                                            <span key={i} className={`inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}>
+                                            <span
+                                                key={i}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium text-white`}
+                                                style={{ backgroundColor: '#f09b13' }}
+                                            >
                                                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                 </svg>
@@ -674,8 +682,13 @@ const BusinessForm = () => {
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button variant="primary" size="sm" onClick={getCurrentLocation} disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-blue-600 hover:!bg-blue-700">
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="!py-1.5 !px-3 !bg-[#f09b13] !border-[#f09b13] hover:!bg-[#d4870f]"
+                        >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
                                 : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
@@ -743,8 +756,8 @@ const BusinessForm = () => {
 
                     {/* Tip box */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-blue-800`}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                            <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
                                 📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
                             </p>
                         </div>
@@ -752,8 +765,8 @@ const BusinessForm = () => {
 
                     {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-blue-800`}>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location set:</span>
                                 <span className="ml-1 font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
@@ -764,20 +777,29 @@ const BusinessForm = () => {
                 </SectionCard>
 
                 {/* ─── 8. PORTFOLIO PHOTOS ──────────────────────────────────── */}
-                <SectionCard title="Portfolio Photos (Optional)">
+                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50'}`}>
+                            disabled={maxImagesReached} />
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            style={{
+                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                            }}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-blue-600" />
+                                <div
+                                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#fff0d6' }}
+                                >
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5 ? 'Maximum 5 images reached' : 'Tap to upload photos'}
+                                        {maxImagesReached
+                                            ? 'Maximum 5 images reached'
+                                            : `Tap to upload photos (${5 - totalImages} slots left)`}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
                                         JPG, PNG, WebP — max 5 MB each, up to 5 images
@@ -790,24 +812,34 @@ const BusinessForm = () => {
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                <div key={`ex-${i}`} className="relative aspect-square group">
+                                    <img src={url} alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                         onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                    <span
+                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}
+                                    >
+                                        Saved
+                                    </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={preview} alt={`New ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -820,11 +852,8 @@ const BusinessForm = () => {
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${
-                            loading || successMessage
-                                ? 'bg-blue-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg'
-                        } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                        style={{ backgroundColor: loading || successMessage ? '#f0b35c' : '#f09b13' }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

@@ -475,7 +475,7 @@ const HospitalServicesList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#1A5F9E] hover:bg-[#154a7e] text-white"
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white"
                     >
                         + Create Hospitals & Healthcare Service
                     </Button>

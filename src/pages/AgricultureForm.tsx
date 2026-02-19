@@ -25,7 +25,6 @@ const getAgricultureSubcategories = (): string[] => {
         : ['Tractor Service', 'Water Pump Service', 'Fertilizer Dealer', 'Seed Dealer', 'Farming Tools', 'Veterinary Services'];
 };
 
-// ── Constant so it's not recomputed on every render ──────────────────────────
 const AGRICULTURE_CATEGORIES = getAgricultureSubcategories();
 
 // ============================================================================
@@ -33,7 +32,7 @@ const AGRICULTURE_CATEGORIES = getAgricultureSubcategories();
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#f09b13] focus:border-[#f09b13] ` +
+    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -115,7 +114,6 @@ const validateForm = (formData: {
 }, isEditMode: boolean): FieldErrors => {
     const errors: FieldErrors = {};
 
-    // FIX 5: Validate userId for new submissions
     if (!isEditMode && !formData.userId.trim()) {
         errors.userId = 'User not logged in. Please log in to add a service.';
     }
@@ -132,7 +130,6 @@ const validateForm = (formData: {
         errors.description = 'Description must be at least 10 characters';
     }
 
-    // FIX 1 & 7: Proper number validation — not just .trim()
     if (!formData.serviceCharge.trim()) {
         errors.serviceCharge = 'Service charge is required';
     } else {
@@ -146,18 +143,10 @@ const validateForm = (formData: {
         }
     }
 
-    // FIX 2: Validate address fields (marked required in UI but were never checked)
-    if (!formData.area.trim()) {
-        errors.area = 'Area is required';
-    }
-    if (!formData.city.trim()) {
-        errors.city = 'City is required';
-    }
-    if (!formData.state.trim()) {
-        errors.state = 'State is required';
-    }
+    if (!formData.area.trim()) errors.area = 'Area is required';
+    if (!formData.city.trim()) errors.city = 'City is required';
+    if (!formData.state.trim()) errors.state = 'State is required';
 
-    // Validate coordinates
     if (!formData.latitude || !formData.longitude) {
         errors.location = 'Location is required — use Auto Detect or enter your address';
     }
@@ -171,7 +160,6 @@ const validateForm = (formData: {
 const AgricultureForm: React.FC = () => {
     const navigate = useNavigate();
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
     const getSubcategoryFromUrl = () => {
         const sub = new URLSearchParams(window.location.search).get('subcategory');
@@ -180,7 +168,6 @@ const AgricultureForm: React.FC = () => {
             : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
@@ -190,7 +177,6 @@ const AgricultureForm: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
 
-    // FIX 9: defaultCategory derived from the module-level constant, not re-evaluated lazily
     const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_CATEGORIES[0] || 'Tractor Service';
 
     const [formData, setFormData] = useState({
@@ -207,7 +193,6 @@ const AgricultureForm: React.FC = () => {
         longitude: '',
     });
 
-    // Per-field validation errors
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     // ── images ───────────────────────────────────────────────────────────────
@@ -217,10 +202,6 @@ const AgricultureForm: React.FC = () => {
 
     // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
-
-    // FIX 3 & 4: Use a ref to track whether GPS just set coordinates,
-    // so we never auto-geocode over freshly detected GPS coordinates.
-    // We store the coords themselves (not just a boolean) so we can compare.
     const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
@@ -230,7 +211,6 @@ const AgricultureForm: React.FC = () => {
             setLoadingData(true);
             try {
                 const data = await getAgricultureById(editId);
-
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
@@ -245,7 +225,6 @@ const AgricultureForm: React.FC = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-
                 if (data.images && Array.isArray(data.images)) {
                     setExistingImages(data.images);
                 }
@@ -259,20 +238,11 @@ const AgricultureForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── FIX 3 & 4: Auto-geocode ONLY when all these are true: ────────────────
-    //   • area/city/state changed
-    //   • lat/lng are genuinely empty (never set)
-    //   • the change was NOT caused by GPS detection (compare against gpsCoords ref)
+    // ── Auto-geocode ONLY when: area typed, lat/lng empty, not from GPS ───────
     useEffect(() => {
         const { area, city, state, latitude, longitude } = formData;
-
-        // Skip if no area typed yet
         if (!area.trim()) return;
-
-        // Skip if coordinates already exist
         if (latitude && longitude) return;
-
-        // Skip if these coords were set by GPS (prevent geocoding over GPS)
         if (
             gpsCoords.current &&
             gpsCoords.current.lat === latitude &&
@@ -292,47 +262,32 @@ const AgricultureForm: React.FC = () => {
                 }));
             }
         }, 1000);
-
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state]);
 
-    // ── generic input — clears field error on change ─────────────────────────
+    // ── generic input ─────────────────────────────────────────────────────────
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        // Clear the specific field error as user corrects it
         if (fieldErrors[name as keyof FieldErrors]) {
             setFieldErrors(prev => ({ ...prev, [name]: undefined }));
         }
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
         const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
+        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
         const validFiles = files.slice(0, availableSlots).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
             return true;
         });
-
         if (!validFiles.length) return;
-
         const newPreviews: string[] = [];
         validFiles.forEach(file => {
             const reader = new FileReader();
@@ -351,11 +306,10 @@ const AgricultureForm: React.FC = () => {
         setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
         setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
     };
-
     const handleRemoveExistingImage = (i: number) =>
         setExistingImages(prev => prev.filter((_, idx) => idx !== i));
 
-    // ── geolocation ──────────────────────────────────────────────────────────
+    // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
@@ -375,15 +329,10 @@ const AgricultureForm: React.FC = () => {
                 const accuracy = pos.coords.accuracy;
 
                 if (accuracy > 500) {
-                    setLocationWarning(
-                        `⚠️ Low accuracy (~${Math.round(accuracy)}m). Please verify the address fields below.`
-                    );
+                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(accuracy)}m). Please verify the address fields below.`);
                 }
 
-                // FIX 3 & 4: Record GPS coords in ref BEFORE setting state,
-                // so the geocode useEffect sees them and skips auto-geocoding.
                 gpsCoords.current = { lat, lng };
-
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
 
                 try {
@@ -401,9 +350,7 @@ const AgricultureForm: React.FC = () => {
                             state: data.address.state || prev.state,
                         }));
                     }
-                } catch (e) {
-                    console.error('Reverse geocode error:', e);
-                }
+                } catch (e) { console.error('Reverse geocode error:', e); }
 
                 setLocationLoading(false);
             },
@@ -415,19 +362,16 @@ const AgricultureForm: React.FC = () => {
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
+    // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setError('');
         setSuccessMessage('');
 
-        // FIX 1, 2, 5, 7: Run full validation before touching the API
         const errors = validateForm(formData, isEditMode);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
-            // Show the first error as a toast too, for visibility
             const firstError = Object.values(errors)[0];
             setError(firstError || 'Please fix the errors below before submitting');
-            // Scroll to top so user sees the error banner
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -436,13 +380,11 @@ const AgricultureForm: React.FC = () => {
         setLoading(true);
 
         try {
-            // FIX 7: Parse once and reuse — guaranteed non-NaN because validation passed
             const charge = parseFloat(formData.serviceCharge);
             const lat = parseFloat(formData.latitude);
             const lng = parseFloat(formData.longitude);
 
             if (isEditMode && editId) {
-                // FIX 6: In update mode, pass existingImages URLs so backend keeps them
                 const payload: UpdateAgriculturePayload & { existingImages?: string[] } = {
                     serviceName: formData.serviceName.trim(),
                     description: formData.description.trim(),
@@ -454,12 +396,9 @@ const AgricultureForm: React.FC = () => {
                     area: formData.area.trim(),
                     city: formData.city.trim(),
                     state: formData.state.trim(),
-                    // Only send new File images if any were added
                     images: selectedImages.length > 0 ? selectedImages : undefined,
-                    // Send remaining existing image URLs so backend doesn't delete them
                     existingImages: existingImages,
                 };
-
                 await updateAgricultureById(editId, payload);
                 setSuccessMessage('Service updated successfully!');
             } else {
@@ -477,7 +416,6 @@ const AgricultureForm: React.FC = () => {
                     state: formData.state.trim(),
                     images: selectedImages,
                 };
-
                 await addAgricultureService(payload);
                 setSuccessMessage('Service created successfully!');
             }
@@ -485,15 +423,10 @@ const AgricultureForm: React.FC = () => {
             setTimeout(() => navigate('/my-business'), 1500);
 
         } catch (err: unknown) {
-            // FIX 10: Handle errors that may not have .message
             console.error('Submit error:', err);
-            if (err instanceof Error) {
-                setError(err.message);
-            } else if (typeof err === 'string') {
-                setError(err);
-            } else {
-                setError('Failed to submit form. Please try again.');
-            }
+            if (err instanceof Error) setError(err.message);
+            else if (typeof err === 'string') setError(err);
+            else setError('Failed to submit form. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -501,17 +434,23 @@ const AgricultureForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // ── loading screen ───────────────────────────────────────────────────────
+    // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f09b13] mx-auto mb-4" />
+                    <div
+                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                        style={{ borderColor: '#f09b13' }}
+                    />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
         );
     }
+
+    const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER — Mobile First
@@ -522,10 +461,7 @@ const AgricultureForm: React.FC = () => {
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+                    <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
@@ -559,10 +495,10 @@ const AgricultureForm: React.FC = () => {
 
                 {/* Success banner */}
                 {successMessage && (
-                    <div className="p-4 bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
                         <div className="flex items-center gap-2">
-                            <span className="text-[#f09b13] text-lg">✓</span>
-                            <p className={`${typography.body.small} text-[#f09b13] font-medium`}>{successMessage}</p>
+                            <span className="text-green-600 text-lg">✓</span>
+                            <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                         </div>
                     </div>
                 )}
@@ -693,7 +629,7 @@ const AgricultureForm: React.FC = () => {
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[#f09b13] hover:!bg-[#f09b13]"
+                            className="!py-1.5 !px-3 !bg-[#f09b13] !border-[#f09b13] hover:!bg-[#d4870f]"
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -714,33 +650,23 @@ const AgricultureForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="e.g. Vidyanagar"
+                                type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="e.g. Vidyanagar"
                                 className={fieldErrors.area ? inputError : inputBase}
                             />
                             {fieldErrors.area && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
-                                </p>
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.area}</p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="e.g. Hubli"
+                                type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="e.g. Hubli"
                                 className={fieldErrors.city ? inputError : inputBase}
                             />
                             {fieldErrors.city && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
-                                </p>
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.city}</p>
                             )}
                         </div>
                     </div>
@@ -748,21 +674,16 @@ const AgricultureForm: React.FC = () => {
                     <div>
                         <FieldLabel required>State</FieldLabel>
                         <input
-                            type="text"
-                            name="state"
-                            value={formData.state}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Karnataka"
+                            type="text" name="state" value={formData.state}
+                            onChange={handleInputChange} placeholder="e.g. Karnataka"
                             className={fieldErrors.state ? inputError : inputBase}
                         />
                         {fieldErrors.state && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.state}
-                            </p>
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>
                         )}
                     </div>
 
-                    {/* Location error (coordinates missing) */}
+                    {/* Location error */}
                     {fieldErrors.location && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-700 flex items-center gap-1.5">
@@ -773,8 +694,8 @@ const AgricultureForm: React.FC = () => {
 
                     {/* Tip box */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#f09b13]`}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                            <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
                                 📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
                             </p>
                         </div>
@@ -782,8 +703,8 @@ const AgricultureForm: React.FC = () => {
 
                     {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#f09b13]`}>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location set:</span>
                                 <span className="ml-1 font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
@@ -794,29 +715,32 @@ const AgricultureForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ─── 6. PHOTOS ───────────────────────────────────────── */}
-                <SectionCard title="Service Photos (Optional)">
+                <SectionCard title={`Service Photos (${totalImages}/5)`}>
                     <label className="cursor-pointer block">
                         <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
+                            type="file" accept="image/*" multiple
+                            onChange={handleImageSelect} className="hidden"
+                            disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-green-300 hover:border-green-400 hover:bg-green-50'
-                            }`}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            style={{
+                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                            }}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-green-600" />
+                                <div
+                                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#fff0d6' }}
+                                >
+                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
+                                        {maxImagesReached
                                             ? 'Maximum 5 images reached'
-                                            : 'Tap to upload photos'}
+                                            : `Tap to upload photos (${5 - totalImages} slots left)`}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
                                         JPG, PNG, WebP — max 5 MB each, up to 5 images
@@ -828,44 +752,40 @@ const AgricultureForm: React.FC = () => {
 
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
-                            {/* Existing images from backend */}
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                                <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
+                                        src={url} alt={`Saved ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                         onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#1A5F9E] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span
+                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}
+                                    >
                                         Saved
                                     </span>
                                 </div>
                             ))}
-
-                            {/* New image previews */}
                             {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
+                                <div key={`new-${i}`} className="relative aspect-square group">
                                     <img
-                                        src={preview}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-[#1A5F9E]"
+                                        src={preview} alt={`New ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: '#f09b13' }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#1A5F9E] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span
+                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: '#f09b13' }}
+                                    >
                                         New
                                     </span>
                                 </div>
@@ -880,10 +800,8 @@ const AgricultureForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all ${loading || successMessage
-                            ? 'bg-[#1A5F9E]/70 cursor-not-allowed'
-                            : 'bg-[#1A5F9E] hover:bg-[#154a7e] active:bg-[#0f365d] shadow-md hover:shadow-lg'
-                            } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                        style={{ backgroundColor: loading || successMessage ? '#f0b35c' : '#f09b13' }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -891,9 +809,7 @@ const AgricultureForm: React.FC = () => {
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
                         ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span>✓</span> Done
-                            </span>
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
                         ) : (
                             isEditMode ? 'Update Service' : 'Create Service'
                         )}
@@ -902,8 +818,7 @@ const AgricultureForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

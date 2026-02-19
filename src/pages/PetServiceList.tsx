@@ -347,7 +347,7 @@ const PetServicesList: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-1">Find pet services near you</p>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700">
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
                         + Add Post
                     </Button>
                 </div>

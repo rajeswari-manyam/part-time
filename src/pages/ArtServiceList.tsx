@@ -293,7 +293,7 @@ const ArtServicesList: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-1">Find creative & art services near you</p>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-amber-600 hover:bg-amber-700">
+                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f]">
                         + Add Listing
                     </Button>
                 </div>
